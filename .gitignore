@@ -5,6 +5,8 @@
 .RData
 .Rdata
 .Ruserdata
+sc_analysis.Rproj
+.httr-oauth
 .DS_Store
 references.bib
 counts/
