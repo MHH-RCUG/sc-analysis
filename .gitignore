@@ -1,0 +1,14 @@
+.Rproj
+.Rproj.user
+.Rproj.user/
+.Rhistory
+.RData
+.Rdata
+.Ruserdata
+.DS_Store
+references.bib
+counts/
+results/
+known_markers*
+
+
