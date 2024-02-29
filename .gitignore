@@ -8,9 +8,16 @@
 sc_analysis.Rproj
 .httr-oauth
 .DS_Store
+
+modules/*/*.Rproj
+
 references.bib
+
 counts/
 results/
+references/
 known_markers*
+
+
 
 
