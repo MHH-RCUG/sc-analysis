@@ -1,3 +1,6 @@
+Sys.setenv(RENV_ACTIVATE_PROJECT = FALSE)
+source("./modules/download_test_datasets/renv/activate.R")
+
 # 10x and Smartseq2 datasets of PBMC cells from "Systematic comparative analysis of single cell RNA-sequencing methods" (Ding et al 2018)
 
 # CAREFULL: BIG DATASET

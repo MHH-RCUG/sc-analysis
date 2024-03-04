@@ -1,3 +1,6 @@
+Sys.setenv(RENV_ACTIVATE_PROJECT = FALSE)
+source("./modules/download_test_datasets/renv/activate.R")
+
 # Minimal dataset for testing.
 #
 # The 10x dataset "1k Peripheral blood mononuclear cells (PBMCs)" is used to create two artifical samples with 500 and 700 cells and 8000 genes each.

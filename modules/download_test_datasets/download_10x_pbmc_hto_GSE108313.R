@@ -1,3 +1,6 @@
+Sys.setenv(RENV_ACTIVATE_PROJECT = FALSE)
+source("./modules/download_test_datasets/renv/activate.R")
+
 # Downloaded 10X data set, 'pbmc_hto_mtx.rds' and 'pbmc_umi_mtx.rds'
 # https://www.dropbox.com/sh/ntc33ium7cg1za1/AAD_8XIDmu4F7lJ-5sp-rGFYa?dl=0
 #
