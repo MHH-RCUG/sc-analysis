@@ -1,38 +1,9 @@
 Sys.setenv(RENV_ACTIVATE_PROJECT = FALSE)
-#source("/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis/modules/download_references/renv/activate.R")
 source("./modules/read_gene_annotation/renv/activate.R")
 
 ## Read gene annotation
 # We read gene annotation from file. 
 # We generate several dictionaries to translate between Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names. 
-
-### Parameter
-################################################################################
-param=list()
-
-# Reference
-#param$mart_dataset="hsapiens_gene_ensembl"
-#param$annot_version=98
-param$mart_dataset="mmusculus_gene_ensembl"
-param$annot_version=103
-
-# Standard parameter
-#param$path_to_git="/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis"
-param$path_to_git="."
-param$path_reference=file.path(param$path_to_git, "references", param$mart_dataset, param$annot_version)
-param$reference=paste0(param$mart_dataset, ".v", param$annot_version, ".annot.txt")
-param$file_annot = file.path(param$path_reference, param$reference)
-param$file_cc_genes = file.path(param$path_reference, "cell_cycle_markers.xlsx")
-
-param$annot_main=c(ensembl="ensembl_gene_id", symbol="external_gene_name", entrez="entrezgene_accession")
-
-
-# Git directory and files to source must be done first, then all helper functions can be sourced
-git_files_to_source = c("functions_biomart.R")
-git_files_to_source = file.path(param$path_to_git, "R", git_files_to_source)
-file_exists = purrr::map_lgl(git_files_to_source, file.exists)
-if (any(!file_exists)) stop(paste("The following files could not be found:", paste(git_files_to_source[!file_exists], collapse=", "), ". Please check the git directory at '", param$path_to_git, "'.!"))
-invisible(purrr::map(git_files_to_source, source))
 
 
 ### read_ensembl_annotation
