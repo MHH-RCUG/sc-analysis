@@ -63,3 +63,5 @@ write.table(feat, file=fh, row.names=FALSE, col.names=FALSE, quote=FALSE, sep="\
 close(fh)
 
 unlink("download", recursive=TRUE)
+
+setwd(param$path_to_git)

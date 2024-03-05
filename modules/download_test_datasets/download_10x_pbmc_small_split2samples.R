@@ -79,3 +79,4 @@ openxlsx::write.xlsx(data.frame(bcell=c("ENSG00000105369", "ENSG00000156738"),
                                 dendritic=c("ENSG00000179639", NA)),
                      "known_markers.xlsx")
 
+setwd(param$path_to_git)

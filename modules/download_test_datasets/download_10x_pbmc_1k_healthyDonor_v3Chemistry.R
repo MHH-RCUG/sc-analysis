@@ -29,3 +29,5 @@ openxlsx::write.xlsx(data.frame(bcell=c("ENSG00000105369", "ENSG00000156738"),
            monocytes=c("ENSG00000203747", NA),
            dendritic=c("ENSG00000179639", NA)),
            "known_markers.xlsx")
+
+setwd(param$path_to_git)

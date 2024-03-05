@@ -102,3 +102,5 @@ openxlsx::write.xlsx(data.frame(condition_column=c("orig.ident", "orig.ident", "
                                 subset_column=c(NA, "seurat_clusters", "seurat_clusters"),
                                 subset_group=c(NA, " ", "1;2")),
                      "deg_contrasts.xlsx")
+
+setwd(param$path_to_git)
