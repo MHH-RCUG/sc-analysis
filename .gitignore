@@ -9,11 +9,11 @@ sc_analysis.Rproj
 .httr-oauth
 .DS_Store
 
-env/
-!env/*/.Rprofile
+env/*/*/*
+env/*/.Rhistory
+env/*/.RData
+env/*/*.Rproj
 !env/*/renv/activate.R
-!env/*/renv.lock
-!env/*/installation*.R
 
 references.bib
 
