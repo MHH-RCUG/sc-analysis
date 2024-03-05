@@ -1,6 +1,3 @@
-Sys.setenv(RENV_ACTIVATE_PROJECT = FALSE)
-source("./modules/download_test_datasets/renv/activate.R")
-
 # Dataset provided by 10x: 1k Peripheral blood mononuclear cells (PBMCs) from a healthy donor
 # https://support.10xgenomics.com/single-cell-gene-expression/datasets/3.0.0/pbmc_1k_v3
 

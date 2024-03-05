@@ -1,7 +1,3 @@
-Sys.setenv(RENV_ACTIVATE_PROJECT = FALSE)
-#source("/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis/modules/download_references/renv/activate.R")
-source("./modules/download_references/renv/activate.R")
-
 ## Download references
 # We download references from Ensembl and write the resulting table to file.
 library(magrittr)

@@ -1,6 +1,3 @@
-Sys.setenv(RENV_ACTIVATE_PROJECT = FALSE)
-source("./modules/read_gene_annotation/renv/activate.R")
-
 ## Read gene annotation
 # We read gene annotation from file. 
 # We generate several dictionaries to translate between Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names. 
