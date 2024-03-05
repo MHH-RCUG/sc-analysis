@@ -1,7 +1,10 @@
 # Dataset provided by 10x: 1k Peripheral blood mononuclear cells (PBMCs) from a healthy donor
 # https://support.10xgenomics.com/single-cell-gene-expression/datasets/3.0.0/pbmc_1k_v3
 
-# Important: Run this script in its directory
+# Data output in a input_data subfolder of the directory where it is run 
+# Create output directories
+if (!file.exists("input_data")) dir.create("input_data", recursive=TRUE, showWarnings=FALSE)
+setwd(file.path(param$path_to_git,"input_data"))
 
 unlink("filtered_feature_bc_matrix", recursive=T)
 #unlink("counts", recursive=T)

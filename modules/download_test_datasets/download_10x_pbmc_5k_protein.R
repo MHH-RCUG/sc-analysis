@@ -1,7 +1,11 @@
 # Dataset provided by 10x: 5k Peripheral blood mononuclear cells (PBMCs) from a healthy donor with cell surface proteins (v3 chemistry)
 # https://support.10xgenomics.com/single-cell-gene-expression/datasets/3.0.2/5k_pbmc_protein_v3
 
-# Important: Run this script in its directory
+# Data output in a input_data subfolder of the directory where it is run 
+# Create output directories
+if (!file.exists("input_data")) dir.create("input_data", recursive=TRUE, showWarnings=FALSE)
+setwd(file.path(param$path_to_git,"input_data"))
+
 
 unlink("counts", recursive=T)
 
@@ -25,3 +29,5 @@ openxlsx::write.xlsx(data.frame(bcell=c("ENSG00000105369", "ENSG00000156738"),
                                 monocytes=c("ENSG00000203747", NA),
                                 dendritic=c("ENSG00000179639", NA)),
                      "known_markers.xlsx")
+
+setwd(param$path_to_git)
