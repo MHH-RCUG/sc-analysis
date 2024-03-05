@@ -2,6 +2,36 @@
 # We read gene annotation from file. 
 # We generate several dictionaries to translate between Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names. 
 
+### Set reference
+################################################################################
+if (param$species=="human") {
+  param$mart_dataset="hsapiens_gene_ensembl"
+} else {
+  if (param$species=="mouse") {
+    param$mart_dataset="mmusculus_gene_ensembl"
+  } else {
+    param$mart_dataset=param$mart_dataset
+  }
+}
+
+if (is.null(param$annot_version)) {
+  param$annot_version=98
+} else {
+  param$annot_version=param$annot_version
+}
+
+param$path_reference=file.path(param$path_to_git, "references", param$mart_dataset, param$annot_version)
+param$reference=paste0(param$mart_dataset, ".v", param$annot_version, ".annot.txt")
+param$file_annot = file.path(param$path_reference, param$reference)
+param$file_cc_genes = file.path(param$path_reference, "cell_cycle_markers.xlsx")
+
+
+### Download reference if not existing
+################################################################################
+if (!file.exists(param$file_annot) | !file.exists(param$file_cc_genes)) {
+  source(file.path(param$path_to_git, "modules/download_references/download_references.R"))
+}
+
 
 ### read_ensembl_annotation
 ################################################################################
