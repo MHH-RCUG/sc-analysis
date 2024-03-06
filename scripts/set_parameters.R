@@ -1,19 +1,13 @@
+### Configuration
+################################################################################
+source('/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis/scripts/configuration.R')
+renv::activate(file.path(param$path_to_git,"env/basic"))
+
+
 ### Parameter
 ################################################################################
-param=list()
 
 # Standard parameter
-param$path_to_git='/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis'
-renv::activate(file.path(param$path_to_git,"env/basic"))
-setwd(param$path_to_git)
-
-# Git directory and files to source must be done first, then all helper functions can be sourced
-git_files_to_source = c("functions_biomart.R")
-git_files_to_source = file.path(param$path_to_git, "R", git_files_to_source)
-file_exists = purrr::map_lgl(git_files_to_source, file.exists)
-if (any(!file_exists)) stop(paste("The following files could not be found:", paste(git_files_to_source[!file_exists], collapse=", "), ". Please check the git directory at '", param$path_to_git, "'.!"))
-invisible(purrr::map(git_files_to_source, source))
-
 
 ##########
 
