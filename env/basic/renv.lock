@@ -8,6 +8,11 @@
       }
     ]
   },
+  "Python": {
+    "Version": "3.8.10",
+    "Type": "virtualenv",
+    "Name": "./virtualenvs/r-reticulate"
+  },
   "Packages": {
     "AnnotationDbi": {
       "Package": "AnnotationDbi",
@@ -491,6 +496,22 @@
         "Rcpp"
       ]
     },
+    "RefManageR": {
+      "Package": "RefManageR",
+      "Version": "1.4.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "d22e94d9088f55cc112e722888afcc70",
+      "Requirements": [
+        "bibtex",
+        "httr",
+        "jsonlite",
+        "lubridate",
+        "plyr",
+        "stringr",
+        "xml2"
+      ]
+    },
     "Rtsne": {
       "Package": "Rtsne",
       "Version": "0.17",
@@ -748,6 +769,16 @@
         "DelayedArray",
         "Matrix",
         "Rcpp"
+      ]
+    },
+    "bibtex": {
+      "Package": "bibtex",
+      "Version": "0.5.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "a704d52e87822191b42c715c568f96dd",
+      "Requirements": [
+        "backports"
       ]
     },
     "biomaRt": {
@@ -1726,6 +1757,18 @@
         "xml2"
       ]
     },
+    "knitcitations": {
+      "Package": "knitcitations",
+      "Version": "1.0.12",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "b862035abb5533c51a81f327836e853e",
+      "Requirements": [
+        "RefManageR",
+        "digest",
+        "httr"
+      ]
+    },
     "knitr": {
       "Package": "knitr",
       "Version": "1.45",
@@ -1865,6 +1908,17 @@
       "Repository": "CRAN",
       "Hash": "7ce2733a9826b3aeb1775d56fd305472",
       "Requirements": []
+    },
+    "markdown": {
+      "Package": "markdown",
+      "Version": "1.12",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "765cf53992401b3b6c297b69e1edb8bd",
+      "Requirements": [
+        "commonmark",
+        "xfun"
+      ]
     },
     "matrixStats": {
       "Package": "matrixStats",
@@ -3045,10 +3099,10 @@
     },
     "xfun": {
       "Package": "xfun",
-      "Version": "0.42",
+      "Version": "0.41",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "fd1349170df31f7a10bd98b0189e85af",
+      "Hash": "460a5e0fe46a80ef87424ad216028014",
       "Requirements": []
     },
     "xml2": {
