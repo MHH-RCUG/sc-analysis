@@ -4,7 +4,7 @@
 # Data output in a input_data subfolder of the directory where it is run 
 # Create output directories
 if (!file.exists("input_data")) dir.create("input_data", recursive=TRUE, showWarnings=FALSE)
-setwd(file.path(param$path_to_git,"input_data"))y
+setwd(file.path(param$path_to_git,"input_data"))
 
 # Clear old files
 unlink("demultiplexed", recursive=TRUE)
