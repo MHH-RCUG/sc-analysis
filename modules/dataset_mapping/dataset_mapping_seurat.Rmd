@@ -1,0 +1,469 @@
+---
+title: "Mapping cluster annotations from another dataset"
+author: "`r param$author`"
+date: "`r format(Sys.time(), '%B, %Y')`"
+geometry: "margin=2cm"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    code_folding: "hide"
+    highlight: "tango"
+    theme: "paper"
+bibliography: "`r file.path(param$path_out, 'references.bib')`"
+css: "`r file.path(param$path_to_git, 'css/style.css')`"
+---
+
+```{r r_options, file='../../scripts/configuration.R'}
+#source(file.path(param$path_to_git,'scripts/configuration.R'))
+message("Set R options")
+```
+
+```{r rmarkdown, file='../../scripts/rmarkdown_configuration.R'}
+#source(file.path(param$path_to_git,'scripts/rmarkdown_configuration.R'))
+message("Set Rmarkdown options")
+```
+
+```{r css, results="asis", eval=FALSE}
+cat(paste0('<link rel="stylesheet" href="', param$css, '" />'))
+```
+
+```{r load_packages, warning=FALSE, message=FALSE, results='hide'}
+
+# Load renv
+renv::load(file.path(param$path_to_git,"env/basic"))
+
+# Required libraries
+library(Seurat)
+library(SingleR)
+library(patchwork)
+library(magrittr)
+library(ggplot2)
+library(ggsci)
+library(pheatmap)
+```
+
+
+
+# Dataset description
+ 
+Single cell transcriptomes can be difficult to annotate without extensive knowledge of the underlying biology. Hence, the biological knowledge (defined marker genes and cluster identities) can be propagated from an previously annotated dataset to the test dataset in an automated manner and aid in cluster identification.  
+
+Here, we project reference data onto a query object to annotate the cells of the query datasets by cell type label transfer and projecting query cells onto reference UMAPs as described in the Seurat vignette 'Mapping and annotating query datasets' (https://satijalab.org/seurat/articles/integration_mapping.html). 
+The reference and the query datasets have to be available as S4 class Seurat objects. While the reference object has to contain normalized data and UMAP reduction, correction of the underlying raw query data is not required. 
+
+Be aware, that the output is highly impacted by the quality and contend of the reference dataset!
+
+<br />
+<br />
+
+```{r read_data, warning=FALSE, message=FALSE}
+# Load Seurat S4 objects 
+# scR = reference dataset
+scR = readRDS(param$ref)
+# sc = query dataset
+sc = readRDS(param$query)
+
+
+
+# Set colors
+if (is.null(param$col_annotation)) {
+  annotation_colours_out = suppressWarnings(SetAnnotationColours(sc, param$col_palette_annotation)) 
+  sc = annotation_colours_out[[1]]
+  param$col_annotation = annotation_colours_out[[2]]
+} 
+if (is.null(param$col_annotation_ref)) {
+  annotation_colours_out = suppressWarnings(SetAnnotationColours(scR, param$col_palette_annotation)) 
+  scR = annotation_colours_out[[1]]
+  param$col_annotation_ref = annotation_colours_out[[2]]
+}
+
+# Expand to to both datasets
+param$col_annotation_all = c(param$col_annotation_ref, 'NA' = "#BA6338FF")
+
+```
+
+Query dataset `r param$query` 
+```{r query, warning=FALSE, message=FALSE}
+sc
+```
+
+Reference dataset `r param$ref`
+```{r reference, warning=FALSE, message=FALSE}
+scR
+```
+
+<br>
+
+# Annotation and mapping of query datasets using Seurat refernce integration
+Cell type classification was performed by projecting a reference dataset onto a query object by transfer of cell type labels from the reference to cells of the query. In the next step, the query data are then project onto the UMAP structure of the reference as described in the vignette https://satijalab.org/seurat/articles/integration_mapping. 
+
+## Transfer of cell type labels
+The reference-mapping of the query dataset helps us identify cell types. However, the output, means the annotation of cells of the query dataset, is highly impacted by the quality and content of the reference dataset. If there are cell types that are present in the query dataset that are not represented in the reference, they will project to the most similar cells in the reference dataset.
+Hence, we perform assessment of the prediction score that each cell obtains representing the strength of the prediction. Each prediction is assigned a score between 0 and 1. We test different thresholds. 
+
+```{r refernce_integration, warning=FALSE, message=FALSE}
+# From https://satijalab.org/seurat/articles/integration_mapping.html
+
+### Projection of query data onto the UMAP structure of the reference does only work if model is known.
+# If reference object does not contain an umap dimensional reduction object
+if (is.null(scR@reductions$umap)) {
+scR = Seurat::RunUMAP(scR, dims=1:30, verbose=FALSE, umap.method="uwot", n.neighbors=30, return.model = TRUE)
+}
+
+# If RunUMAP() was run without return.model = TRUE, set the model manually with information extracted from the seurat object
+if (is.null(scR[["umap"]]@misc$model)) {
+  # set embeddings
+  scR[["umap"]] <- CreateDimReducObject(embeddings = scR[["umap"]]@cell.embeddings, key = "UMAP_")
+  
+  # set UMAP models
+  umap.model <- list()
+  umap.model$n_epochs <- 200
+  umap.model$alpha <-1
+  umap.model$method <- "umap"
+  umap.model$negative_sample_rate <- scR@commands$RunUMAP.RNA.pca$negative.sample.rate 
+  umap.model$gamma <- 1
+  umap.model$approx_pow <- FALSE
+  umap.model$metric$cosine$ndim <- length(scR@commands$RunUMAP.RNA.pca$dims) 
+  umap.model$min_dist = scR@commands$RunUMAP.RNA.pca$min.dist
+  umap.model$spread = scR@commands$RunUMAP.RNA.pca$spread
+  umap.model$n_neighbors = scR@commands$RunUMAP.RNA.pca$n.neighbors
+  umap.model$pca_models = list()
+  umap.model$spread = scR@commands$RunUMAP.RNA.pca$uwot.sgd
+  umap.model$embedding <- scR[["umap"]]@cell.embeddings 
+  ab_param <- uwot:::find_ab_params(spread = scR@commands$RunUMAP.RNA.pca$spread, min_dist = scR@commands$RunUMAP.RNA.pca$min.dist) 
+  umap.model$a <- ab_param["a"]
+  umap.model$b <- ab_param["b"]
+  scR[["umap"]]@misc$model <- umap.model
+}
+
+# Find anchors between reference and query
+DefaultAssay(scR) <- "RNA"
+DefaultAssay(sc) <- "RNA"
+sc.anchors = FindTransferAnchors(reference = scR, query = sc, dims = 1:30, reference.reduction = "pca")
+
+# MapQuery(), a wrapper of TransferData(), IntegrateEmbeddings(), and ProjectUMAP(), transfers cell type labels and impute the ADT values (TransferData()) and projects the query data onto the UMAP structure of the reference (IntegrateEmbeddings() and ProjectUMAP()). Predicted cell types are saved in a predicted.celltype column.
+sc = MapQuery(anchorset = sc.anchors, reference = scR, query = sc, refdata = list(celltype = param$celltype), reference.reduction = "pca", reduction.model = "umap")
+
+# Transfer refdata annotation to an additional column of the reference dataset for later visualisation.  
+scR$annot_cells = scR[[param$celltype]]
+
+```
+
+```{r test_predicted_score_thresholds, warning=FALSE, message=FALSE}
+# Extract numbers predicted celltypes
+pred_cells_table = data.frame(table(sc$predicted.celltype))
+colnames(pred_cells_table) = c("Cell_type", "0")
+
+# Filter for predicted.celltype.score
+pred_score_thresholod = seq(0.1, 1, 0.1)
+for (i in pred_score_thresholod) {
+ sc_subset <- subset(sc, subset = predicted.celltype.score > i)
+ sc$annot_cells = NULL
+ sc$annot_cells = sc_subset$predicted.celltype 
+ 
+ # Extract numbers predicted celltypes
+ pred_celltypes_filtered_tbl = data.frame(table(sc$annot_cells))
+ colnames(pred_celltypes_filtered_tbl) = c("Cell_type", i)
+ 
+ # Combine and print table
+ pred_cells_table = merge(pred_cells_table, pred_celltypes_filtered_tbl, by.x = "Cell_type", all.x = TRUE)
+
+}
+
+knitr::kable(pred_cells_table, align="l", caption="Number of annotated cells for each prediction score threshold") %>% 
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover")) 
+
+```
+```{r plot_test_predicted_score_thresholds, fig.height=4, warning=FALSE, message=FALSE}
+
+tbl = tidyr::pivot_longer(pred_cells_table, cols = 2:12, cols_vary = "fastest", names_to = "Threshold", values_to = "Number")
+tbl <- tbl %>% replace(is.na(.), 0)
+p = ggplot(tbl) +
+  geom_point(aes(x = Threshold, y = Number, color = Cell_type)) +
+  theme_bw() +
+  scale_color_manual(values=param$col_annotation_ref)  
+p
+```
+
+In the following the prediction score threshold of `r param$predicted_score_threshol` was used to exclude unlikely cell type annotations. 
+
+```{r set_predicted_score_thresholds, fig.height=4, warning=FALSE, message=FALSE}
+# Filter by sub-setting for threshold
+sc_subset <- subset(sc, subset = predicted.celltype.score > param$predicted_score_threshold)
+pred_celltypes = data.frame(table(sc_subset$predicted.celltype))
+pred_celltypes = dplyr::mutate(pred_celltypes, Percent = (Freq/sum(pred_celltypes$Freq)*100))
+
+# Filter by subsetting for cells belonging to a specific cell type annotation
+filtered_pred_celltypes = dplyr::filter(pred_celltypes, Percent > param$percent_predicted_cells_threshold)
+celltype_filter = as.vector(filtered_pred_celltypes$Var1)
+Idents(sc_subset) = "predicted.celltype"
+sc_subset <- subset(sc_subset, idents = celltype_filter)
+
+# Transfer subsetting results into sc object as annot_cells variable
+sc$annot_cells = NULL
+sc$annot_cells = sc_subset$predicted.celltype 
+
+# Print table 
+annot_cells = data.frame(table(sc$annot_cells))
+colnames(annot_cells) = c("Cell_type", "Number")
+unassiged = data.frame("unassigend",(length(colnames(sc))-sum(table(sc$annot_cells))))
+colnames(unassiged) = c("Cell_type", "Number")
+annot_cells = rbind(annot_cells, unassiged)
+annot_cells = dplyr::mutate(annot_cells, Percent = (Number/sum(annot_cells$Number)*100))
+
+knitr::kable(annot_cells, align="l", caption="Number and percentage of annotated cells") %>% 
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover")) 
+```
+
+```{r fig_prediction_scores_heights}
+fig_prediction_scores = ceiling(length(pred_celltypes)/4) * 4
+```
+
+Visualization of the prediction score of annotated cell types in the query dataset.
+
+```{r plot_prediction_scores_refumap, fig.height=fig_prediction_scores, warning=FALSE, message=FALSE}
+# plot cell type prediction scores
+DefaultAssay(sc) <- 'prediction.score.celltype'
+
+p <- FeaturePlot(sc,  reduction = "ref.umap", features = celltype_filter, ncol = 3,
+                  cols = c("lightgrey", "darkred"))
+p
+```
+
+
+```{r plot_prediction_scores_original, fig.height=fig_prediction_scores, warning=FALSE, message=FALSE}
+# plot cell type prediction scores
+p <- FeaturePlot(sc, reduction = param$reduction, features = celltype_filter, ncol = 3,
+                  cols = c("lightgrey", "darkred"))
+p
+
+DefaultAssay(sc) <- "RNA"
+```
+
+## Unimodal UMAP Projection
+### Reference dataset projection
+Visualization query cells projected into the UMAP visualization defined by the reference alongside the reference.
+
+```{r unimodal_umap_projection, fig.height=4, warning=FALSE, message=FALSE}
+p1 = Seurat::DimPlot(scR, reduction = "umap", group.by = "annot_cells", pt.size=param$pt_size, cols = param$col_annotation_all, label = TRUE, label.size = 3, repel = TRUE, shuffle = TRUE) + 
+  AddStyle(title="Reference dataset with annotations", xlab = "UMAP 1", ylab = "UMAP 2") +
+  theme(title = element_text(size = 10)) +
+  NoGrid()
+p2 = Seurat::DimPlot(sc, reduction = "ref.umap", group.by = "annot_cells", pt.size=param$pt_size, cols = param$col_annotation_all, label = TRUE, label.size = 3, repel = TRUE, shuffle = TRUE) + 
+  AddStyle(title="Cells of query dataset projected on reference UMAP", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "right") +
+  theme(title = element_text(size = 10)) +
+  NoGrid()
+
+p = p1 + p2
+p
+```
+
+### Query dataset projection
+Visualization annotated query cells in original UMAP visualization alongside the original query annotation.
+
+```{r annotation_projection, fig.height=4, warning=FALSE, message=FALSE}
+p1 = Seurat::DimPlot(sc, reduction = param$reduction, group.by = param$celltype, pt.size=param$pt_size, label = TRUE, cols = param$col_annotation, label.size = 3, repel = TRUE, shuffle = TRUE) + 
+  AddStyle(title="Query dataset with original annotation", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "right") +
+  theme(title = element_text(size = 10)) +
+  NoGrid()
+
+p2 = Seurat::DimPlot(sc, reduction = param$reduction, group.by = "annot_cells", pt.size=param$pt_size, cols = param$col_annotation_all, label = TRUE, label.size = 3, repel = TRUE, shuffle = TRUE) + 
+  AddStyle(title="Query dataset with transferred labels", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "right") +
+  theme(title = element_text(size = 10)) +
+  NoGrid()
+p = p1 + p2
+p
+```
+
+
+<br />
+
+## Computing a new UMAP visualiztion
+
+Above, we have projected the query cells onto to the reference-derived UMAP. Keeping a consistent visualization can assist with the interpretation of new datasets. However, the limitation of this approach lies also exactly within the predefined cell types and reference-derived UMAP and can mask the presence of new cell types in the query which may be of interest. Hence, if the query dataset contains cell types that are not present in the reference, computing a ‘de novo’ visualization is an important step in interpreting the dataset.
+
+This part follows the example of the vignette https://satijalab.org/seurat/articles/multimodal_reference_mapping. 
+
+### Annotation with reference dataset
+
+```{r compute_combined_umap_projection, fig.height=4, warning=FALSE, message=FALSE}
+# Slim down a Seurat object to reduces the amount of data in the subsequent merge. 
+reference = DietSeurat(scR, counts = FALSE, dimreducs = "pca")
+query = DietSeurat(sc, counts = FALSE, dimreducs = "ref.pca")
+
+# Make cell names unique
+colnames(reference) = paste("reference", colnames(reference), sep = "_")
+colnames(query) = paste("query", colnames(query), sep = "_")
+
+# Select equal amount of pca of both datasets
+red_pca = reference[["pca"]][[,1:30]]
+reference[["red_pca"]] = CreateDimReducObject(embeddings = red_pca, key = "PC_", assay = DefaultAssay(reference))
+red_pca = query[["ref.pca"]][[,1:30]]
+query[["red_pca"]] = CreateDimReducObject(embeddings = red_pca, key = "PC_", assay = DefaultAssay(query))
+
+# Merge both datasets
+reference$id <- 'reference'
+query$id <- 'query'
+
+refquery = base::merge(reference, query)
+refquery[["pca"]] = base::merge(reference[["red_pca"]], query[["red_pca"]])
+refquery = Seurat::RunUMAP(refquery, reduction = 'pca', dims=1:param$pc_n, verbose=FALSE, umap.method="uwot", n.neighbors=param$umap_k)
+
+# Set sample colors
+param$col_samples = c('reference' = "#5DB1DDFF", 'query' = "#802268FF")
+```
+
+```{r plot_combined_umap_projection, fig.height=4, warning=FALSE, message=FALSE}
+
+p1 = DimPlot(refquery, group.by = "id", shuffle = TRUE, pt.size=param$pt_size, cols = param$col_samples, label = TRUE, label.size = 3, repel = TRUE) + 
+  AddStyle(title="Groups", xlab = "UMAP 1", ylab = "UMAP 2") + 
+  theme(title = element_text(size = 10)) + 
+  NoLegend() + 
+  NoGrid()
+
+p2 = DimPlot(refquery, group.by = "annot_cells", shuffle = TRUE, pt.size=param$pt_size, cols = param$col_annotation_all, label = TRUE, label.size = 3, repel = TRUE) + 
+  AddStyle(title="Annotation with reference dataset", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "right") + 
+  theme(title = element_text(size = 10)) + 
+  NoGrid()
+
+p = p1 + p2
+p
+```
+
+```{r plot_combined_umap_projection_split, fig.height=3, warning=FALSE, message=FALSE}
+
+
+p = DimPlot(refquery, group.by = "annot_cells", shuffle = TRUE, split.by = "id", pt.size=param$pt_size, cols = param$col_annotation_all, label = TRUE, label.size = 3, repel = TRUE, ncol = 3) + 
+  AddStyle(title="Annotation with reference dataset", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "right") +
+  theme_classic() +
+  theme(title = element_text(size = 10)) +
+  NoGrid()
+
+p
+```
+#### Highlight only the common cell types `r celltype_filter`. 
+```{r plot_combined_umap_projection_common_celltypes, fig.height=4, warning=FALSE, message=FALSE}
+
+Idents(reference) = "annot_cells"
+sc_subset_ref <- subset(reference, idents = celltype_filter)
+Idents(query) = "annot_cells"
+sc_subset_query <- subset(query, idents = celltype_filter)
+
+p1 = DimPlot(refquery, group.by = param$celltype, shuffle = TRUE, pt.size=param$pt_size, label = TRUE, label.size = 3, repel = TRUE, cells = colnames(reference), cells.highlight = colnames(sc_subset_ref), sizes.highlight = param$pt_size) + 
+  AddStyle(title="Reference", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "right") +
+  theme(title = element_text(size = 10)) +
+  NoLegend() +
+  NoGrid()
+
+p2 = DimPlot(refquery, group.by = param$celltype, shuffle = TRUE, pt.size=param$pt_size, label = TRUE, label.size = 3, repel = TRUE, cells = colnames(query), cells.highlight = colnames(sc_subset_query), sizes.highlight = param$pt_size) + 
+  AddStyle(title="Query", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "right") +
+  theme(title = element_text(size = 10)) +
+  NoLegend() +
+  NoGrid()
+
+p = p1 + p2
+p
+```
+
+#### QC of combined umap projection.
+This section of the report visualizes the above calculated cell cycle scores. 
+Scoring is based on the strategy described in `r Cite("10.1126/science.aad0501")`
+
+```{r plot_combined_umap_projection_qc, fig.height=6, warning=FALSE, message=FALSE}
+
+p1 = DimPlot(refquery, group.by = param$celltype, shuffle = TRUE, pt.size=param$pt_size, label = TRUE, cols = param$col_annotation, label.size = 3, repel = TRUE, cells = colnames(query)) + 
+  AddStyle(title="Original query annotation", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "bottom") +
+  theme(title = element_text(size = 10)) +
+  NoGrid()
+
+p2 = Seurat::DimPlot(refquery, group.by="Phase", pt.size=param$pt_size) + 
+  AddStyle(title="Cell cycle phases", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "right") +
+  theme(title = element_text(size = 10)) +
+  NoGrid()
+
+p3 = suppressMessages(Seurat::FeaturePlot(refquery, features="nCount_RNA")) + 
+  AddStyle(title="nCount_RNA", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "right") +
+  scale_colour_gradient(low="lightgrey", high=param$col, trans="log10") +
+  theme(title = element_text(size = 10)) +
+  NoGrid()
+
+p4 = suppressMessages(Seurat::FeaturePlot(refquery, features="nFeature_RNA")) + 
+  AddStyle(title="nFeature_RNA", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "right") +
+  scale_colour_gradient(low="lightgrey", high=param$col, trans="log10") +
+  theme(title = element_text(size = 10)) +
+  NoGrid()
+
+p5 = suppressMessages(Seurat::FeaturePlot(refquery, features="percent_mt", cols=c("lightgrey", param$col))) + 
+  AddStyle(title="percent_mt", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "right") +
+  theme(title = element_text(size = 10)) +
+  NoGrid()
+
+p = p1 + p2 + plot_spacer() + p3 + p4 + p5 +
+  plot_layout(ncol = 3)
+p
+```
+
+<br />
+
+### Compositional analysis
+
+```{r composition, fig.height=4, warning=FALSE, message=FALSE}
+
+annot_cells_ref = data.frame(table(scR$annot_cells))
+colnames(annot_cells_ref) = c("Cell_type", "Number")
+annot_cells_ref = dplyr::mutate(annot_cells_ref, Group = "reference")
+annot_cells_ref = dplyr::mutate(annot_cells_ref, Percent = (Number/sum(annot_cells_ref$Number)*100))
+
+annot_cells = dplyr::mutate(annot_cells, Group = "query")
+
+cells_tbl = rbind(annot_cells_ref, annot_cells)
+
+p = ggplot(cells_tbl, aes(x = Cell_type, y = Percent, fill = Group)) +
+  geom_bar(stat = "identity") +
+  theme_classic(base_size = 10) +
+  scale_fill_manual(values=param$col_samples)
+p
+```
+
+```{r plot_composition, fig.height=8, warning=FALSE, message=FALSE}
+
+p1 = ggplot(cells_tbl, aes(x = Group, y = Percent, fill = Cell_type )) +
+  geom_bar(stat = "identity") +
+  theme_classic(base_size = 10) +
+  scale_fill_manual(values=param$col_annotation_all)
+
+p2 = ggplot(annot_cells_ref, aes(x = 2, y = Percent, fill = Cell_type )) +
+  geom_bar(stat="identity", width=1, color = "white") +
+  coord_polar("y", start = 0) +
+  geom_text(aes(label = round(Percent,1)), position = position_stack(vjust = 0.5), size = 3, color = "white") +
+  theme_void() +
+  xlim(0.8, 2.5) +
+  scale_fill_manual(values=param$col_annotation_all)
+
+p3 = ggplot(annot_cells, aes(x = 2, y = Percent, fill = Cell_type )) +
+  geom_bar(stat="identity", width=1, color = "white") +
+  coord_polar("y", start = 0) +
+  geom_text(aes(label = round(Percent,1)), position = position_stack(vjust = 0.5), size = 3, color = "white") +
+  theme_void() +
+  xlim(0.8, 2.5) +
+  scale_fill_manual(values=param$col_annotation_all)
+
+p = p1 + p2 + plot_spacer() + p3
+p
+```
+
+<br />
+<br />
+<br />
+
+# Other output files
+```{r output_files}
+# Seurat object
+saveRDS(scR, file=file.path(param$path_out, "data", "scR.rds"))
+saveRDS(sc, file=file.path(param$path_out, "data", "sc.rds"))
+```
+
+```{r, child='../../scripts/appendix.Rmd'}
+```
