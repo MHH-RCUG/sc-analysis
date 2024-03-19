@@ -176,67 +176,72 @@ list_indices = function(x) {
   return(setNames(seq(x), names(x)))
 }
 
-#' Wrapper around the biomaRt::useEnsembl function to cope with unavailable Ensembl mirrors. Tries different Ensembl mirrors and returns a mart object with the mirror that works.
+#' Set colours for samples.
 #' 
-#' @param biomart A biomaRt database name. Possible database names can be retrieved with the function listEnsembl().
-#' @param dataset Dataset you want to use. Possible dataset names can be retrieved with the function listDatasets(mart_obj).
-#' @param mirror Specify an Ensembl mirror to connect to. The valid options here are 'www', 'uswest', 'useast', 'asia'. If no mirror is specified, then the first mirror that works will be used. Will be ignored if a host is specified.
-#' @param version Ensembl version to connect to when wanting to connect to an archived Ensembl version.
-#' @param host Host to connect to. Only needs to be specified if different from www.ensembl.org. 
-#' @return A biomaRt object.
-GetBiomaRt = function(biomart, dataset, mirror=NULL, version=NULL, host=NULL) {
+#' @param sc The seurat object.
+#' @param col_palette_samples A palette function for generating the colours.
+#' @return The generated colours and the object.
+SetSampleColours = function(sc, col_palette_samples) {
+  # Set up colors for samples and add them to the sc objects
   
-  # Which mirrors to test
-  if (is.null(mirror)) {
-    mirrors_to_test = c("www", "uswest", "useast", "asia")
-  } else {
-    mirrors_to_test = c(mirror)
+  # If samples in one object
+  if (class(sc)=="Seurat") {
+    sample_names=unique(scR[[]][["orig.ident"]])
+    col_samples = GenerateColours(num_colours=length(sample_names), names=sample_names, palette=col_palette_samples, alphas=1)
+    sc = ScAddLists(sc, lists=list(orig.ident=col_samples), lists_slot="colour_lists")
   }
   
-  mart_obj = NULL
-  if(is.null(host)) {
-    # Test and if a mirror is not available, check the next one
-    for(m in mirrors_to_test) {
-      mart_obj = tryCatch({
-        biomaRt::useEnsembl(biomart=biomart, dataset=dataset, mirror=m, version=version)
-      },
-      error=function(cond) {
-        return(NULL)
-      })
-    
-      if(!is.null(mart_obj)) break
-    }
-
-  } else {
-    # Use specific host
-    mart_obj = tryCatch({
-      biomaRt::useEnsembl(biomart=biomart, dataset=dataset, host=host, version=version)
-    },
-    error=function(cond) {
-      return(NULL)
-    })
+  # If samples in object list
+  if (class(sc)=="list") {
+    sample_names = purrr::flatten_chr(purrr::map(sc, function(s) {
+      nms = unique(as.character(s[[]][["orig.ident"]]))
+      return(nms) 
+    }))
+    col_samples = GenerateColours(num_colours=length(sample_names), names=sample_names, palette=col_palette_samples, alphas=1)
+    sc = purrr::map(sc, ScAddLists, lists=list(orig.ident=col_samples), lists_slot="colour_lists")
   }
-  
-  return(mart_obj)
+  sample_colours_out <- list(sc, col_samples) 
+  return(sample_colours_out)
 }
 
-
-#' Returns the mirror of a biomaRt object.
+#' Set colours for clusters.
 #' 
-#' @param mart_obj A biomaRt object obtained by GetBiomaRt or useEnsembl name.
-#' @return The mirror of the biomaRt object. Can be 'www', 'uswest', 'useast' or 'asia'.
-GetBiomaRtMirror = function(mart_obj) {
-  mirrors_to_test = c("uswest", "useast", "asia")
-  mirror = "www"
-  
-  for(m in mirrors_to_test){
-    if(grepl(pattern=m, x=mart_obj@host)){
-      mirror = m
-      break
-    }
+#' @param sc The seurat object.
+#' @param col_palette_clusters A palette function for generating the colours.
+#' @return The generated colours and the object.
+SetClusterColours = function(sc, col_palette_clusters) {
+  # Set up colors for clusters and add the sc object
+  if ("seurat_clusters" %in% colnames(sc@meta.data)) {
+    col_clusters = GenerateColours(num_colours=length(levels(sc$seurat_clusters)), names=levels(sc$seurat_clusters), 
+                                         palette=col_palette_clusters, alphas=1)
+    sc = ScAddLists(sc, lists=list(seurat_clusters=col_clusters), lists_slot="colour_lists")
+    cluster_cells = table(sc@active.ident)
+    cluster_labels = paste0(levels(sc@active.ident)," (", cluster_cells[levels(sc@active.ident)],")")
+  } else {
+    col_clusters = NULL
   }
-  
-  return(mirror)
+  cluster_colours_out <- list(sc, col_clusters)   
+  return(cluster_colours_out)
+}
+
+#' Set colours for annotation.
+#' 
+#' @param sc The seurat object.
+#' @param col_palette_annotation A palette function for generating the colours.
+#' @return The generated colours and the object.
+SetAnnotationColours = function(sc, col_palette_annotation) {
+  # Set up colors for clusters and add the sc object
+  if ("annotation" %in% colnames(sc@meta.data)) {
+    col_annotation = GenerateColours(num_colours=length(unique(sc$annotation)), names=unique(sc$annotation), 
+                                   palette=col_palette_annotation, alphas=1)
+    sc = ScAddLists(sc, lists=list(annotation=col_annotation), lists_slot="colour_lists")
+    #cluster_cells = table(sc$annotation)
+    #cluster_labels = paste0(unique(sc$annotation)," (", cluster_cells[unique(sc$annotation)],")")
+  } else {
+    col_annotation = NULL
+  }
+  annotation_colours_out <- list(sc, col_annotation)   
+  return(annotation_colours_out)
 }
 
 #' Generate colours based on a palette. If the requested number exceeds the number of colours in the palette, then the palette is reused but with a different alpha.
