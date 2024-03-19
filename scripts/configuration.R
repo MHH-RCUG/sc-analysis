@@ -6,22 +6,11 @@ cpus = as.integer(unlist(strsplit(unlist(strsplit(nodeInfo[grep("CfgTRES", nodeI
 memInKB = as.integer(unlist(strsplit(unlist(strsplit(nodeInfo[grep("CfgTRES", nodeInfo)], "mem="))[2], "M,"))[1]) * 1024^2
 
 options(stringsAsFactors=FALSE,
-        citation_format="pandoc", 
         dplyr.summarise.inform=FALSE, 
-        knitr.table.format="html",
-        kableExtra_view_html=TRUE,
-        #future.globals.maxSize=+Inf,
         future.globals.maxSize=min(memInKB, 2 * 1024^3),
         mc.cores=min(cpus,1),
         future.fork.enable=TRUE, future.plan="multicore",
         future.rng.onMisuse="ignore")
-
-### Standard parameter
-param=list()
-
-# Working directory
-param$path_to_git='/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis'
-setwd(param$path_to_git)
 
 ### Fuctions
 # Git directory and files to source must be done first, then all helper functions can be sourced

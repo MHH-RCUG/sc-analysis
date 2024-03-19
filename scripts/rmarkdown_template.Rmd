@@ -1,0 +1,66 @@
+---
+title: "Titel"
+author: "`r param$author`"
+date: "`r format(Sys.time(), '%B, %Y')`"
+geometry: "margin=2cm"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    code_folding: "hide"
+    highlight: "tango"
+    theme: "paper"
+bibliography: "`r file.path(param$path_out, 'references.bib')`"
+---
+
+```{r r_options, file='../../scripts/configuration.R'}
+#source(file.path(param$path_to_git,'scripts/configuration.R'))
+message("Set R options")
+```
+
+```{r rmarkdown, file='../../scripts/rmarkdown_configuration.R'}
+#source(file.path(param$path_to_git,'scripts/rmarkdown_configuration.R'))
+message("Set Rmarkdown options")
+```
+
+```{r css, results="asis"}
+cat(paste0('<link rel="stylesheet" href="', param$css, '" />'))
+```
+
+```{r load_packages, warning=FALSE, message=FALSE, results='hide'}
+
+# Load renv
+renv::load(file.path(param$path_to_git,"env/basic"))
+
+# Required libraries
+library("Seurat")
+
+```
+
+
+
+# Heading
+ 
+Text
+
+<br />
+
+
+```{r chunk, warning=FALSE, message=FALSE}
+
+message("test")
+```
+
+
+
+<br />
+<br />
+<br />
+
+
+
+
+```{r, child='../../scripts/appendix.Rmd'}
+```
+
