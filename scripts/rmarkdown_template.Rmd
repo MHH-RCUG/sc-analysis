@@ -12,6 +12,7 @@ output:
     highlight: "tango"
     theme: "paper"
 bibliography: "`r file.path(param$path_out, 'references.bib')`"
+css: "`r file.path(param$path_to_git, 'css/style.css')`"
 ---
 
 ```{r r_options, file='../../scripts/configuration.R'}

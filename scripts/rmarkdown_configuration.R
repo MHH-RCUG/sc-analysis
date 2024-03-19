@@ -2,7 +2,6 @@
 ################################################################################
 
 ### Create output directories
-if (!file.exists(param$path_out)) dir.create(param$path_out, recursive=TRUE, showWarnings=FALSE)
 if (!file.exists(file.path(param$path_out, "figures"))) dir.create(file.path(param$path_out, "figures"), recursive=TRUE, showWarnings=FALSE)
 if (!file.exists(file.path(param$path_out, "data"))) dir.create(file.path(param$path_out, "data"), recursive=TRUE, showWarnings=FALSE)
 
@@ -29,10 +28,6 @@ knitr::opts_chunk$set(echo=TRUE,                     # output code
                       fig.path=paste0(file.path(param$path_out, "figures"), "/")  # Path for figures in png and pdf format (trailing "/" is needed)
 )
 
-
-### Set css
-param$css = file.path(param$path_to_git,"css/style.css")
-param$author = Sys.info()[["user"]]
 
 ### Required libraries
 library(magrittr)

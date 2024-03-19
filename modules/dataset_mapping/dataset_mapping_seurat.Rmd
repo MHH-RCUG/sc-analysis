@@ -25,10 +25,6 @@ message("Set R options")
 message("Set Rmarkdown options")
 ```
 
-```{r css, results="asis", eval=FALSE}
-cat(paste0('<link rel="stylesheet" href="', param$css, '" />'))
-```
-
 ```{r load_packages, warning=FALSE, message=FALSE, results='hide'}
 
 # Load renv
