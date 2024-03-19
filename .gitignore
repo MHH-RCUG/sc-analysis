@@ -15,10 +15,8 @@ env/*/.RData
 env/*/*.Rproj
 !env/*/renv/activate.R
 
-references.bib
-
 input_data/
-results/
+output_data/
 references/
 
 
