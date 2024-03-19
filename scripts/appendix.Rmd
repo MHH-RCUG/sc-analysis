@@ -1,20 +1,35 @@
 
+<br>
+
 # Parameters and software versions
 The following parameters were used to run the workflow.  
+
+<details>
+  <summary>Parameters</summary>
+  
 ```{r parameters_table}
 out = ScrnaseqParamsInfo(params=param)
 
 knitr::kable(out, align="l") %>% 
   kableExtra::kable_styling(bootstrap_options=c("striped", "hover"), full_width=FALSE, position="left")
 ```
+</details>
 
 This report was generated using the `r param$scriptname` script. Software versions were collected at run time. 
+
+<details>
+  <summary>Software versions</summary>
+  
 ```{r versions, message=FALSE}
 out = ScrnaseqSessionInfo(param$path_to_git)
 
 knitr::kable(out, align="l") %>% 
   kableExtra::kable_styling(bootstrap_options=c("striped", "hover"))
 ```
+
+</details>
+
+<br>
 
 # Credits and References
 This Workflow was developed as module of the sc_analysis workflow at the [Research Core Unit Genomics, Hannover Medical School](https://www.mhh.de/en/genomics) (Hannover, Germany). Seurat Vignettes were initially used as templates (`r knitcitations::citet(citation("Seurat")[1:2])`). 
