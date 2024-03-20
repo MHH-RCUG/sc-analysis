@@ -25,17 +25,13 @@ message("Set R options")
 message("Set Rmarkdown options")
 ```
 
-```{r css, results="asis"}
-cat(paste0('<link rel="stylesheet" href="', param$css, '" />'))
-```
-
 ```{r load_packages, warning=FALSE, message=FALSE, results='hide'}
 
 # Load renv
-renv::load(file.path(param$path_to_git,"env/basic"))
+renv::load(file.path(param$path_to_git,"env/..."))
 
 # Required libraries
-library("Seurat")
+library(...)
 
 ```
 
@@ -50,7 +46,7 @@ Text
 
 ```{r chunk, warning=FALSE, message=FALSE}
 
-message("test")
+
 ```
 
 
