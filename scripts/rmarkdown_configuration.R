@@ -39,3 +39,17 @@ knitcitations::cleanbib()
 # If the DOI publication servers cannot be reached, there will be no citations, knitcitations will not write a references.bib file and pandoc will stop. This makes sure that there is always at least one citation.
 rcug_ref = knitcitations::read.bibtex(file.path(param$path_to_git,"rcug_references.bib"))
 invisible(knitcitations::citep(rcug_ref))
+
+### Figure heights
+# Single figure, landscape
+fig_standard_height = 4
+# Two plots alongside (e.g. umaps)
+fig_standard2_height = 4
+# Three plots alongside (e.g. umaps)
+fig_standard3_height = 3
+# Four plots 2x2 (e.g. umaps)
+fig_patchwork4_height = fig_standard2_height * 2
+# Four plots 2x3 (e.g. umaps)
+fig_patchwork6_height = fig_standard3_height * 2
+
+

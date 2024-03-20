@@ -32,7 +32,6 @@ renv::load(file.path(param$path_to_git,"env/basic"))
 
 # Required libraries
 library(Seurat)
-library(SingleR)
 library(patchwork)
 library(magrittr)
 library(ggplot2)
@@ -51,17 +50,12 @@ The reference and the query datasets have to be available as S4 class Seurat obj
 
 Be aware, that the output is highly impacted by the quality and contend of the reference dataset!
 
-<br />
-<br />
-
 ```{r read_data, warning=FALSE, message=FALSE}
 # Load Seurat S4 objects 
 # scR = reference dataset
 scR = readRDS(param$ref)
 # sc = query dataset
 sc = readRDS(param$query)
-
-
 
 # Set colors
 if (is.null(param$col_annotation)) {
@@ -172,7 +166,8 @@ knitr::kable(pred_cells_table, align="l", caption="Number of annotated cells for
   kableExtra::kable_styling(bootstrap_options = c("striped", "hover")) 
 
 ```
-```{r plot_test_predicted_score_thresholds, fig.height=4, warning=FALSE, message=FALSE}
+
+```{r plot_test_predicted_score_thresholds, fig.height=fig_standard_height, warning=FALSE, message=FALSE}
 
 tbl = tidyr::pivot_longer(pred_cells_table, cols = 2:12, cols_vary = "fastest", names_to = "Threshold", values_to = "Number")
 tbl <- tbl %>% replace(is.na(.), 0)
@@ -185,7 +180,7 @@ p
 
 In the following the prediction score threshold of `r param$predicted_score_threshol` was used to exclude unlikely cell type annotations. 
 
-```{r set_predicted_score_thresholds, fig.height=4, warning=FALSE, message=FALSE}
+```{r set_predicted_score_thresholds, warning=FALSE, message=FALSE}
 # Filter by sub-setting for threshold
 sc_subset <- subset(sc, subset = predicted.celltype.score > param$predicted_score_threshold)
 pred_celltypes = data.frame(table(sc_subset$predicted.celltype))
@@ -213,36 +208,38 @@ knitr::kable(annot_cells, align="l", caption="Number and percentage of annotated
   kableExtra::kable_styling(bootstrap_options = c("striped", "hover")) 
 ```
 
-```{r fig_prediction_scores_heights}
-fig_prediction_scores = ceiling(length(pred_celltypes)/4) * 4
+```{r fig_settings}
+fig_annot_celltypes = ceiling(length(pred_celltypes)/3) * 4
 ```
 
 Visualization of the prediction score of annotated cell types in the query dataset.
 
-```{r plot_prediction_scores_refumap, fig.height=fig_prediction_scores, warning=FALSE, message=FALSE}
+```{r plot_prediction_scores_refumap, fig.height=fig_annot_celltypes, warning=FALSE, message=FALSE}
 # plot cell type prediction scores
 DefaultAssay(sc) <- 'prediction.score.celltype'
 
 p <- FeaturePlot(sc,  reduction = "ref.umap", features = celltype_filter, ncol = 3,
-                  cols = c("lightgrey", "darkred"))
+                  cols = c(param$col_bg, param$col))
 p
 ```
 
 
-```{r plot_prediction_scores_original, fig.height=fig_prediction_scores, warning=FALSE, message=FALSE}
+```{r plot_prediction_scores_original, fig.height=fig_annot_celltypes, warning=FALSE, message=FALSE}
 # plot cell type prediction scores
 p <- FeaturePlot(sc, reduction = param$reduction, features = celltype_filter, ncol = 3,
-                  cols = c("lightgrey", "darkred"))
+                  cols = c(param$col_bg, param$col))
 p
 
 DefaultAssay(sc) <- "RNA"
 ```
 
+<br>
+
 ## Unimodal UMAP Projection
 ### Reference dataset projection
 Visualization query cells projected into the UMAP visualization defined by the reference alongside the reference.
 
-```{r unimodal_umap_projection, fig.height=4, warning=FALSE, message=FALSE}
+```{r unimodal_umap_projection, fig.height=fig_standard2_height, warning=FALSE, message=FALSE}
 p1 = Seurat::DimPlot(scR, reduction = "umap", group.by = "annot_cells", pt.size=param$pt_size, cols = param$col_annotation_all, label = TRUE, label.size = 3, repel = TRUE, shuffle = TRUE) + 
   AddStyle(title="Reference dataset with annotations", xlab = "UMAP 1", ylab = "UMAP 2") +
   theme(title = element_text(size = 10)) +
@@ -259,7 +256,7 @@ p
 ### Query dataset projection
 Visualization annotated query cells in original UMAP visualization alongside the original query annotation.
 
-```{r annotation_projection, fig.height=4, warning=FALSE, message=FALSE}
+```{r annotation_projection, fig.height=fig_standard2_height, warning=FALSE, message=FALSE}
 p1 = Seurat::DimPlot(sc, reduction = param$reduction, group.by = param$celltype, pt.size=param$pt_size, label = TRUE, cols = param$col_annotation, label.size = 3, repel = TRUE, shuffle = TRUE) + 
   AddStyle(title="Query dataset with original annotation", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "right") +
   theme(title = element_text(size = 10)) +
@@ -274,17 +271,18 @@ p
 ```
 
 
-<br />
+<br>
+<br>
 
-## Computing a new UMAP visualiztion
+# Computing a new UMAP visualiztion
 
 Above, we have projected the query cells onto to the reference-derived UMAP. Keeping a consistent visualization can assist with the interpretation of new datasets. However, the limitation of this approach lies also exactly within the predefined cell types and reference-derived UMAP and can mask the presence of new cell types in the query which may be of interest. Hence, if the query dataset contains cell types that are not present in the reference, computing a ‘de novo’ visualization is an important step in interpreting the dataset.
 
 This part follows the example of the vignette https://satijalab.org/seurat/articles/multimodal_reference_mapping. 
 
-### Annotation with reference dataset
+## Annotation with reference dataset
 
-```{r compute_combined_umap_projection, fig.height=4, warning=FALSE, message=FALSE}
+```{r compute_combined_umap_projection, warning=FALSE, message=FALSE}
 # Slim down a Seurat object to reduces the amount of data in the subsequent merge. 
 reference = DietSeurat(scR, counts = FALSE, dimreducs = "pca")
 query = DietSeurat(sc, counts = FALSE, dimreducs = "ref.pca")
@@ -311,7 +309,7 @@ refquery = Seurat::RunUMAP(refquery, reduction = 'pca', dims=1:param$pc_n, verbo
 param$col_samples = c('reference' = "#5DB1DDFF", 'query' = "#802268FF")
 ```
 
-```{r plot_combined_umap_projection, fig.height=4, warning=FALSE, message=FALSE}
+```{r plot_combined_umap_projection, fig.height=fig_standard2_height, warning=FALSE, message=FALSE}
 
 p1 = DimPlot(refquery, group.by = "id", shuffle = TRUE, pt.size=param$pt_size, cols = param$col_samples, label = TRUE, label.size = 3, repel = TRUE) + 
   AddStyle(title="Groups", xlab = "UMAP 1", ylab = "UMAP 2") + 
@@ -328,19 +326,22 @@ p = p1 + p2
 p
 ```
 
-```{r plot_combined_umap_projection_split, fig.height=3, warning=FALSE, message=FALSE}
+```{r plot_combined_umap_projection_split, fig.height=fig_standard2_height, warning=FALSE, message=FALSE}
+facet_names <- c(`TRUE` = "Query", `FALSE` = "Reference")
 
-
-p = DimPlot(refquery, group.by = "annot_cells", shuffle = TRUE, split.by = "id", pt.size=param$pt_size, cols = param$col_annotation_all, label = TRUE, label.size = 3, repel = TRUE, ncol = 3) + 
+p = DimPlot(refquery, group.by = "annot_cells", shuffle = TRUE, split.by = "id", pt.size=param$pt_size, cols = param$col_annotation_all, label = TRUE, label.size = 3, repel = TRUE) + 
   AddStyle(title="Annotation with reference dataset", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "right") +
   theme_classic() +
   theme(title = element_text(size = 10)) +
-  NoGrid()
+  NoGrid() +
+  facet_wrap(~id %in% c("query"), drop = TRUE, labeller = as_labeller(facet_names))
 
 p
 ```
-#### Highlight only the common cell types `r celltype_filter`. 
-```{r plot_combined_umap_projection_common_celltypes, fig.height=4, warning=FALSE, message=FALSE}
+
+Highlight common cell types `r celltype_filter`. 
+
+```{r plot_combined_umap_projection_common_celltypes, fig.height=fig_standard2_height, warning=FALSE, message=FALSE}
 
 Idents(reference) = "annot_cells"
 sc_subset_ref <- subset(reference, idents = celltype_filter)
@@ -350,24 +351,27 @@ sc_subset_query <- subset(query, idents = celltype_filter)
 p1 = DimPlot(refquery, group.by = param$celltype, shuffle = TRUE, pt.size=param$pt_size, label = TRUE, label.size = 3, repel = TRUE, cells = colnames(reference), cells.highlight = colnames(sc_subset_ref), sizes.highlight = param$pt_size) + 
   AddStyle(title="Reference", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "right") +
   theme(title = element_text(size = 10)) +
+  scale_color_manual(labels = c("Unique cell types","Common cell types"), values = c(param$col_bg, param$col)) +
   NoLegend() +
   NoGrid()
 
 p2 = DimPlot(refquery, group.by = param$celltype, shuffle = TRUE, pt.size=param$pt_size, label = TRUE, label.size = 3, repel = TRUE, cells = colnames(query), cells.highlight = colnames(sc_subset_query), sizes.highlight = param$pt_size) + 
   AddStyle(title="Query", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "right") +
   theme(title = element_text(size = 10)) +
-  NoLegend() +
+  scale_color_manual(labels = c("Unique cell types","Common cell types"), values = c(param$col_bg, param$col)) +
   NoGrid()
 
 p = p1 + p2
 p
 ```
 
-#### QC of combined umap projection.
+<br>
+
+## QC of combined umap projection
 This section of the report visualizes the above calculated cell cycle scores. 
 Scoring is based on the strategy described in `r Cite("10.1126/science.aad0501")`
 
-```{r plot_combined_umap_projection_qc, fig.height=6, warning=FALSE, message=FALSE}
+```{r plot_combined_umap_projection_qc, fig.height=fig_patchwork6_height, warning=FALSE, message=FALSE}
 
 p1 = DimPlot(refquery, group.by = param$celltype, shuffle = TRUE, pt.size=param$pt_size, label = TRUE, cols = param$col_annotation, label.size = 3, repel = TRUE, cells = colnames(query)) + 
   AddStyle(title="Original query annotation", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "bottom") +
@@ -401,11 +405,11 @@ p = p1 + p2 + plot_spacer() + p3 + p4 + p5 +
 p
 ```
 
-<br />
+<br>
 
-### Compositional analysis
+## Compositional analysis
 
-```{r composition, fig.height=4, warning=FALSE, message=FALSE}
+```{r composition, fig.height=fig_standard_height, warning=FALSE, message=FALSE}
 
 annot_cells_ref = data.frame(table(scR$annot_cells))
 colnames(annot_cells_ref) = c("Cell_type", "Number")
@@ -418,12 +422,14 @@ cells_tbl = rbind(annot_cells_ref, annot_cells)
 
 p = ggplot(cells_tbl, aes(x = Cell_type, y = Percent, fill = Group)) +
   geom_bar(stat = "identity") +
-  theme_classic(base_size = 10) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1.05)) +
   scale_fill_manual(values=param$col_samples)
-p
+
+p 
 ```
 
-```{r plot_composition, fig.height=8, warning=FALSE, message=FALSE}
+```{r plot_composition, fig.height=fig_patchwork4_height, warning=FALSE, message=FALSE}
 
 p1 = ggplot(cells_tbl, aes(x = Group, y = Percent, fill = Cell_type )) +
   geom_bar(stat = "identity") +
@@ -450,9 +456,8 @@ p = p1 + p2 + plot_spacer() + p3
 p
 ```
 
-<br />
-<br />
-<br />
+<br>
+<br>
 
 # Other output files
 ```{r output_files}

@@ -45,7 +45,8 @@ param$col_annotation = c('EPP' = "#4682B4FF", 'VE' = "#E6CCFFFF", 'PE/ST' = "#EE
                              'AE' = "#FFB3D9FF", 'MKs' = "#80FFE5FF", 'PFE' = "#80FFE5FF", 'CM' = "#EE2C2CFF",
                              'Ery' = "#B33C00FF", 'Mo/Mo'	= "#99BBFFFF", 'EC' = "#CD00CDFF", 'HPC' = "#FFCC99FF",
                              'ELC' = "#EE2C2CFF")
-param$col = "navy"
+param$col = "#0086b3"
+param$col_bg = "#D3D3D3"
 
 # compute_combined_umap_projection parameters
 param$pc_n = 13
@@ -69,6 +70,8 @@ if (param$colors == TRUE) {
   param$col_annotation = NULL
   param$col_annotation_ref = NULL
   param$col_palette_annotation = "ggsci::pal_igv"
+  param$col = "#0086b3"
+  param$col_bg = "#D3D3D3"
 }
 
 
