@@ -73,12 +73,12 @@ LIANA calculates an aggregate_rank across the used methods and generates a proba
 Alongside we provide the aggregated “Magnitude” (named magnitude_rank) and "Specificity" (specificity_rank) of each interaction. 
 
 ```{r liana, warning=FALSE, message=FALSE}
-liana_res = liana_wrap(sce = sc, idents_col = "annotation", assay = "RNA", assay.type = 'logcounts', method = param$liana_methods, resource = c('Consensus'), expr_prop = 0.1, permutation = list(nperms = 500), return_all = FALSE)
+liana_res = liana_wrap(sce = sc, idents_col = "annotation", assay = "RNA", assay.type = 'logcounts', method = param$liana_methods, resource = c('Consensus'), expr_prop = 0.1, permutation = list(nperms = 500), return_all = FALSE, verbose = FALSE)
 #  aggregate_rank
-liana_agg = liana_aggregate(liana_res)
+liana_agg = liana_aggregate(liana_res, verbose = FALSE)
 write.csv(liana_agg, file.path(param$path_out, "data", "liana_aggregate_rank.csv"))
 # magnitude_rank and specificity_rank
-liana_rank_agg = rank_aggregate(liana_res)
+liana_rank_agg = rank_aggregate(liana_res, verbose = FALSE)
 write.csv(liana_rank_agg, file.path(param$path_out, "data", "liana_results.csv"))
 
 #  aggregate_rank
