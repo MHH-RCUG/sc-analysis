@@ -1,0 +1,177 @@
+---
+title: "Titel"
+author: "`r param$author`"
+date: "`r format(Sys.time(), '%B, %Y')`"
+geometry: "margin=2cm"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    code_folding: "hide"
+    highlight: "tango"
+    theme: "paper"
+bibliography: "`r file.path(param$path_out, 'references.bib')`"
+css: "`r file.path(param$path_to_git, 'css/style.css')`"
+---
+
+```{r r_options, file='../../scripts/configuration.R'}
+source(file.path(param$path_to_git,'scripts/configuration.R'))
+message("Set R options")
+```
+
+```{r rmarkdown, file='../../scripts/rmarkdown_configuration.R'}
+source(file.path(param$path_to_git,'scripts/rmarkdown_configuration.R'))
+message("Set Rmarkdown options")
+```
+
+```{r load_packages, warning=FALSE, message=FALSE, results='hide'}
+
+# Load renv
+renv::load(file.path(param$path_to_git,"env/ccc"))
+
+# Required libraries
+library(liana)
+library(ComplexHeatmap)
+library(patchwork)
+library(magrittr)
+library(ggplot2)
+library(ggsci)
+
+```
+
+
+# Deciphering Cell-Cell Communication
+ 
+Cell-cell communication (CCC) is a process by which cells react to stimuli during many biological processes. CCC commonly focuses on ligand binding to its corresponding receptors but also includes interactions via extra-cellular matrix proteins and transporters. The stimuli commonly elicit in the receiver cells (the cells receiving the signal) a downstream response such as the induction of canonical pathways and transcription factor binding.
+
+CCC inference methods usually use one of the following approaches: 
+1) Prediction of CCC interactions alone, commonly referred to as ligand-receptor inference as performed by LIANA
+2) Analysis of downstream intracellular activities induced by CCC as conducted by NicheNet
+
+Here, we will use LIANA to infer the ligand-receptor interactions as described in the LIANA tutorial (https://saezlab.github.io/liana/articles/liana_tutorial.html) and the 'LIANA x Tensor-cell2cell Quickstart' vignette (https://ccc-protocols.readthedocs.io/en/latest/notebooks/ccc_R/QuickStart.html). 
+
+The results of all CCC inference methods are affected by ligand-receptor prior knowledge resources i.e. the used databases (quality and contend, and each resource comes with its own biases). In this regard, LIANA provides a consensus expert-curated resource that combiness different resources (CellPhoneDBv223, CellChat27, ICELLNET30, connectomeDB202025, CellTalkDB31, as well as 10 others).
+
+LIANA performs multiple CCC inference methods using the consensus resource and combines the results. 
+The different CCC scores obtained by the diverse methods are categorized and translated into a “Magnitude” and “Specificity” value for the specific interactions. The “Magnitude” of an interaction is a measure of the strength of the expression of the interaction partners, while the “Specificity” indicates how specific an interaction is to a given pair sender and reciever cell tpye. Generally, both values are complementary. For example, a ligand-receptor interaction with a high magnitude score in a given pair of cell types is likely to also be specific.
+
+We load the dataset as S4 class Seurat objects. 
+
+<br>
+<br>
+
+```{r read_rds, file='../../scripts/read_rds.R', warning=FALSE}
+source(file.path(param$path_to_git,'scripts/read_rds.R'))
+```
+
+<br>
+
+# Deciphering Cell-Cell Communication
+ 
+LIANA calculates an aggregate_rank across the used methods and generates a probability distribution for ligand-receptors that are ranked consistently better than expected under a null hypothesis. By default, the aggregate_rank in ascending order and can be interpreted similar to a p-value.
+Alongside we provide the aggregated “Magnitude” (named magnitude_rank) and "Specificity" (specificity_rank) of each interaction. 
+
+```{r liana, warning=FALSE, message=FALSE}
+liana_res = liana_wrap(sce = sc, idents_col = "annotation", assay = "RNA", assay.type = 'logcounts', method = param$liana_methods, resource = c('Consensus'), expr_prop = 0.1, permutation = list(nperms = 500), return_all = FALSE)
+#  aggregate_rank
+liana_agg = liana_aggregate(liana_res)
+write.csv(liana_agg, file.path(param$path_out, "data", "liana_aggregate_rank.csv"))
+# magnitude_rank and specificity_rank
+liana_rank_agg = rank_aggregate(liana_res)
+write.csv(liana_rank_agg, file.path(param$path_out, "data", "liana_results.csv"))
+
+#  aggregate_rank
+knitr::kable(head(liana_agg, 25), align="l", caption="LIANA aggregate_rank, top 25 rows") %>%
+  kableExtra::kable_styling(bootstrap_options=c("striped", "hover"))  %>% 
+  kableExtra::scroll_box(width="100%")
+# magnitude_rank and specificity_rank
+knitr::kable(head(liana_rank_agg, 25), align="l", caption="LIANA magnitude_rank and specificity_rank, top 25 rows") %>%
+  kableExtra::kable_styling(bootstrap_options=c("striped", "hover"))  %>% 
+  kableExtra::scroll_box(width="100%")
+
+```
+
+```{r fig_settings}
+heatmap_number_celltypes = length(unique(sc$annotation)) * 0.3 + 0.5
+fig_number_celltypes = length(unique(sc$annotation)) * 3
+
+```
+
+## Interaction frequencies
+We plot the frequencies of interactions for each pair of potentially communicating cell types.
+
+First, we filter interactions by aggregate_rank (<= `r param$liana_agg_rank_threshold`), as a indicator for the robustly, highly ranked interactions concordant between methods and visualize the number of the inferred interactions between sender and retriever cell types. Here we assume that the number of the interactions is informative of the occurring communication events. However, this is a rather strong assumption affected by the applied filter criteria. Thus, any conclusions need to be confirmed by supporting information such as biological prior knowledge (`r knitcitations::citet("https://www.biorxiv.org/content/10.1101/2021.05.21.445160v1.abstract")`).
+
+### Frequency Heatmap
+Heatmap displaying the interaction frequencies of all cell types.
+```{r liana_freq_figure, fig.height=heatmap_number_celltypes, warning=FALSE, message=FALSE}
+
+# First, we filter interactions by aggregate_rank, as a indicator for the robustly, highly ranked interactions concordant between methods. 
+# These p-values are already corrected.
+liana_agg_filtered = dplyr::filter(liana_agg, aggregate_rank <= param$liana_agg_rank_threshold) 
+
+p = heat_freq(liana_agg_filtered, font_size = 10, pallette = c("white", "navy"))
+p
+```
+
+### Frequency Chord diagram
+Chord diagram displaying the interaction frequencies of all cell types and chosen source and target cell type groups.
+```{r chord_figure, fig.height=fig_standard2_height, warning=FALSE, message=FALSE}
+
+p1 = wrap_elements(full= ~ chord_freq(liana_agg_filtered, cex = 0.8, facing = "inside", adj = c(0.5, 0))) + 
+    ggtitle("All cell types")
+
+p2 = wrap_elements(full= ~ chord_freq(liana_agg_filtered, source_groups = param$sender, target_groups = param$receiver, cex = 0.8, facing = "inside", adj = c(0.5, 0))) + 
+    ggtitle("Selected cell types")
+
+p = p1 + p2
+p
+```
+
+<br> 
+
+## Interactions by source and target cells
+The dotplot displays the specific ligand-receptor interactions between sender (`r param$sender`) to receiver (`r param$receiver`) cells. "Specificity" refers to how specific this interaction is to a cell type pair relative to the rest of the cell type pairs, while "Magnitude" is a direct measure of the expression alone. 30 interactions with the highest "Magnitude" and "Specificity" are shown. 
+
+```{r liana_res_selected, fig.height=10, warning=FALSE, message=FALSE}
+
+p = liana_dotplot(liana_rank_agg, source_groups = param$sender, target_groups = param$receiver, ntop = 30, specificity = 'specificity_rank', magnitude = 'magnitude_rank', invert_specificity = TRUE, invert_magnitude = TRUE) +
+  theme(text = element_text(size = 10)) +
+  theme(title = element_text(size = 12, face = "bold")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1.2, colour = "black", face = "plain", size = 10)) +
+  theme(axis.text.y = element_text(size = 10)) +
+  theme(axis.title.x.bottom = element_text(vjust = -1.5)) +
+  theme(axis.title.y = element_text(vjust = 3.5))
+
+p
+```
+Here, for each cell type, we plot the 10 interactions (signals) with the highest "Magnitude" and "Specificity" that the cells receive from each of the other cell types. 
+
+```{r liana_res, fig.height=fig_number_celltypes, warning=FALSE, message=FALSE}
+p_list = list()
+for (i in unique(sc$annotation)) {
+  p_list[[i]] = liana_dotplot(liana_rank_agg, target_groups = i, ntop = 10, specificity = 'specificity_rank', magnitude = 'magnitude_rank', invert_specificity = TRUE, invert_magnitude = TRUE) +
+  AddStyle(title="", xlab=i, legend_position = "none") +
+  theme(text = element_text(size = 10)) +
+  theme(title = element_text(size = 12, face = "bold")) +
+  theme(axis.text.x.bottom = element_blank()) +
+  theme(axis.title.x = element_text(vjust = -1.5)) +
+  theme(axis.title.y = element_blank())
+}
+
+p = patchwork::wrap_plots(p_list, ncol = 1)
+p
+```
+
+
+
+
+<br />
+<br />
+<br />
+
+
+```{r, child='../../scripts/appendix.Rmd'}
+```
+
