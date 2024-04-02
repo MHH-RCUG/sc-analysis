@@ -61,8 +61,8 @@ We load the dataset as S4 class Seurat objects.
 <br>
 <br>
 
-```{r read_rds, file='../../scripts/read_rds.R', warning=FALSE}
-source(file.path(param$path_to_git,'scripts/read_rds.R'))
+```{r read_rds, file='../read_data/read_rds.R', warning=FALSE}
+source(file.path(param$path_to_git,'modules/read_data/read_rds.R'))
 ```
 
 <br>
