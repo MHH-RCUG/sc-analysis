@@ -186,7 +186,7 @@ SetSampleColours = function(sc, col_palette_samples) {
   
   # If samples in one object
   if (class(sc)=="Seurat") {
-    sample_names=unique(scR[[]][["orig.ident"]])
+    sample_names=unique(sc[[]][["orig.ident"]])
     col_samples = GenerateColours(num_colours=length(sample_names), names=sample_names, palette=col_palette_samples, alphas=1)
     sc = ScAddLists(sc, lists=list(orig.ident=col_samples), lists_slot="colour_lists")
   }
