@@ -41,7 +41,7 @@ library(...)
  
 Text
 
-<br />
+<br>
 
 
 ```{r chunk, warning=FALSE, message=FALSE}
@@ -49,11 +49,14 @@ Text
 
 ```
 
+```{r chunk_figure, fig.height=fig_standard_height, warning=FALSE, message=FALSE}
 
 
-<br />
-<br />
-<br />
+```
+
+<br>
+<br>
+<br>
 
 
 
