@@ -2,9 +2,6 @@
 # https://www.dropbox.com/sh/ntc33ium7cg1za1/AAD_8XIDmu4F7lJ-5sp-rGFYa?dl=0
 
 # Data output in a input_data subfolder of the directory where it is run 
-# Create output directories
-if (!file.exists("input_data")) dir.create("input_data", recursive=TRUE, showWarnings=FALSE)
-setwd(file.path(param$path_to_git,"input_data"))
 
 # Clear old files
 unlink("demultiplexed", recursive=TRUE)

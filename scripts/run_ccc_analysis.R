@@ -1,3 +1,10 @@
+### Requirements
+################################################################################
+# Must be a Seurat object (rds file) with a @meta.data$annotation annotation column with a cell type annotation or at least a cluster number!
+# Annotations must be known and some specified in param$sender and param$receiver
+
+
+
 ### Configuration
 ################################################################################
 param=list()
@@ -25,14 +32,16 @@ param$project_name = "BG-HFO"
 
 # set query object
 # at the moment, only one object
-param$data = "/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis/input_data/BGHFO/sc.rds"
+param$data = "/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis/data/BGHFO/sc.rds"
 
 # set output folder
-param$path_out = file.path(param$path_to_git,"output_data", param$project_name, "ccc_analysis")
+param$path_out = file.path(param$path_to_git,"output", param$project_name, "ccc_analysis")
 
 # Set sender and receiver cell types
 param$sender = c("MES","CM", "PE/ST", "HPCs", "AE")
 param$receiver = c("HPC","AE", "CM", "PE/ST")
+
+
 
 ########## Advanced settings ########## 
 

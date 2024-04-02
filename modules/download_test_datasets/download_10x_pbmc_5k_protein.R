@@ -2,10 +2,6 @@
 # https://support.10xgenomics.com/single-cell-gene-expression/datasets/3.0.2/5k_pbmc_protein_v3
 
 # Data output in a input_data subfolder of the directory where it is run 
-# Create output directories
-if (!file.exists("input_data")) dir.create("input_data", recursive=TRUE, showWarnings=FALSE)
-setwd(file.path(param$path_to_git,"input_data"))
-
 
 unlink("counts", recursive=T)
 
