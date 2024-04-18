@@ -12,6 +12,16 @@ if (is.null(param$data)) {
     message(paste0("Load dataset:", param$data))
     sc = base::readRDS(param$data)
     
+    # Transfer original params to loaded object
+    if ("parameters" %in% list_names(sc@misc[])) {
+      orig_param = sc@misc$parameters
+      
+      param_keep = param[c("path_to_git", "scriptname", "author", "project_id", "data", "path_out", "file_annot", "file_cc_genes")]
+      param = modifyList(x = param, val = orig_param)
+      param = modifyList(x = param, val = param_keep)
+      param = modifyList(x = param, val = param_advset)
+    }
+    
     ### Set colors
     # Set sample colors based on orig.ident
     if (!is.null(sc@meta.data[["orig.ident"]])) {
@@ -52,12 +62,28 @@ if (is.null(param$data)) {
 
 ### Load reference Seurat S4 objects if specified
 # Test if file is defined
-if (!is.null(param$reference)) {
+if (!is.null(param$refdata)) {
   # Test if file exists
-  if (file.exists(param$reference)) {
+  if (file.exists(param$refdata)) {
    # Read object
-    message(paste0("Load dataset:", param$reference)) 
-    scR = base::readRDS(param$reference)
+    message(paste0("Load dataset:", param$refdata)) 
+    scR = base::readRDS(param$refdata)
+    
+    # Transfer original params to loaded object
+    if ("parameters" %in% list_names(scR@misc[])) {
+      orig_paramR = scR@misc$parameters
+      
+      if (!is.null(orig_paramR$col_samples)) {
+        param$col_samples_ref = orig_paramR$col_samples
+      }
+      if (!is.null(orig_paramR$col_clusters)) {
+        param$col_clusters_ref = orig_paramR$col_clusters
+      }
+      if (!is.null(orig_paramR$col_annotation)) {
+        param$col_annotation_ref = orig_paramR$col_annotation
+      }
+      param = modifyList(x = param, val = param_advset)
+    }
     
     ### Set colors
     # Set sample colors based on orig.ident
