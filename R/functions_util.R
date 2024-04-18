@@ -192,14 +192,14 @@ SetSampleColours = function(sc, col_palette_samples) {
   }
   
   # If samples in object list
-  if (class(sc)=="list") {
-    sample_names = purrr::flatten_chr(purrr::map(sc, function(s) {
-      nms = unique(as.character(s[[]][["orig.ident"]]))
-      return(nms) 
-    }))
-    col_samples = GenerateColours(num_colours=length(sample_names), names=sample_names, palette=col_palette_samples, alphas=1)
-    sc = purrr::map(sc, ScAddLists, lists=list(orig.ident=col_samples), lists_slot="colour_lists")
-  }
+  #if (class(sc)=="list") {
+  #  sample_names = purrr::flatten_chr(purrr::map(sc, function(s) {
+  #    nms = unique(as.character(s[[]][["orig.ident"]]))
+  #    return(nms) 
+  #  }))
+  #  col_samples = GenerateColours(num_colours=length(sample_names), names=sample_names, palette=col_palette_samples, alphas=1)
+  #  sc = purrr::map(sc, ScAddLists, lists=list(orig.ident=col_samples), lists_slot="colour_lists")
+  #}
   sample_colours_out <- list(sc, col_samples) 
   return(sample_colours_out)
 }
