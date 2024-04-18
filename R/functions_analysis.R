@@ -66,8 +66,8 @@ CCScoring = function(sc, genes_s, genes_g2m, name=""){
 #' 
 #' @param sc List of seurat objects with variable features
 #' @param ndims Number of dimensions used for integration (Default: min(30, minimum number of cells in a sample - 1))
+#' @param reduction Which integration_function should be used. Can be 'cca' or 'rpca' (Default: cca)
 #' @param reference Use one or more datasets as reference. Separate multiple datasets by comma (Default: NULL)
-#' @param use_reciprocal_pca Use reciprocal PCA for cell anchoring (Default: FALSE)
 #' @param verbose Be verbose (Default: FALSE)
 #' @param assay Can be 'RNA' or 'SCT' (Default: RNA)
 #' @param k_filter How many neighbors to use when filtering anchors. If NULL, automatically set to min(200, minimum number of cells in a sample)).
@@ -77,7 +77,7 @@ CCScoring = function(sc, genes_s, genes_g2m, name=""){
 #' @param vars_to_regress For reciprocal PCA: when doing the scaling, which variables should be regressed out when doing the scaling
 #' @param min_cells For reciprocal PCA: when doing the scaling for SCT, the minimum number of cells a gene should be expressed
 #' @return A Seurat object with an integrated assay (RNAintegrated or SCTintegrated) and a merged assay (RNA or SCT)
-RunIntegration = function(sc, ndims=30, reference=NULL, use_reciprocal_pca=FALSE, verbose=FALSE, assay="RNA", k_filter=NULL, k_weight=NULL, k_anchor=NULL, k_score=NULL, vars_to_regress=NULL, min_cells=1) {
+RunIntegration = function(sc, ndims=30, reduction='cca', reference=NULL, verbose=FALSE, assay="RNA", k_filter=NULL, k_weight=NULL, k_anchor=NULL, k_score=NULL, vars_to_regress=NULL, min_cells=1) {
   # THIS FUNCTION NEEDS TO BE REVIEWED
   
   # Note: Assay names should only have numbers and letters
@@ -118,23 +118,6 @@ RunIntegration = function(sc, ndims=30, reference=NULL, use_reciprocal_pca=FALSE
                                                        nfeatures=3000,
                                                        verbose=verbose)
     
-    # If reciprocal PCA is used for integration, scale integration features and use them to run PCA for each sample
-    if (use_reciprocal_pca) {
-      sc = purrr::map(sc, function(s) {
-        s = Seurat::ScaleData(s,
-                              assay="RNA",
-                              features=integrate_RNA_features,
-                              vars.to.regress=vars_to_regress,
-                              verbose=verbose)
-        s = Seurat::RunPCA(x,
-                           assay="RNA",
-                           npcs=min(c(50, ncol(s))),
-                           features=integrate_RNA_features,
-                           verbose=verbose)
-        return(s)
-      })
-    }
-    
     # Find integration anchors for assay RNA
     integrate_RNA_anchors = Seurat::FindIntegrationAnchors(object.list=sc, 
                                                            dims=1:ndims,
@@ -145,7 +128,7 @@ RunIntegration = function(sc, ndims=30, reference=NULL, use_reciprocal_pca=FALSE
                                                            k.score=k_score,
                                                            reference=reference,
                                                            verbose=verbose,
-                                                           reduction=ifelse(use_reciprocal_pca, "rpca", "cca"))
+                                                           reduction=reduction)
     
     # Integrate RNA data 
     sc = Seurat::IntegrateData(integrate_RNA_anchors, 
@@ -161,26 +144,6 @@ RunIntegration = function(sc, ndims=30, reference=NULL, use_reciprocal_pca=FALSE
     integrate_SCT_features = Seurat::SelectIntegrationFeatures(object.list=sc, 
                                                        nfeatures=3000,
                                                        verbose=verbose)
-    
-    # If reciprocal PCA is used for integration, run SCTransform on the integration features and use them to run PCA for each sample
-    # NOTE: This might be that we run SCTransform twice
-    if (use_reciprocal_pca) {
-      min_npcs = 
-      sc = purrr::map(sc, function(s) {
-        s = SCTransform(s, 
-                    vars.to.regress=vars_to_regress, 
-                    min_cells=min_cells, 
-                    verbose=verbose, 
-                    return.only.var.genes=FALSE,
-                    method=ifelse(packages_installed("glmGamPoi"), "glmGamPoi", "poisson")) 
-        s = Seurat::RunPCA(x,
-                           assay="SCT",
-                           npcs=min(c(50, ncol(s))),
-                           features=integrate_SCT_features,
-                           verbose=verbose)
-        return(s)
-      })
-    }
     
     # Ensure that sctransform residuals have been computed for each feature and subset scale.data to only contain residuals for the integration features
     sc = Seurat::PrepSCTIntegration(object.list=sc, 
@@ -198,7 +161,7 @@ RunIntegration = function(sc, ndims=30, reference=NULL, use_reciprocal_pca=FALSE
                                                    k.score=k_score,
                                                    reference=reference,
                                                    verbose=verbose,
-                                                   reduction=ifelse(use_reciprocal_pca, "rpca", "cca"))
+                                                   reduction=reduction)
     
     # Integrate SCT data
     sc = Seurat::IntegrateData(integrate_SCT_anchors, 
