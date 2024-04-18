@@ -28,6 +28,8 @@ knitr::opts_chunk$set(echo=TRUE,                     # output code
                       fig.path=paste0(file.path(param$path_out, "figures"), "/")  # Path for figures in png and pdf format (trailing "/" is needed)
 )
 
+### Set output hooks
+knitr::knit_hooks$set(message=format_message, warning=format_warning)
 
 ### Required libraries
 library(magrittr)
@@ -44,12 +46,22 @@ invisible(knitcitations::citep(rcug_ref))
 # Single figure, landscape
 fig_standard_height = 4
 # Two plots alongside (e.g. umaps)
-fig_standard2_height = 4
+fig_standard2_height = 5
 # Three plots alongside (e.g. umaps)
-fig_standard3_height = 3
+fig_standard3_height = 4
+# Four plots alongside (e.g. umaps)
+fig_standard4_height = 2.5
 # Four plots 2x2 (e.g. umaps)
 fig_patchwork4_height = fig_standard2_height * 2
-# Four plots 2x3 (e.g. umaps)
+# Six plots 2x3 (e.g. umaps)
 fig_patchwork6_height = fig_standard3_height * 2
+# Eight plots 4x2 (e.g. umaps)
+fig_patchwork8_height = fig_standard4_height * 2
+# Twelve plots 4x3 (e.g. umaps)
+fig_patchwork12_height = fig_standard4_height * 3
+# Sixteen plots 4x4 (e.g. umaps)
+fig_patchwork16_height = fig_standard4_height * 4
+
+
 
 
