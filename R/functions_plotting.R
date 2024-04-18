@@ -24,6 +24,37 @@ AddStyle = function(title=NULL, col=NULL, fill=NULL, legend_title=NULL, legend_p
     if (!is.null(ylab)) ylab(ylab)
   )
 }
+
+#' Transform list of feature plots into combined plot with predefined plotting style.
+#'
+#'@param p A list of feature plots.
+#'@param title The plot title.
+#'@param ncol The number of plots per row.
+#'@return Patchwork plot with theme.
+AddStyleMultiFeaturePlot = function(p, title=NULL, ncol=length(p)) {
+  for (i in list_indices(p):(length(p)-1) ) {
+    p[[i]] = p[[i]] + AddStyle(xlab = " ", ylab = " ") + theme_classic() + NoLegend()
+  }  
+  p[[length(p)]] = p[[length(p)]] + AddStyle(xlab = " ", ylab = " ", legend_position = "right") + theme_classic()
+  p = patchwork::wrap_plots(p, ncol = ncol) + plot_annotation(title = title)
+  return(p)
+}
+
+#' Transform list of violin plots into combined plot with predefined plotting style.
+#'
+#'@param p A list of violin plots.
+#'@param title The plot title.
+#'@param ncol The number of plots per row.
+#'@return Patchwork plot with theme.
+AddStyleMultiVln = function(p, title=NULL, ncol=length(p)) {
+  for (i in list_indices(p):(length(p)-1) ) {
+    p[[i]] = p[[i]] + AddStyle(xlab = "", ylab = "", legend_position = "none") + theme(axis.text.x = element_text(angle = 45, hjust = 0.8))
+  }  
+  p[[length(p)]] = p[[length(p)]] + AddStyle(xlab = "", ylab = "", legend_position = "right") + theme(axis.text.x = element_text(angle = 45, hjust = 0.8))
+  p = patchwork::wrap_plots(p, ncol = ncol) + plot_annotation(title = title)
+  return(p)
+}
+
 #' Transform a matrix cells (rows) x htos (cols) into a format that can be understood by feature_grid: cell class, name hto1, value hto1, name hto2, value hto2
 #' 
 #' @param x: A matrix cells (rows) x htos (cols).
