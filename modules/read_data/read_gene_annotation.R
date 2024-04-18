@@ -6,9 +6,11 @@
 ################################################################################
 if (param$species=="human") {
   param$mart_dataset="hsapiens_gene_ensembl"
+  param$mt = "^MT-"
 } else {
   if (param$species=="mouse") {
     param$mart_dataset="mmusculus_gene_ensembl"
+    param$mt = "^mt-"
   } else {
     param$mart_dataset=param$mart_dataset
   }
