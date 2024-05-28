@@ -12,6 +12,9 @@ renv::install("bioc::biomaRt") # version 2.0.0
 renv::install("Seurat") # version 5.0.2
 renv::install("R.utils") # version 2.12.3
 
+# pre-processing
+renv::install("bioc::glmGamPoi") # version 1.10.2
+
 # dataset mapping
 renv::install("kableExtra") # version 1.4.0
 remotes::install_version("matrixStats", version="1.1.0")
