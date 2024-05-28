@@ -45,10 +45,7 @@ library(knitr)
 
 ```
 
-
 # Read data
-```{asis, ref.label="read_data"}
-```
 
 ## Read gene annotation
 Gene annotation including Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names, are loaded from a pre-prepared reference file or Ensembl. 
@@ -59,7 +56,9 @@ message("Read gene annotation")
 ```
 
 ## Read scRNA-seq data
-We read the single-cell RNA-seq data into a Seurat object.  
+```{asis, ref.label="read_data"}
+```
+
 Here, for the project `r param$project_id`, the following data are analysed:  
 
 ```{r read_rds, eval=!is.null(param$data), file='../read_data/read_rds.R', warning=FALSE}
@@ -157,22 +156,19 @@ knitr::kable(head(sc[[1]][[param$assay_raw]][[]], 5), align="l", caption="Featur
   kableExtra::scroll_box(width="100%")
 ```
 
-<br>
+<br>  
+<br>  
 
 # Quality control
-Quality control (QC) is an important step of the pre-processing workflow for single-cell RNA-seq data. Here we assess the cell quality, i.e. the cell viability and duplicate rate to filter parameter. Moreover, we estimate possible batch effects between samples and the impact of covariates like the cell cycle phase, to determine an appropriate normalization, scaling and integration method.
+Quality control (QC) is an important step of the pre-processing workflow. Here we assess the cell quality, i.e. the cell viability and duplicate rate to determine filter parameter. 
 
 ```{asis, ref.label="pre-processing"}
 ```
 
+## Determining filter thresholds
 ```{asis, ref.label="qc"}
 ```
 
-## QC covariates 
-The QC metrics plots can be used to infer filter thresholds. 
-Cells with very high count depth should possibly be excluded as those might be duplicates.  
-Cells with very low count depth might be droplets with ambient RNA. If the dataset contains a high number of such events, it is advisable to perform additionally upstream correction for ambient RNA e.g. via SoupX `r knitcitations::citet("https://academic.oup.com/gigascience/article/9/12/giaa151/6049831?login=true")` as ambient RNA can confound the number of observed counts and adds background noise to the data.  
-Cells with low count depth and high percentage of mitochondrial reads are presumably dying cells and should be filtered out as well.  
 ```{r qc_plot_cells, fig.height=fig_patchwork4_height}
 
 # Create plot per QC metric
@@ -261,7 +257,9 @@ if (length(p_list) == 1) {
 p
 ```
 
-To save time and computational resources, we down-sample the cell number before continuing with further quality assessment. According to provided number of samples the cell number is down-sampled to 1000 cells (1 sample), 500 (2-3 samples), or 300 (4 and more samples).
+<br>  
+
+To save time and computational resources, we __down-sample__ the cell number before continuing with further quality assessment. According to provided number of samples the cell number is down-sampled to 1000 cells (1 sample), 500 (2-3 samples), or 300 (4 and more samples).
 
 ```{r downsampling}
 # downsample 
@@ -298,10 +296,12 @@ if (!is.null(param$downsample_cells_n) | param$downsample_cells_equally) {
   print(sc)
 }
 ```
-## Estimation of batch effects
-### Genes with highest expression
-We next investigate whether there are individual genes that are represented by an unusually high number of counts and whether there is a difference between samples. For each cell, we first calculate the percentage of counts per gene. Subsequently, for each gene, we calculate the median value of these percentages in all cells. Genes with the highest median percentage of counts are plotted below.  
-Often those genes are mitochondrial or ribosomal genes. Here rather the percentage of raw counts per gene in a cell and similarity between samples is of importance. A high percentage of of raw counts of those, presumably, less interesting genes, suggest to perform scaling of the data. Differences in percentage of of raw counts of those genes between samples might be one first indication for batch effects.  
+
+<br>   
+
+## Genes with highest expression
+We next plot the genes with the highest median percentage of counts, i.e. for each cell, we calculate the percentage of counts per gene and then calculate the median value of these percentages for each gene in all cells.  
+Often those genes are mitochondrial or ribosomal genes. Here rather the percentage of raw counts per gene in a cell and similarity between samples is of importance. A high percentage of of raw counts of those, presumably, less interesting genes, suggest to perform scaling of the data. Differences in percentage of raw counts of those genes between supposedly similar samples might be a indication for a batch effect.  
 
 ```{r plot_highest_expression, fig.height=fig_standard_height}
 # Plot only samples that we intend to keep 
@@ -329,15 +329,14 @@ if (length(unique(genes_highestExpr_counts$name))>1) p = p + geom_line()
 p
 ```
 
-### Variable genes
+<br>  
+<br>  
 
+# Normalization and scaling
 ```{asis, ref.label="normalization"}
 ```
 
-```{asis, ref.label="variable_genes"}
-```
-
-```{r normalization}
+```{r normalize, message=FALSE}
 # Normalize data the original way
 #   This is required to score cell cycle (https://github.com/satijalab/seurat/issues/1679)
 if (!("data" %in% sc[[param$project_id]][["RNA"]][])) {
@@ -345,11 +344,21 @@ if (!("data" %in% sc[[param$project_id]][["RNA"]][])) {
 }
 ```
 
+```{r normalization_message}
+message(paste0("Here, the ", ifelse(param$norm=="RNA","Standard log normalization","SCTransform")," method was used and no additional sources of variance regressed out."))
+```
+
+<br>  
+
+## Variable genes
+We select and plot the top 3,000 variable genes. If the composition of the samples is overall similar, it would be expected that they roughly share the same variable genes.
+```{asis, ref.label="variable_genes"}
+```
+
 ```{r plot_variable_features_heights}
 fig_height_vf = 5 * ceiling(length(names(sc))/2)
 ```
 
-If the composition of the samples is overall similar, it would be expected that they roughly share the same variable genes.  
 ```{r plot_variable_features, warning=FALSE, fig.height=fig_height_vf}
 # If VariableFeatures not yet present in object
 # Find variable features from normalized data (unaffected by scaling)
@@ -374,7 +383,7 @@ p = patchwork::wrap_plots(p_list, ncol=2) + patchwork::plot_annotation("Variable
 p
 ```
 
-
+If multiple data sets are processed, we merge the datasets now.  
 ```{r merge}
 if (length(sc) == 1) {
   # Default assay is set automatically
@@ -383,14 +392,28 @@ if (length(sc) == 1) {
 } else {
   source(file.path(param$path_to_git,'modules/pre-processing/combine_samples.R'))
 }
+
+
+# Only relevant if data loaded from rds, otherwise they would be scaled and dimensional reduced before
+if (!("scale.data" %in% sc[["RNA"]][])) {
+  # Scale (default)
+  all_genes = rownames(sc)
+  sc = suppressMessages(ScaleData(sc, features = all_genes))
+} 
+# Run pca with the variable genes
+if (!("pca" %in% list_names(sc@reductions[]))) {
+  # Run PCA for default normalization
+  sc = suppressMessages(Seurat::RunPCA(sc, features=Seurat::VariableFeatures(object=sc), verbose=FALSE, npcs=min(50, ncol(sc))))
+}
+
 ```
 
+<br>  
 
-### Relative log expression
-The data were Log normalized with a scaling factor of 10000 and samples merged into one Seurat object.
-```{asis, ref.label="rel"}
-```
-
+## Relative log expression
+To better understand the efficiency of the applied normalization procedures, we plot the relative log expression of genes in 100 randomly selected cells per sample before and after normalization. This type of plot reveals unwanted variation in your data.  
+The concept is taken from `r knitcitations::citet("10.1371/journal.pone.0191629")`. In brief, we remove variation between genes by calculating for each gene its median expression across all cells, and then calculate the deviation from this median for each cell. For each cell, we plot the median expression (black), the interquartile range (<span style="color:lightgrey;font-weight:bold">lightgrey</span>), whiskers defined as 1.5 times the interquartile range (<span style="color:darkgrey;font-weight:bold">darkgrey</span>), and outliers (`r paste0('<span style="color:', param$col_samples, ';font-weight:bold">', param$col_samples, '</span>', collapse=', ')`).  
+If expression levels of most genes are supposed to be similar in all cell types, sample heterogeneity is a sign of unwanted variation.  
 ```{r plot_RLE_raw, fig.height=fig_standard_height}
 
 n_cells_rle_plot = 100
@@ -416,37 +439,25 @@ p = p1 / p2
 p
 ```
 
-### Principal component analysis
-```{r run_pca}
+<br>  
+<br>  
 
-if (!("scale.data" %in% sc[["RNA"]][])) {
-  # Scale (default)
-  all_genes = rownames(sc)
-  sc = ScaleData(sc, features = all_genes)
-} 
+# Investigating covariants
 
-# Run pca with the variable genes
-if (!("pca" %in% list_names(sc@reductions[]))) {
-  # Run PCA for default normalization
-  sc = Seurat::RunPCA(sc, features=Seurat::VariableFeatures(object=sc), verbose=FALSE, npcs=min(50, ncol(sc)))
-}
+```{asis, ref.label="regress_out"}
 ```
 
-These plots offer a low dimension representation of your data. 
-```{r pca_dims, fig.height=fig_patchwork4_height}
-# Score plots  
-p1 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples, pt.size = 1, dims = c(1,2)) + 
-  AddStyle(legend_position="none", title = "", xlab = "PC 1", ylab = "PC 2")
-p2 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples,  pt.size = 1, dims = c(2,3)) + 
-  AddStyle(legend_position="none", title = "", xlab = "PC 2", ylab = "PC 3")
-p3 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples,  pt.size = 1, dims = c(3,4)) + 
-  AddStyle(legend_position="none", title = "", xlab = "PC 3", ylab = "PC 4")
-p4 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples,  pt.size = 1, dims = c(4,5)) + 
-  AddStyle(legend_position="bottom", title = "", xlab = "PC 4", ylab = "PC 5")
-p = (p1 + p2) / (p3 + p4) +  
-  plot_annotation(title = 'Cells arranged by the first five PCs') 
-p
+<br>  
+
+## Dimensional reduction
+```{asis, ref.label="dimensional_reduction"}
 ```
+
+<br>  
+
+## Principal component analysis
+Running a PCA on our object, we see how the variance can be explained.  
+In case a early PC dimension is split on cell-cycle genes or mitochondrial gene, we might want to regress this signal from the data, so that cell-cycle heterogeneity or expression of mitochondrial genes does not contribute to PCA or downstream analysis. However, remember, those signals could also always be informative of the biology!  
 ```{r pca_loadings, fig.height=14}
 p_list = Seurat::VizDimLoadings(sc, dims=1:12, reduction="pca", col=param$col, combine=FALSE, balanced=TRUE)
 for (i in seq(p_list)) p_list[[i]] = p_list[[i]] + AddStyle(xlab = paste0("PC ",i))
@@ -454,90 +465,58 @@ p =  patchwork::wrap_plots(p_list, ncol=4) + patchwork::plot_annotation("Top gen
 p
 ```
 
-If we run a PCA on our object, using the variable genes we found in FindVariableGenes above, we see that while most of the variance can be explained by lineage, PC4 is split on cell-cycle genes including TOP2A and MKI67. We will attempt to regress this signal from the data, so that cell-cycle heterogneity does not contribute to PCA or downstream analysis
+<br>  
 
-
-
-```{r dimensionality, fig.height=fig_standard_height}
-# More approximate technique used to reduce computation time
-p = Seurat::ElbowPlot(sc, ndims=min(20, ncol(sc))) + 
-  geom_vline(xintercept=param$pc_n + .5, col="firebrick", lty=2) + 
-  AddStyle(title="Elbow plot") 
-p
-
-# Cannot have more PCs than number of cells
-param$pc_n = min(param$pc_n, ncol(sc))
-```
-
-## Umap
-
-```{r umap, fig.height=fig_standard3_height}
+## Feature plots
+The feature plots allow to examined the distribution of cells with specific features, here QC covariates (Number of counts and features as well as percent of mitochondrial and ribosomal reads), and, hence, to infer whether those feature might exert some influence on the localisation and distribution of cells in low dimensional space. These plot can clarify the necessity and scope of covariates filter application.  
+```{r umap, message=FALSE}
 # Generate UMAP
 if (!("umap" %in% list_names(sc@reductions[]))) {
   # Default UMAP
   sc = suppressWarnings(Seurat::RunUMAP(sc, dims=1:param$pc_n, verbose=FALSE, umap.method="uwot", n.neighbors=param$umap_k))
 }
 
-# Plot umap colored by sample
-p1 = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident", pt.size = param$pt_size, cols = param$col_samples) +
-  AddStyle(title="Cells coloured by sample", legend_position="right", xlab = "UMAP 1", ylab = "UMAP 2")
+```
+
+```{r feature_plots, fig.height=fig_standard4_height}
 
 # Number of counts 
 qc_feature = paste0("nCount_", param$assay_raw)
-p2 = suppressMessages(Seurat::FeaturePlot(sc, features=qc_feature, pt.size = param$pt_size) + 
+p1 = suppressMessages(Seurat::FeaturePlot(sc, features=qc_feature, pt.size = param$pt_size) + 
   AddStyle(title="Number of counts", legend_position="right", xlab = "UMAP 1", ylab = "UMAP 2") + 
   scale_colour_gradient(low=param$col_bg, high=param$col, trans="log10"))
 
 # Number of features
 qc_feature = paste0("nFeature_", param$assay_raw)
-p3 = suppressMessages(Seurat::FeaturePlot(sc, features=qc_feature, pt.size = param$pt_size) + 
-  AddStyle(title="Number of features", legend_position="right", xlab = "UMAP 1", ylab = "UMAP 2") + 
+p2 = suppressMessages(Seurat::FeaturePlot(sc, features=qc_feature, pt.size = param$pt_size) + 
+  AddStyle(title="Number of features", legend_position="right", xlab = "", ylab = "") + 
   scale_colour_gradient(low=param$col_bg, high=param$col, trans="log10"))
 
 # Percent mitochondrial reads
-p4 = Seurat::FeaturePlot(sc, features="percent_mt", cols=c(param$col_bg, param$col), pt.size = param$pt_size) + 
-  AddStyle(title="% mitochondrial reads", legend_position="right", xlab = "UMAP 1", ylab = "UMAP 2")
+p3 = Seurat::FeaturePlot(sc, features="percent_mt", cols=c(param$col_bg, param$col), pt.size = param$pt_size) + 
+  AddStyle(title="% mitochondrial", legend_position="right", xlab = "", ylab = "")
 
 # Percent ribosomal reads
-p5 = Seurat::FeaturePlot(sc, features="percent_ribo", cols=c(param$col_bg, param$col), pt.size = param$pt_size) +
-  AddStyle(title="% ribosomal reads", legend_position="right", xlab = "UMAP 1", ylab = "UMAP 2")
+p4 = Seurat::FeaturePlot(sc, features="percent_ribo", cols=c(param$col_bg, param$col), pt.size = param$pt_size) +
+  AddStyle(title="% ribosomal", legend_position="right", xlab = "", ylab = "")
 
-p = (p1 + (p2 / p3) + (p4 / p5)) + 
-    plot_layout(widths = c(5, 2, 2))
+#p = ((p2 / p3) | (p4 / p5)) + 
+#    plot_layout(widths = c(2, 2))
+p = p1 | p2 | p3 | p4
 p
 
 ```
 
-### Expression of apopsote related genes 
-
-```{r apoptpsis, fig.height=fig_patchwork8_height, warning=FALSE}
-# Feature plots of target genes
-if (param$species=="human") {
-  apo_genes = c("BCL2", "BIRC5", "CASP3", "TP53")
-} else {
-  apo_genes = c("Bcl2", "Birc5", "Casp3", "Tp53")
-}
-
-p1 = suppressMessages(Seurat::FeaturePlot(sc, features=apo_genes, cols=c(param$col_bg, param$col), pt.size = param$pt_size, combine = FALSE))
-p1 = AddStyleMultiFeaturePlot(p1, title = 'UMAP projection of gene expression', ncol = 4)
-
-p2 = suppressMessages(Seurat::VlnPlot(sc, features=apo_genes, group.by = "orig.ident", slot = "counts", log = TRUE, cols = param$col_samples, combine = FALSE))
-p2 = AddStyleMultiVln(p2, title = 'Expression levels', ncol = 4)
-
-p = p1 / p2 
-p
-```
-
+<br>  
 
 ## Cell Cycle Effect
+The following plots can help to evaluate whether the cell cycle phases are a major source of variation in the dataset and the necessity to regress out cell cycle effects during scaling.  
+An indication to consider removal of cell cycle effects would be a strong differences between samples (that are supposed to have a similar cell composition) or if cells in the same cell cycle phase form very distinctive clusters. Nevertheless, the final decision also depends on the biological system and scientific question.  
+
 ```{asis, ref.label="cc-removal"}
 ```
 
-The following plots can help to evaluate the necessity to regress out cell cycle effects during scaling.  
-An indication to consider removal of cell cycle effects would be a strong differences between samples or if cells in the same cell cycle phase form very distinctive clusters. Nevertheless, the final decision also depends on the biological system and scientific question.  
 ```{r cellCycleEffect, fig.height=fig_standard2_height}
-# Score cell cycle effects after merge
-sc = CCScoring(sc=sc, genes_s=genes_s[,2], genes_g2m=genes_g2m[,2])
 
 # Set up colours for cell cycle effect and add to sc object
 col =  GenerateColours(num_colours=length(levels(sc$Phase)), names=levels(sc$Phase), palette="ggsci::pal_npg", alphas=1)
@@ -569,8 +548,153 @@ p = p1 + p2 + plot_spacer() + p3 +
 p
 ```
 
+<br>  
+
+## Expression of apoptosis related genes 
+Here the expression of some apoptosis related genes is plotted to get, apart from the mitochondrial gene expression ratio, another indication of cell viability. However, the expression level of such genes strongly depends on the state during the process of apoptosis, i.e. low expression is not necessarily affirmation of high cell viability. 
+```{r apoptosis, fig.height=fig_patchwork8_height, warning=FALSE}
+
+# Feature plots of target genes
+if (param$species=="human") {
+  apo_genes = c("BCL2", "BIRC5", "CASP3", "TP53")
+} else {
+  apo_genes = c("Bcl2", "Birc5", "Casp3", "Tp53")
+}
+
+p1 = suppressMessages(Seurat::FeaturePlot(sc, features=apo_genes, cols=c(param$col_bg, param$col), pt.size = param$pt_size, combine = FALSE))
+p1 = AddStyleMultiFeaturePlot(p1, title = 'UMAP projection of gene expression', ncol = 4)
+
+p2 = suppressMessages(Seurat::VlnPlot(sc, features=apo_genes, group.by = "orig.ident", slot = "counts", log = TRUE, cols = param$col_samples, combine = FALSE))
+p2 = AddStyleMultiVln(p2, title = 'Expression levels', ncol = 4)
+
+p = p1 / p2 
+p
+```
+
+<br>  
+<br>  
 
 
+# Batch correction 
+Integration can help to remove biological differences and match shared cell types and states across datasets.   
+```{asis, ref.label="sample_combination"}
+```
+
+<br>  
+
+### Methods for sample combination {.tabset}
+```{asis, ref.label="integration_methods"}
+```
+  
+<br>  
+
+To explore the results of data merging and different integration methods, here integration is performed in low-dimensional space (streamlined (one-line) integrative analysis as described in https://satijalab.org/seurat/articles/seurat5_integration).
+
+<details>
+  <summary>How does streamlined (one-line) integrative analysis work?</summary>
+  
+  Seurat v5 enables streamlined integrative analysis via the IntegrateLayers function.   
+  First, the samples are merged and then the layers are split (a counts and data layer for each batch). As the the data is split into layers, normalization and variable feature identification is performed for each set independently and a consensus set of variable features is identified. Moreover, a dimensional reduction with (hopefully) co-embed shared cell types across samples is returned as output.  
+</details>
+
+The following plots offer a low dimension representation of your data combined via the different methods. 
+
+```{r streamlined_integrative_analysis, file='./streamlined_integrative_analysis.R', warning=FALSE, message=FALSE}
+source(file.path(param$path_to_git,'modules/pre-processing/streamlined_integrative_analysis.R'))
+
+```
+
+```{r dim_reductions}
+### Score plots
+# PCA score plots colored by sample
+p1 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples, pt.size = 1, dims = c(1,2)) + 
+  AddStyle(legend_position="none", title = "", xlab = "PC 1", ylab = "PC 2")
+p2 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples,  pt.size = 1, dims = c(3,4)) + 
+  AddStyle(legend_position="none", title = "", xlab = "PC 3", ylab = "PC 4")
+
+# CCA integrated score plots colored by sample
+p3 = Seurat::DimPlot(sc, reduction="integrated.cca", group.by = "orig.ident", cols=param$col_samples, pt.size = 1, dims = c(1,2)) + 
+  AddStyle(legend_position="none", title = "", xlab = "PC 1", ylab = "PC 2")
+p4 = Seurat::DimPlot(sc, reduction="integrated.cca", group.by = "orig.ident", cols=param$col_samples,  pt.size = 1, dims = c(3,4)) + 
+  AddStyle(legend_position="none", title = "", xlab = "PC 3", ylab = "PC 4")
+
+# RPCA integrated score plots colored by sample
+p5 = Seurat::DimPlot(sc, reduction="integrated.rpca", group.by = "orig.ident", cols=param$col_samples, pt.size = 1, dims = c(1,2)) + 
+  AddStyle(legend_position="none", title = "", xlab = "PC 1", ylab = "PC 2")
+p6 = Seurat::DimPlot(sc, reduction="integrated.rpca", group.by = "orig.ident", cols=param$col_samples,  pt.size = 1, dims = c(3,4)) + 
+  AddStyle(legend_position="none", title = "", xlab = "PC 3", ylab = "PC 4")
+
+### Umaps
+# Plot umap colored by sample
+p7 = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident", pt.size = param$pt_size, cols = param$col_samples) +
+  AddStyle(title="", legend_position="right", xlab = "UMAP 1", ylab = "UMAP 2")
+
+# Plot CCA umap colored by sample
+p8 = Seurat::DimPlot(sc, reduction="umap.cca", group.by="orig.ident", pt.size = param$pt_size, cols = param$col_samples) +
+  AddStyle(title="", legend_position="right", xlab = "UMAP 1", ylab = "UMAP 2")
+
+# Plot RPCA umap colored by sample
+p9 = Seurat::DimPlot(sc, reduction="umap.rpca", group.by="orig.ident", pt.size = param$pt_size, cols = param$col_samples) +
+  AddStyle(title="", legend_position="right", xlab = "UMAP 1", ylab = "UMAP 2")
+
+# Combine plots
+p_list = list()
+p_list[[1]] = (p1 / p2)
+p_list[[1]] = (p_list[[1]] | p7) +
+  plot_layout(widths = c(1, 3)) + 
+  plot_annotation(title = 'Merged') 
+p_list[[2]] = (p3 / p4)
+p_list[[2]] = (p_list[[2]] | p8) +
+  plot_layout(widths = c(1, 3)) + 
+  plot_annotation(title = 'CCA integrated') 
+p_list[[3]] = (p5 / p6)
+p_list[[3]] = (p_list[[3]] | p9) +
+  plot_layout(widths = c(1, 3)) + 
+  plot_annotation(title = 'RPCA integrated') 
+
+```
+
+#### Merged
+```{r dim_reductions_merged, fig.height=fig_patchwork8_height}
+p_list[[1]]
+```
+
+<br>   
+<br>  
+
+#### CCA integrated
+```{r dim_reductions_cca_integrated, fig.height=fig_patchwork8_height}
+p_list[[2]]
+```
+
+<br>   
+<br>  
+
+#### RPCA integrated
+```{r dim_reductions_rpca_integrated, fig.height=fig_patchwork8_height}
+p_list[[3]]
+```
+
+<br>   
+<br>  
+
+
+# Determinig dimensionality of the dataset
+Now we need to decide how many PCs we want to use for our analyses.  
+
+```{asis, ref.label="determinig_dimensionality"}
+```
+
+```{r dimensionality, fig.height=fig_standard_height}
+# More approximate technique used to reduce computation time
+p = Seurat::ElbowPlot(sc, ndims=min(20, ncol(sc))) + 
+  geom_vline(xintercept=param$pc_n + .5, col="firebrick", lty=2) + 
+  AddStyle(title="Elbow plot") 
+p
+
+# Cannot have more PCs than number of cells
+param$pc_n = min(param$pc_n, ncol(sc))
+```
 
 
 <br>

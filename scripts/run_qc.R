@@ -58,6 +58,10 @@ param$download_test_datasets=NULL
 # Means versions > 105 do not work for mouse
 param_advset$annot_version=NULL
 
+### Normalisation
+# Which normalisation should be used for analysis? ("RNA", "SCT")
+param_advset$norm="SCT"
+
 ### Set colors
 # Colour palette used for samples
 param_advset$col_palette_samples = NULL

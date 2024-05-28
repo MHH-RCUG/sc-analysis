@@ -60,6 +60,9 @@ param$cc_rescore_after_merge = TRUE
 # Additional (unwanted) variables that will be regressed out for visualisation and clustering ("nCount_RNA", "percent_mt")
 param$vars_to_regress = c()
 
+# Similarity between samples ("homogene" or "heterogene")
+param$experimental_groups = "homogene"
+
 # How to combine multiple datasets (method = "merge" or "integrate")
 # "merge": Concatenate data e.g. when samples were multiplexed on the same chip.
 # "integrate": Anchors are computed for all pairs of datasets. This will give all datasets the same weight during dataset integration but can be computationally intensive

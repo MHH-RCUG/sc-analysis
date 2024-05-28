@@ -53,9 +53,12 @@ sc_cell_metadata_factor_levels = purrr::map(which(sapply(sc_cell_metadata, is.fa
 })
 
 # Save variable features
+# necessary for runPCA of merged, SCTransformed data
 # According to https://github.com/satijalab/seurat/issues/5205 
-# This ranks features by the number of datasets they are deemed variable in
-SCTVariableFeatures = SelectIntegrationFeatures(sc)
+# and https://github.com/satijalab/seurat/issues/6185
+# This integrates the variable features from a list of objects (separately SCTransform)
+# and ranks features by the number of data sets they are deemed variable in.
+SCTVariableFeatures = SelectIntegrationFeatures(sc, nfeatures = 3000)
 
 
 
@@ -66,6 +69,11 @@ SCTVariableFeatures = SelectIntegrationFeatures(sc)
 #   for example, when samples were multiplexed on the same chip
 if (param$integrate_samples[["method"]]=="merge") {
   sc = merge(x=sc[[1]], y=sc[2:length(sc)], project=param$project_id, merge.data = TRUE)
+  
+
+    # Join layers (counts, data, scaled.data) of RNA assay 
+    sc[["RNA"]] = JoinLayers(sc[["RNA"]])
+  
   
   message("Data values for all samples have been merged. This means that data values have been concatenated, not integrated.")
 }
@@ -90,6 +98,11 @@ if (param$integrate_samples[["method"]]=="integrate") {
                       k_weight=param$integrate_samples[["k.weight"]], 
                       k_anchor=param$integrate_samples[["k.anchor"]],
                       k_score=param$integrate_samples[["k.score"]])
+  
+  if (param$norm == "RNA") { 
+    # Join layers (counts, data, scaled.data) of RNA assay 
+    sc[["RNA"]] = JoinLayers(sc[["RNA"]])
+  }
   
   # Is this necessary???
   # Add sample as latent_vars for marker detection
@@ -132,12 +145,10 @@ if (param$cc_rescore_after_merge) {
 }
 
 # Set default assay (will be the integrated version)
-if (param$integrate_samples[["method"]]=="merge") {DefaultAssay(sc) = "RNA" } 
+if (param$integrate_samples[["method"]]=="merge") {DefaultAssay(sc) = ifelse(param$norm=="RNA", "RNA", "SCT") } 
 if (param$integrate_samples[["method"]]=="integrate") {DefaultAssay(sc) = paste0(param$norm, "integrated") } 
 
 if (param$norm == "RNA") { 
-  # Join layers (counts, data, scaled.data) of RNA assay 
-  sc[["RNA"]] = JoinLayers(sc[["RNA"]])
   # Find variable features in RNA assay
   sc = Seurat::FindVariableFeatures(sc, selection.method="vst", nfeatures=3000, verbose=FALSE)
   # Scale RNA assay
@@ -145,7 +156,8 @@ if (param$norm == "RNA") {
   
 } else if (param$norm == "SCT") {
   if (param$experimental_groups == "homogene") { 
-    # Re-running of SCT not recommended https://github.com/satijalab/seurat/issues/6054, https://github.com/satijalab/seurat/issues/7407
+    # Re-running of SCT not recommended https://github.com/satijalab/seurat/issues/6054 
+    # and https://github.com/satijalab/seurat/issues/7407
     # Set variable features
     VariableFeatures(sc) = SCTVariableFeatures
   
@@ -155,6 +167,7 @@ if (param$norm == "RNA") {
     sc = suppressWarnings(SCTransform(sc, 
                                       assay=param$assay_raw,
                                       vars.to.regress=param$vars_to_regress, 
+                                      variable.features.n = 3000,
                                       min_cells=min_cells_overall, 
                                       verbose=FALSE, 
                                       return.only.var.genes=FALSE,

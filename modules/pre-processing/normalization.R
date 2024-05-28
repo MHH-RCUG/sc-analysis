@@ -3,8 +3,9 @@
 ### (part1_normalization) and (part2_cc_scores)
 # Calculate cell cycle score if it should be regressed out
 if (param$cc_remove) {
-  # Normalize data the original way
+  # Run NormalizeData prior to CellCycleScoring
   # This is required to score cell cycle (https://github.com/satijalab/seurat/issues/1679)
+  # This learns cell cycle scores that can be added to the vars.to.regress parameter in LogNormalize or SCTransform
   sc = purrr::map(sc, Seurat::NormalizeData, normalization.method="LogNormalize", scale.factor=10000, verbose=FALSE)
   
   # Determine cell cycle effect per sample 
@@ -50,8 +51,10 @@ if (length(sc) == 1) {
 ### (part3_normalization)
 if (param$norm == "RNA") { 
   # For Log Normalize data
+  # if not normalized already above for CellCycleScoring
+  if (!param$cc_remove) {
   sc = purrr::map(sc, Seurat::NormalizeData, normalization.method="LogNormalize", scale.factor=10000, verbose=FALSE)
-  
+  }
   # For integration or if only one sample
   # Multiple Log Normalized samples that should be merged, will be scaled after merging
   # vignette: https://satijalab.org/seurat/articles/integration_introduction.html
@@ -82,16 +85,16 @@ if (param$norm == "RNA") {
     suppressWarnings(SCTransform(sc[[n]], 
                 assay=param$assay_raw,
                 vars.to.regress=param$vars_to_regress, 
+                variable.features.n = 3000, 
                 min_cells=param$feature_filter[[n]][["min_cells"]], 
                 verbose=FALSE, 
                 return.only.var.genes=FALSE,
                 method=ifelse(packages_installed("glmGamPoi"), "glmGamPoi", "poisson"))) 
   })
   
-    
     # For integration 
     # vignette: https://satijalab.org/seurat/articles/integration_introduction.html
-    if (param$integrate_samples[["method"]]=="integrate") {
+    if (param$integrate_samples[["method"]]=="integrate" | (length(sc) == 1)) {
       sc = purrr::map(sc, Seurat::RunPCA, assay="SCT", verbose=FALSE, npcs=min(50, ncol(sc[[n]])))
     }
 }
