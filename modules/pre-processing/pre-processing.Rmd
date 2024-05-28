@@ -1,0 +1,566 @@
+---
+title: "Pre-processing of scRNA seq data"
+author: "`r param$author`"
+date: "`r format(Sys.time(), '%B, %Y')`"
+geometry: "margin=2cm"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    code_folding: "hide"
+    highlight: "tango"
+    theme: "paper"
+bibliography: "`r file.path(param$path_out, 'references.bib')`"
+css: "`r file.path(param$path_to_git, 'css/style.css')`"
+---
+
+```{r r_options, file='../../scripts/configuration.R'}
+source(file.path(param$path_to_git,'scripts/configuration.R'))
+message("Set R options")
+```
+
+```{r rmarkdown, file='../../scripts/rmarkdown_configuration.R'}
+source(file.path(param$path_to_git,'scripts/rmarkdown_configuration.R'))
+message("Set Rmarkdown options")
+```
+
+```{r, include=FALSE, cache=FALSE}
+knitr::read_chunk(file.path(param$path_to_git,'scripts/text.R'))
+```
+
+```{r load_packages, warning=FALSE, message=FALSE, results='hide'}
+
+# Load renv and virtualenvs
+renv::load(file.path(param$path_to_git,"env/basic"))
+renv::use_python(type = "virtualenv", name = file.path(param$path_to_git,"env/basic/virtualenvs/r-reticulate"))
+#reticulate::use_virtualenv(file.path(param$path_to_git,"env/basic/virtualenvs/r-reticulate"))
+
+# Required libraries
+library(Seurat) # main
+library(ggplot2) # plots
+library(patchwork) # combination of plots
+library(magrittr) # %>% operator
+library(knitr)
+
+```
+
+
+# Read data
+
+## Read gene annotation
+Gene annotation including Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names, are loaded from a pre-prepared reference file or Ensembl. 
+
+```{r read_gene_annotation, file='../read_data/read_gene_annotation.R'}
+#source(file.path(param$path_to_git,'modules/read_data/read_gene_annotation.R'))
+message("Read gene annotation")
+```
+
+## Read scRNA-seq data
+```{asis, ref.label="read_data"}
+```
+
+Here, for the project `r param$project_id`, the following data are analysed:  
+
+```{r read_rds, eval=!is.null(param$data), file='../read_data/read_rds.R', warning=FALSE}
+#source(file.path(param$path_to_git,'modules/read_data/read_rds.R'))
+message("Load Seurat object from rds file")
+```
+
+```{r restructure_object, eval=!is.null(param$data), warning=FALSE}
+# Transfer object into a list
+sc_original = sc
+sc = list()
+n = param$project_id
+sc[[n]] = sc_original
+```
+
+```{r download_test_dataset, eval=!is.null(param$download_test_datasets), warning=FALSE, message=FALSE}
+# Download test dataset 
+param$path_test_dataset=paste0(param$path_to_git, "/modules/download_test_datasets/", param$download_test_datasets, ".R")
+if (file.exists(param$path_test_dataset)) {
+  message(paste0("Using test dataset '", gsub('download_','', param$download_test_datasets), "'."))
+  # Data output in a data subfolder of the directory where it is run 
+  # Create output directories
+  if (!file.exists("data")) dir.create("data", recursive=TRUE, showWarnings=FALSE)
+  setwd(file.path(param$path_to_git,"data"))
+  source(param$path_test_dataset)
+  param$path_data = data.frame(name=list.dirs(path = file.path(param$path_to_git,"data", "counts"),
+                                              full.names = FALSE, recursive = FALSE), 
+                                type=c("10x"),
+                                path=list.dirs(path = file.path(param$path_to_git,"data", "counts"),
+                                              full.names = TRUE, recursive = FALSE))
+} else {
+  message("Test dataset does not exist.")
+}
+
+```
+
+```{r read_datasets, eval=is.null(param$data), warning=FALSE, message=FALSE}
+# List of Seurat objects
+sc = list()
+
+datasets = param$path_data
+for (i in seq(nrow(datasets))) {
+  name = datasets[i, "name"]
+  type = datasets[i, "type"]
+  path = datasets[i, "path"]
+  suffix = datasets[i, "suffix"]
+  
+  # Read 10X or smartseq2
+  if (type == "10x") {
+    # Read 10X sparse matrix into a Seurat object
+    sc = c(sc, ReadSparseMatrix(path, project=name, row_name_column=1, convert_row_names=ensembl_to_seurat_rowname, cellnames_suffix=suffix))
+    
+  } else if (type == "smartseq2") {
+    # Read counts table into a Seurat object
+    sc = c(sc, ReadCountsTable(path, project=name, row_name_column=1, convert_row_names=ensembl_to_seurat_rowname, parse_plate_information=TRUE, return_samples_as_datasets=TRUE, cellnames_suffix=suffix))
+  } 
+}
+
+# Make sure that sample names are unique. If not, just prefix with the dataset name. Also set orig.ident to this name.
+sample_names = names(sc)
+duplicated_sample_names_idx = which(sample_names %in% sample_names[duplicated(sample_names)])
+for (i in duplicated_sample_names_idx) {
+  sample_names[i] = paste(head(sc[[i]][["orig.dataset", drop=TRUE]], 1), sample_names[i], sep=".")
+  sc[[i]][["orig.ident"]] = sample_names[i]
+}
+
+# Set up colors for samples and add them to the sc objects
+sample_names = purrr::flatten_chr(purrr::map(sc, function(s) {
+  nms = unique(as.character(s[[]][["orig.ident"]]))
+  return(nms) 
+}))
+param$col_samples = GenerateColours(num_colours=length(sample_names), names=sample_names, palette=param$col_palette_samples, alphas=1)
+sc = purrr::map(sc, ScAddLists, lists=list(orig.ident=param$col_samples), lists_slot="colour_lists")
+
+message("Read scRNA-seq data into Seurat object")
+sc
+```
+
+```{r calculate_qc_metadata, file='./calculate_qc_metadata.R', warning=FALSE}
+#source(file.path(param$path_to_git,'modules/pre-processing/calculate_qc_metadata.R'))
+message("Calculate and add QC metadata")
+```
+
+<br>
+
+
+# Pre-processing
+The steps below represent a standard pre-processing workflow for single-cell RNA-seq data, including quality control, the respective filtering of cells and genes, data normalization and scaling, the detection of highly variable genes, dimensional reduction, cell clustering and annotation.  
+```{asis, ref.label="pre-processing"}
+```
+
+## Quality control 
+Quality control (QC) is an important step of the pre-processing workflow. We start the analysis by removing unwanted cells from the dataset(s).  
+```{asis, ref.label="qc"}
+```
+
+
+### Filtering
+Cells and genes are filtered based on the following thresholds: 
+
+```{r filter_print_cutoffs}
+cell_filter_lst = param$cell_filter %>% unlist(recursive=FALSE)
+is_numeric_filter = purrr::map_lgl(cell_filter_lst, function(f) return(is.numeric(f) & length(f)==2))
+
+# numeric cell filters
+if (length(cell_filter_lst[is_numeric_filter]) > 0) {
+  purrr::invoke(rbind, cell_filter_lst[is_numeric_filter]) %>%
+    knitr::kable(align="l", caption="Numeric filters applied to cells", col.names=c("Min", "Max")) %>% 
+    kableExtra::kable_styling(bootstrap_options=c("striped", "hover"))
+}
+
+# categorial cell filters
+if (length(cell_filter_lst[!is_numeric_filter]) > 0) {
+purrr::invoke(rbind, cell_filter_lst[!is_numeric_filter] %>% purrr::map(paste, collapse=",")) %>%
+  knitr::kable(align="l", caption="Categorial filters applied to cells", col.names=c("Values")) %>% 
+  kableExtra::kable_styling(bootstrap_options=c("striped", "hover"))
+}
+  
+# gene filters
+feature_filter_lst = param$feature_filter %>% unlist(recursive=FALSE)
+if (length(feature_filter_lst) > 0) {
+  purrr::invoke(rbind, feature_filter_lst) %>% 
+    knitr::kable(align="l", caption="Filters applied to genes", col.names=c("Value")) %>%
+    kableExtra::kable_styling(bootstrap_options=c("striped", "hover"))
+}
+```
+
+The number of excluded cells and features is as follows: 
+
+```{r filter_cells}
+# Iterate over datasets and filters
+# Record a cell if it does not pass the filter
+# Also record a cell if it belongs to a sample that should be dropped
+sc_cells_to_exclude  = purrr::map(list_names(sc), function(n) { 
+  filter_result = purrr::map(list_names(param$cell_filter[[n]]), function(f) {
+    filter = param$cell_filter[[n]][[f]]
+    if (is.numeric(filter)) {
+      if (is.na(filter[1])) filter[1] = -Inf # Minimum
+      if (is.na(filter[2])) filter[2] = Inf  # Maximum 
+      idx_exclude = sc[[n]][[f, drop=TRUE]] < filter[1] | sc[[n]][[f, drop=TRUE]] > filter[2]
+      return(names(which(idx_exclude)))
+    } else if (is.character(filter)) { 
+      idx_exclude = !sc[[n]][[f, drop=TRUE]] %in% filter
+      return(Cells(sc[[n]])[idx_exclude])
+    }
+  })
+
+  # Samples to drop
+  if (n %in% param$samples_to_drop) {
+    filter_result[["samples_to_drop"]] = colnames(sc[[n]])
+  } else {
+    filter_result[["samples_to_drop"]] = as.character(c())
+  }
+  
+  # Minimum number of cells for a sample to keep
+  if (ncol(sc[[n]]) < param$samples_min_cells) {
+    filter_result[["samples_min_cells"]] = colnames(sc[[n]])
+  } else {
+    filter_result[["samples_min_cells"]] = as.character(c())
+  }
+  
+  return(filter_result)
+})
+
+# Summarise
+sc_cells_to_exclude_summary = purrr::map_dfr(sc_cells_to_exclude, function(s) {
+  return(as.data.frame(purrr::map(s, length))) 
+  })
+rownames(sc_cells_to_exclude_summary) = names(sc_cells_to_exclude)
+
+sc_cells_to_exclude_summary$Original = purrr::map_int(sc, ncol)
+sc_cells_to_exclude_summary$Excluded = purrr::map_int(sc_cells_to_exclude, function(s) { return(purrr::flatten(s) %>% unique() %>% length())})
+sc_cells_to_exclude_summary$PercKept = round((sc_cells_to_exclude_summary$Original - sc_cells_to_exclude_summary$Excluded) / sc_cells_to_exclude_summary$Original * 100, 2)
+knitr::kable(sc_cells_to_exclude_summary, 
+             align="l", 
+             caption="Summary of excluded cells") %>% 
+  kableExtra::kable_styling(bootstrap_options=c("striped", "hover"))
+
+# Add filter column to sc_cell_metadata for post-filtering QC
+sc_cell_metadata$IS_FILTERED = rownames(sc_cell_metadata) %in% unlist(sc_cells_to_exclude)
+
+# Now filter, drop the respective colours and adjust integration method
+sc = purrr::map(list_names(sc), function(n) {
+  cells_to_keep = Cells(sc[[n]])
+  cells_to_keep = cells_to_keep[!cells_to_keep %in% purrr::flatten_chr(sc_cells_to_exclude[[n]])]
+  if (length(cells_to_keep)==0) return(NULL)
+  else return(subset(sc[[n]], cells=cells_to_keep))
+}) %>% purrr::discard(is.null)
+
+if (length(sc)==1) param$integrate_samples[["method"]] = "single"
+```
+
+```{r filter_features}
+# Only RNA assay at the moment
+
+# Iterate over samples and record a feature if it does not pass the filter
+sc_features_to_exclude = purrr::map(list_names(sc), function(n) {
+  
+  # Make sure the sample contains more cells than the minimum threshold
+  if (length(Cells(sc[[n]])) < param$feature_filter[[n]][["min_cells"]]) return(list())
+  
+  # Return gene names that do not pass the minimum threshold 
+  else return(names(which(sc[[n]][[param$assay_raw]][["num_cells_expr_threshold", drop=TRUE]] < param$feature_filter[[n]][["min_cells"]])))
+})
+
+# Which genes are to be filtered for all samples?
+# Note: Make sure that no other sample is called "AllSamples"
+sc_features_to_exclude$AllSamples = Reduce(f=intersect, x=sc_features_to_exclude)
+
+# Summarise
+sc_features_to_exclude_summary = purrr::map_dfr(names(sc), function(n){
+  df = data.frame(Original=nrow(sc[[n]]), 
+                  FailThreshold=length(sc_features_to_exclude[[n]]))
+  df$PercFailThreshold = round(df$FailThreshold / df$Original * 100, 2)
+  df$Kept = length(setdiff(rownames(sc[[n]]), sc_features_to_exclude[["AllSamples"]]))
+  df$PercKept = round(df$Kept / df$Original * 100, 2)
+  return(df)
+})
+rownames(sc_features_to_exclude_summary) = names(sc)
+knitr::kable(sc_features_to_exclude_summary, align="l", caption="Summary of excluded genes") %>% 
+  kableExtra::kable_styling(bootstrap_options=c("striped", "hover"))
+
+# Now filter those genes that are to be filtered for all samples 
+sc = purrr::map(list_names(sc), function(n) {
+  assay_names = Seurat::Assays(sc[[n]])
+  features_to_keep = purrr::map(values_to_names(assay_names), function(a) {
+    features = rownames(sc[[n]][[a]])
+    keep = features[!features %in% sc_features_to_exclude$AllSamples]
+    return(keep)
+  })
+  return(subset(sc[[n]], features=purrr::flatten_chr(features_to_keep)))
+})
+```
+
+After filtering, the size of the Seurat object is: 
+
+```{r filter_size_after}
+sc
+```
+
+### QC covariates 
+
+```{r qc_plot_cells, fig.height=fig_patchwork4_height}
+
+# Create plot per QC metric
+p_list = list()
+for (m in cell_qc_features) {
+  p_list[[m]]= ggplot(sc_cell_metadata[, c("orig.ident", m, "IS_FILTERED")] %>% dplyr::filter(!IS_FILTERED), aes(x=.data[["orig.ident"]], y=.data[[m]], fill=.data[["orig.ident"]], group=.data[["orig.ident"]])) +
+    geom_violin(scale="width")
+
+  # Adds points for samples with less than three cells since geom_violin does not work here
+  p_list[[m]] = p_list[[m]] + 
+    geom_point(data=sc_cell_metadata[, c("orig.ident", m, "IS_FILTERED")] %>% dplyr::filter(!IS_FILTERED, orig.ident %in% names(which(table(sc_cell_metadata$orig.ident) < 3))), aes(x=.data[["orig.ident"]], y=.data[[m]], fill=.data[["orig.ident"]]), shape=21, size=2)
+  
+  # Now add style
+  p_list[[m]] = p_list[[m]] + 
+    AddStyle(title=m, legend_position="none", fill=param$col_samples, xlab="") + 
+    theme(axis.text.x=element_text(angle=45, hjust=1))
+  
+  # Add filter threshold as segments to plot; min threshold lines are dashed and max threshold lines are twodashed
+  if (nrow(cell_qc_thresholds[[m]]) > 0) {
+    sample_names = sc_cell_metadata[, c("orig.ident", m, "IS_FILTERED")] %>% dplyr::filter(!IS_FILTERED) %>% dplyr::pull(orig.ident) %>% unique()
+    p_list[[m]] = p_list[[m]] + geom_segment(data=cell_qc_thresholds[[m]] %>% dplyr::filter(orig.ident %in% sample_names), 
+                                             aes(x=as.integer(as.factor(orig.ident))-0.5, 
+                                                 xend=as.integer(as.factor(orig.ident))+0.5, 
+                                                 y=value, yend=value, lty=threshold), colour="firebrick") +
+      scale_linetype_manual(values=setNames(c("dashed", "F1"), c("max", "min")))
+  }
+}
+p = patchwork::wrap_plots(p_list, ncol=2) + patchwork::plot_annotation("Distribution of feature values") 
+p
+```
+
+```{r qc_plot_correlation, fig.height=fig_standard2_height}
+# Correlate QC metrics for cells
+p_list = list()
+sc_cell_metadata_plot_order = sample(1:nrow(sc_cell_metadata))
+
+# nFeature vs nCount
+m = paste0(c("nCount_", "nFeature_"), param$assay_raw)
+p_list[[1]] = ggplot(sc_cell_metadata[sc_cell_metadata_plot_order, , drop=FALSE], aes(x=.data[[m[1]]], y=.data[[m[2]]], colour=.data[["orig.ident"]], alpha=.data[["IS_FILTERED"]])) +
+  geom_point(size = param$pt_size) + 
+  scale_linetype_manual(values=setNames(c("dashed", "F1"), c("max", "min"))) +
+  scale_alpha_manual(values=setNames(c(1, 0.1), c(FALSE, TRUE))) +
+  AddStyle(col=param$col_samples)
+if (nrow(cell_qc_thresholds[[m[1]]]) > 0) {
+  p_list[[1]] = p_list[[1]] + geom_vline(data=cell_qc_thresholds[[m[1]]], aes(xintercept=value, lty=threshold), colour="firebrick")
+    
+}
+if (nrow(cell_qc_thresholds[[m[2]]]) > 0) {
+  p_list[[1]] = p_list[[1]] + geom_hline(data=cell_qc_thresholds[[m[2]]], aes(yintercept=value, lty=threshold), colour="firebrick")
+}
+  
+
+# nFeature vs percent_mt
+m = c("percent_mt", paste0(c("nFeature_"), param$assay_raw))
+p_list[[2]] = ggplot(sc_cell_metadata[sc_cell_metadata_plot_order, , drop=FALSE], aes(x=.data[[m[1]]], y=.data[[m[2]]], colour=.data[["orig.ident"]], alpha=.data[["IS_FILTERED"]])) +
+  geom_point(size = param$pt_size) +
+  scale_linetype_manual(values=setNames(c("dashed", "F1"), c("max", "min"))) +
+  scale_alpha_manual(values=setNames(c(1, 0.1), c(FALSE, TRUE))) +
+  AddStyle(col=param$col_samples)
+if (nrow(cell_qc_thresholds[[m[1]]]) > 0) {
+  p_list[[2]] = p_list[[2]] + geom_vline(data=cell_qc_thresholds[[m[1]]], aes(xintercept=value, lty=threshold), colour="firebrick")
+}
+if (nrow(cell_qc_thresholds[[m[2]]]) > 0) {
+  p_list[[2]] = p_list[[2]] + geom_hline(data=cell_qc_thresholds[[m[2]]], aes(yintercept=value, lty=threshold), colour="firebrick")
+}
+
+# nFeature vs percent_ercc (if available)
+if ("percent_ercc" %in% names(cell_qc_features)) {
+  m = c("percent_ercc", paste0(c("nFeature_"), param$assay_raw))
+  p_list[[3]] = ggplot(sc_cell_metadata[sc_cell_metadata_plot_order, , drop=FALSE], aes(x=.data[[m[1]]], y=.data[[m[2]]], colour=.data[["orig.ident"]], alpha=.data[["IS_FILTERED"]])) +
+    geom_point(size = param$pt_size) + 
+    scale_linetype_manual(values=setNames(c("dashed", "F1"), c("max", "min"))) + 
+    scale_alpha_manual(values=setNames(c(1, 0.1), c(FALSE, TRUE))) +
+    AddStyle(col=param$col_samples)
+  if (nrow(cell_qc_thresholds[[m[1]]]) > 0) {
+    p_list[[3]] = p_list[[3]] + geom_vline(data=cell_qc_thresholds[[m[1]]], aes(xintercept=value, lty=threshold), colour="firebrick")
+  }
+  if (nrow(cell_qc_thresholds[[m[2]]]) > 0) {
+    p_list[[3]] = p_list[[3]] + geom_hline(data=cell_qc_thresholds[[m[2]]], aes(yintercept=value, lty=threshold), colour="firebrick")
+  }
+}
+
+# Combine plots
+p = patchwork::wrap_plots(p_list, ncol=length(p_list)) + patchwork::plot_annotation("Features plotted against each other")
+if (length(p_list) == 1) {
+  p = p & theme(legend.position="bottom")
+} else {
+  p = p + patchwork::plot_layout(guides="collect") & theme(legend.position="bottom")
+}
+p
+```
+
+```{r downsampling}
+# downsample_cells_n overwrites downsample_cells_equally
+if (!is.null(param$downsample_cells_n)) {
+  n = param$downsample_cells_n
+} else if (param$downsample_cells_equally) {
+  n = purrr::map_int(sc, ncol) %>% min()  
+}
+
+# Actual downsampling
+if (!is.null(param$downsample_cells_n) | param$downsample_cells_equally) {
+  sc = purrr::map(sc, function(s) {
+    cells = ScSampleCells(sc=s, n=n, seed=1)
+    return(subset(s, cells=cells))
+  })
+  
+  # Adjust combined metadata accordingly
+  sc_cell_metadata = sc_cell_metadata[unlist(purrr::map(sc, Cells)), ]
+  
+  message(paste0("Your data has been down-sampled to ", param$downsample_cells_n, " cells." ))
+  print(sc)
+}
+```
+
+```{r cleanup_metadata}
+# Remove filtered cells from metadata
+sc_cell_metadata = sc_cell_metadata %>% dplyr::filter(IS_FILTERED==FALSE)
+
+# Update levels but make sure level order stays the same
+idx.factors = sapply(sc_cell_metadata, is.factor) %>% which()
+for (n in colnames(sc_cell_metadata[idx.factors])) {
+  levels_old = sc_cell_metadata %>% dplyr::pull(n) %>% levels()
+  levels_new = sc_cell_metadata %>% dplyr::pull(n) %>% as.character() %>% unique()
+  sc_cell_metadata[[n]] = factor(sc_cell_metadata[[n]], levels=levels_old[levels_old %in% levels_new])
+}
+
+# Update actual colors as well, as they will appear in the plots otherwise
+param$col_samples = param$col_samples[names(param$col_samples) %in% names(sc)]
+```
+
+## TONAME
+In this section, we subsequently run a series of Seurat functions for each provided sample. We normalize, select variable genes, and combine the datasets according to the chosen methods. In the process cell cycle scores are assigned to each cell based on its normalized expression of G2/M and S phase markers and data are scaled while regressing out covariants if desired. 
+
+### Normalisation
+```{asis, ref.label="normalization"}
+```
+
+```{r normalize, message=FALSE}
+# Normalize data the original way
+#   This is required to score cell cycle (https://github.com/satijalab/seurat/issues/1679)
+if (!("data" %in% sc[[param$project_id]][["RNA"]][])) {
+  source(file.path(param$path_to_git,'modules/pre-processing/normalization.R'))
+}
+```
+
+```{r normalization_message}
+message(paste0("Here, the ", ifelse(param$norm=="RNA","Standard log normalization","SCTransform")," method was used and no additional sources of variance regressed out."))
+```
+
+### Variable genes
+The top 3,000 variable genes are selected 
+```{asis, ref.label="variable_genes"}
+```
+
+### Combine datasets
+```{asis, ref.label="sample_combination"}
+```
+
+```{asis, ref.label="integration_methods"}
+```
+
+```{r combine_datasets}
+if (length(sc) == 1) {
+  # Default assay is set automatically
+  sc = sc[[1]]
+  message("Your dataset contains 1 sample only. No merging/integrating required.")
+} else {
+  source(file.path(param$path_to_git,'modules/pre-processing/combine_samples.R'))
+}
+
+
+# Only relevant if data loaded from rds, otherwise they would be scaled and dimensional reduced before
+if (!("scale.data" %in% sc[["RNA"]][])) {
+  # Scale (default)
+  all_genes = rownames(sc)
+  sc = suppressMessages(ScaleData(sc, features = all_genes))
+} 
+# Run pca with the variable genes
+if (!("pca" %in% list_names(sc@reductions[]))) {
+  # Run PCA for default normalization
+  sc = suppressMessages(Seurat::RunPCA(sc, features=Seurat::VariableFeatures(object=sc), verbose=FALSE, npcs=min(50, ncol(sc))))
+}
+
+```
+
+### Scaling
+```{asis, ref.label="regress_out"}
+```
+
+```{asis, ref.label="cc-removal"}
+```
+Cell cycle effects removed for this report: `r param$cc_remove`; _all_ cell cycle effects removed for this report: `r param$cc_remove_all`.
+
+
+<br> 
+<br>  
+
+## Dimensional reduction
+```{asis, ref.label="dimensional_reduction"}
+```
+
+<br>  
+
+### Principal component analysis
+Running a PCA on our object, we see how the variance can be explained.  
+
+```{r pca_loadings, fig.height=14}
+p_list = Seurat::VizDimLoadings(sc, dims=1:12, reduction="pca", col=param$col, combine=FALSE, balanced=TRUE)
+for (i in seq(p_list)) p_list[[i]] = p_list[[i]] + AddStyle(xlab = paste0("PC ",i))
+p =  patchwork::wrap_plots(p_list, ncol=4) + patchwork::plot_annotation("Top gene loadings of the first two PCs") 
+p
+```
+
+<br>  
+
+### Dimensionality of the dataset
+```{asis, ref.label="determinig_dimensionality"}
+```
+
+```{r dimensionality, fig.height=fig_standard_height}
+# More approximate technique used to reduce computation time
+p = Seurat::ElbowPlot(sc, ndims=min(20, ncol(sc))) + 
+  geom_vline(xintercept=param$pc_n + .5, col="firebrick", lty=2) + 
+  AddStyle(title="Elbow plot") 
+p
+
+# Cannot have more PCs than number of cells
+param$pc_n = min(param$pc_n, ncol(sc))
+```
+
+
+
+
+
+
+
+The following plots offer a low dimension representation of your data combined via ...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<br>
+<br>
+<br>
+
+
+
+
+```{r, child='../../scripts/appendix.Rmd'}
+```
+
