@@ -134,7 +134,7 @@ p
 ## Interactions by source and target cells
 The dotplot displays the specific ligand-receptor interactions between sender (`r param$sender`) to receiver (`r param$receiver`) cells. "Specificity" refers to how specific this interaction is to a cell type pair relative to the rest of the cell type pairs, while "Magnitude" is a direct measure of the expression alone. 30 interactions with the highest "Magnitude" and "Specificity" are shown. 
 
-```{r liana_res_selected, fig.height=10, warning=FALSE, message=FALSE}
+```{r liana_res_selected, fig.height=10, fig.width=20, warning=FALSE, message=FALSE}
 
 p = liana_dotplot(liana_rank_agg, source_groups = param$sender, target_groups = param$receiver, ntop = 30, specificity = 'specificity_rank', magnitude = 'magnitude_rank', invert_specificity = TRUE, invert_magnitude = TRUE) +
   theme(text = element_text(size = 10)) +
