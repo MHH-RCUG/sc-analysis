@@ -254,3 +254,41 @@ Anchor-based integration can be applied to either log-normalized or SCTransform-
   For RPCA, instead of identifying shared sources of variation using variant genes, each dataset is projected into the other’s PCA space. Afterwards, similarly to CCa, mutual neighbors and anchors are identified.  
   RPCA-based integration is significantly faster and more conservative, i.e. cells in different biological states are less likely to align. Hence, RPCA is suitable for integration of multiple datasets, of datasets with little overlay of cell types, or datasets originate from the same platform. The strength of alignment can be elevated by increasing the k.anchor parameter (default 5).  
 </details>  
+
+
+## ---- cell_clustering --------
+The clustering method used by Seurat first constructs a graph structure, where nodes are cells and edges are drawn between cells with similar gene expression patterns. Technically speaking, Seurat first constructs a K-nearest neighbor (KNN) graph based on Euclidean distance in PCA space, and refines edge weights between cells based on the shared overlap in their local neighborhoods (Jaccard similarity). To partition the graph into highly interconnected parts, cells are iteratively grouped together using the Leiden algorithm `r Cite("10.1038/s41598-019-41695-z")`. 
+
+<details>
+  <summary>Further explanation on clustering</summary>
+  
+  At this point, we would like to define subpopulations of cells with similar gene expression profiles using unsupervised clustering. Clusters ultimately serve as approximations for biological objects like cell types or cell states.
+    
+  During the first step of clustering, a K-nearest neighbor (KNN) graph is constructed. In simplified terms this means that cells are connected to their K nearest neighbors based on cell-to-cell expression similarity using the PCs chosen in the previous step. The higher the similarity is, the higher the edge weight becomes. During the second step, the graph is partitioned into highly interconnected communities, whereby each community represents a cluster of cells with similar expression profiles. The separation of the graph into clusters is dependent on the chosen resolution. For scRNA-seq datasets of around 3000 cells, it is recommended to use a resolution value between 0.4 and 1.2. This value can be set even higher for larger datasets. Note that the choice of PCs and cluster resolution is an arbitrary one. Therefore, it is highly recommended to evaluate clusters and re-run the workflow with adapted parameters if needed. 
+</details>
+
+
+## ---- clustering_tree --------
+Clustering is used to group similar samples. One problem when conducting cluster analysis is deciding for a number of clusters, usually controlled by a parameter such as a numerical value for the resolution or a k integer for k-means clustering. A clustering tree visualises the relationships between cluster at a range of resolutions and can aid in the desicion.   
+  
+<details>
+  <summary>What is a clustering tree?</summary>   
+  
+  A clustering tree shows how cells move as the clustering resolution is increased. Each level of the tree represents a different resolution. Each cluster forms a node in the tree. The edges are a representation of the number of cells from a lower resolution that contribute to a sepcific cluster at the next higher resolution. Thus, the clustering tree indicates how clusters are related to each other, which clusters are distinct and do not change with the increasing resolution, and which are unstable. E.g. we can see how one cluster is subdevided into others. Hence, the clustering tree can help to identify which clusters might be candidates for merging. On the other hand, nodes with multiple incoming edges would indicate that we might have over-clustered the data. 
+  
+</details>
+  
+
+## ---- umap --------
+We use a UMAP to visualise and explore the dataset. The goal is to place similar cells together in 2D space, and learn about the biology underlying the data. Cells are color-coded according to the graph-based clustering, and clusters typcially co-localise on the UMAP.
+
+Take care not to mis-read a UMAP:
+
+* Parameters influence the plot (we use defaults here)
+* Cluster sizes relative to each other mean nothing, since the method has a local notion of distance
+* Distances between clusters might not mean anything
+* You may need more than one plot
+
+For a nice read to intuitively understand UMAP, see `r Cite("https://pair-code.github.io/understanding-umap/")`.
+
+

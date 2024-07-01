@@ -42,6 +42,8 @@ library(ggplot2) # plots
 library(patchwork) # combination of plots
 library(magrittr) # %>% operator
 library(knitr)
+library(clustree)
+library(ggraph)
 
 ```
 
@@ -52,7 +54,7 @@ library(knitr)
 Gene annotation including Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names, are loaded from a pre-prepared reference file or Ensembl. 
 
 ```{r read_gene_annotation, file='../read_data/read_gene_annotation.R'}
-#source(file.path(param$path_to_git,'modules/read_data/read_gene_annotation.R'))
+source(file.path(param$path_to_git,'modules/read_data/read_gene_annotation.R'))
 message("Read gene annotation")
 ```
 
@@ -139,15 +141,15 @@ sc
 ```
 
 ```{r calculate_qc_metadata, file='./calculate_qc_metadata.R', warning=FALSE}
-#source(file.path(param$path_to_git,'modules/pre-processing/calculate_qc_metadata.R'))
+source(file.path(param$path_to_git,'modules/pre-processing/calculate_qc_metadata.R'))
 message("Calculate and add QC metadata")
 ```
 
 <br>
 
 
-# Pre-processing
-The steps below represent a standard pre-processing workflow for single-cell RNA-seq data, including quality control, the respective filtering of cells and genes, data normalization and scaling, the detection of highly variable genes, dimensional reduction, cell clustering and annotation.  
+# scRNA-seq data pre-processing
+The steps below represent a standard processing workflow for single-cell RNA-seq data, including quality control, the respective filtering of cells and genes, data normalization and scaling, the detection of highly variable genes, and dimensional reduction.  
 ```{asis, ref.label="pre-processing"}
 ```
 
@@ -166,14 +168,14 @@ is_numeric_filter = purrr::map_lgl(cell_filter_lst, function(f) return(is.numeri
 
 # numeric cell filters
 if (length(cell_filter_lst[is_numeric_filter]) > 0) {
-  purrr::invoke(rbind, cell_filter_lst[is_numeric_filter]) %>%
+  purrr::exec("rbind", !!!cell_filter_lst[is_numeric_filter]) %>%
     knitr::kable(align="l", caption="Numeric filters applied to cells", col.names=c("Min", "Max")) %>% 
     kableExtra::kable_styling(bootstrap_options=c("striped", "hover"))
 }
 
 # categorial cell filters
 if (length(cell_filter_lst[!is_numeric_filter]) > 0) {
-purrr::invoke(rbind, cell_filter_lst[!is_numeric_filter] %>% purrr::map(paste, collapse=",")) %>%
+purrr::exec("rbind", !!!cell_filter_lst[!is_numeric_filter] %>% purrr::map(paste, collapse=",")) %>%
   knitr::kable(align="l", caption="Categorial filters applied to cells", col.names=c("Values")) %>% 
   kableExtra::kable_styling(bootstrap_options=c("striped", "hover"))
 }
@@ -181,7 +183,7 @@ purrr::invoke(rbind, cell_filter_lst[!is_numeric_filter] %>% purrr::map(paste, c
 # gene filters
 feature_filter_lst = param$feature_filter %>% unlist(recursive=FALSE)
 if (length(feature_filter_lst) > 0) {
-  purrr::invoke(rbind, feature_filter_lst) %>% 
+  purrr::exec("rbind", !!!feature_filter_lst) %>% 
     knitr::kable(align="l", caption="Filters applied to genes", col.names=c("Value")) %>%
     kableExtra::kable_styling(bootstrap_options=c("striped", "hover"))
 }
@@ -301,7 +303,6 @@ sc
 ```
 
 ### QC covariates 
-
 ```{r qc_plot_cells, fig.height=fig_patchwork4_height}
 
 # Create plot per QC metric
@@ -433,10 +434,11 @@ for (n in colnames(sc_cell_metadata[idx.factors])) {
 param$col_samples = param$col_samples[names(param$col_samples) %in% names(sc)]
 ```
 
-## TONAME
-In this section, we subsequently run a series of Seurat functions for each provided sample. We normalize, select variable genes, and combine the datasets according to the chosen methods. In the process cell cycle scores are assigned to each cell based on its normalized expression of G2/M and S phase markers and data are scaled while regressing out covariants if desired. 
+<br>
 
-### Normalisation
+In the following sections, we subsequently run a series of Seurat functions for each provided sample. We normalize, select variable genes, and combine the datasets according to the chosen methods. In the process cell cycle scores are assigned to each cell based on its normalized expression of G2/M and S phase markers and data are scaled while regressing out covariants if desired. 
+
+## Normalisation
 ```{asis, ref.label="normalization"}
 ```
 
@@ -453,11 +455,13 @@ message(paste0("Here, the ", ifelse(param$norm=="RNA","Standard log normalizatio
 ```
 
 ### Variable genes
-The top 3,000 variable genes are selected 
+The top 3,000 variable genes are selected. 
 ```{asis, ref.label="variable_genes"}
 ```
 
-### Combine datasets
+<br>
+
+## Combine datasets
 ```{asis, ref.label="sample_combination"}
 ```
 
@@ -488,23 +492,34 @@ if (!("pca" %in% list_names(sc@reductions[]))) {
 
 ```
 
-### Scaling
+<br>
+
+## Scaling
 ```{asis, ref.label="regress_out"}
 ```
 
 ```{asis, ref.label="cc-removal"}
 ```
-Cell cycle effects removed for this report: `r param$cc_remove`; _all_ cell cycle effects removed for this report: `r param$cc_remove_all`.
 
+```{r scaling_message}
+message(
+  paste0("Here, ", 
+               ifelse(is.null(param$vars_to_regress),"no additional sources of variance regressed out.", 
+                      paste0(param$vars_to_regress, " as sources of variance was/were regressed out. ")), 
+               ifelse(param$cc_remove==FALSE,"No cell cycle effects removed for this report.",  
+                      paste0(
+                        ifelse(param$cc_remove_all==TRUE,"All cell cycle effects removed for this report.",  
+                               "Difference in cell cycle state removed for this report.")
+                      ))
+         )
+)
+```
 
 <br> 
-<br>  
 
 ## Dimensional reduction
 ```{asis, ref.label="dimensional_reduction"}
 ```
-
-<br>  
 
 ### Principal component analysis
 Running a PCA on our object, we see how the variance can be explained.  
@@ -524,7 +539,7 @@ p
 
 ```{r dimensionality, fig.height=fig_standard_height}
 # More approximate technique used to reduce computation time
-p = Seurat::ElbowPlot(sc, ndims=min(20, ncol(sc))) + 
+p = Seurat::ElbowPlot(sc, ndims=min(30, ncol(sc))) + 
   geom_vline(xintercept=param$pc_n + .5, col="firebrick", lty=2) + 
   AddStyle(title="Elbow plot") 
 p
@@ -533,25 +548,190 @@ p
 param$pc_n = min(param$pc_n, ncol(sc))
 ```
 
+```{r dimension_message}
+message(paste0("For the current dataset ", param$pc_n," PCs were chosen."))
+```
+  
+<br>  
+
+## Batch effects
+We visualize the sample distribution in low dimensional space to confirm that the chosen method for combining the samples was appropriate (see section [Combine datasets]). The following plots offer a low dimension representation of your data combined via `r ifelse(param$integrate_samples[["method"]]=="merge","dataset merging",paste0("dataset integration using ", param$integrate_samples[["integration_function"]]))`.  
+
+```{r run_umap}
+# Default UMAP
+sc = suppressWarnings(Seurat::RunUMAP(sc, dims=1:param$pc_n, verbose=FALSE, umap.method="uwot", n.neighbors=param$umap_k))
+```
+
+```{r dim_reductions, fig.height=fig_patchwork6_height}
+### Score plots
+# PCA score plots colored by sample
+p1 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples, pt.size = 1, dims = c(1,2)) + 
+  AddStyle(legend_position="none", title = "", xlab = "PC 1", ylab = "PC 2")
+p2 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples,  pt.size = 1, dims = c(3,4)) + 
+  AddStyle(legend_position="none", title = "", xlab = "PC 3", ylab = "PC 4")
+# Umap plot
+p3 = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident", cols = param$col_samples) +
+  AddStyle(title="UMAP, cells coloured by sample of origin", legend_position="bottom", xlab = "UMAP 1", ylab = "UMAP 2")
+
+p = p3 + (p1 / p2) +
+  plot_layout(widths = c(3, 1))
+p
+```
+
+
+# Clustering
+```{asis, ref.label="cell_clustering"}
+```
+
+To get a first idea about how different cluster resolution values influence the clustering, we run and visualize the clustering multiple times. 
+
+```{r clustering, warning=FALSE, message=FALSE}
+tree_resolutions = seq(from = 0, to = 1.2, by = 0.2)
+cluster_resolutions = sort(unique(c(param$cluster_resolution, param$cluster_resolution_test, tree_resolutions)))
+
+
+# Construct phylogenetic tree relating the "average" cell from each sample
+if (length(levels(sc$orig.ident)) > 1) {
+  sc = BuildClusterTree(sc, features=rownames(sc), verbose=FALSE)
+  Seurat::Misc(sc, "trees") = list(orig.ident = Seurat::Tool(sc, "BuildClusterTree"))
+}
+
+# The number of clusters can be optimized by tuning "resolution" -> based on feedback from the client whether or not clusters make sense
+# Choose the number of PCs to use for clustering
+sc = Seurat::FindNeighbors(sc, dims=1:param$pc_n, verbose=FALSE, k.param=param$cluster_k)
+
+# Seurat vignette suggests resolution parameter between 0.4-1.2 for datasets of about 3k cells
+# But we can run multiple resolutions if requested
+sc = Seurat::FindClusters(sc, algorithm=4, method="igraph", resolution=cluster_resolutions, verbose=FALSE)
+
+# Construct phylogenetic tree relating the "average" cell from each cluster for each clustering
+# Also add colour lists for each clustering
+for(r in cluster_resolutions) {
+  n = paste0(DefaultAssay(sc), "_snn_res.", r)
+  
+  # Tree
+  if (length(levels(sc[[n, drop=TRUE]])) > 1) {
+    Seurat::Idents(sc) = n
+    sc = suppressWarnings(BuildClusterTree(sc, dims=1:param$pc_n, verbose=FALSE))
+    l = list(Seurat::Tool(sc, "BuildClusterTree"))
+    names(l) = n
+    suppressWarnings({Seurat::Misc(sc, "trees") = c(Seurat::Misc(sc, "trees"), l)})
+  }
+  
+  col = GenerateColours(num_colours=length(levels(sc[[n, drop=TRUE]])), names=levels(sc[[n, drop=TRUE]]), 
+                                     palette=param$col_palette_clusters, alphas=1)
+  # Colours
+  l = list(col)
+  names(l) = n
+  sc = ScAddLists(sc, lists=l, lists_slot="colour_lists")
+}
+
+```
 
 
 
 
+## Clustering tree
+```{asis, ref.label="clustering_tree"}
+```
+Here, we use the clustertree package `r Cite("10.1093/gigascience/giy083")`. While the nodes in the first graph are colored by the cluster resolution, the second plot is colored by SC3 stability index, a measures of cluster stability across resolutions.   
+```{r plot_clustering_tree, fig.height=fig_large_height, message=FALSE}
+
+p1 = clustree::clustree(sc, prefix = "RNA_snn_res.", layout = "sugiyama") +
+    scale_color_brewer(palette = "BrBG") +
+    scale_edge_color_continuous(low = "black", high = "gold")
+
+p2 = clustree::clustree(sc, prefix = "RNA_snn_res.", node_colour = "sc3_stability", layout = "sugiyama") 
+
+p = p1 + p2
+p
+
+```
+Overlay of clustering tree onto umap projection.
+```{r clustering_tree_overlay, fig.height=fig_large_height, message=FALSE}
+# Generate table with umap projection and resolutions
+tbl_projection = as.data.frame(sc[["umap"]]@cell.embeddings[,1:2])
+tbl_resolutions = as.data.frame(sc@meta.data %>% dplyr::select(contains("res.")))
+tbl = cbind(tbl_projection, tbl_resolutions)
+
+# Plot overlay of cluster tree with umap
+overlay_list = clustree::clustree_overlay(tbl, prefix = "RNA_snn_res.", x_value = "umap_1", y_value = "umap_2", plot_sides = TRUE, use_colour = "points", alt_colour = "black")
+
+tree_color = sc@misc$colour_lists$RNA_snn_res.1.2
+
+p1 = overlay_list$overlay +
+  scale_color_manual(values = tree_color) +
+  scale_fill_brewer(palette = "BrBG", direction = -1) + 
+  AddStyle(legend_position="right", xlab = "UMAP 1", ylab = "UMAP 2") + 
+  patchwork::plot_annotation(title="Top view")
+p1
+
+p2 = overlay_list$x_side +
+  scale_color_manual(values = tree_color) +
+  scale_fill_brewer(palette = "BrBG", direction = -1) + 
+  AddStyle(legend_position="none", xlab = "UMAP 1")
+p3 = overlay_list$y_side +
+  scale_color_manual(values = tree_color) +
+  scale_fill_brewer(palette = "BrBG", direction = -1) + 
+  AddStyle(legend_position="none", xlab = "UMAP 2")
+p = p2 + p3 + 
+  patchwork::plot_annotation(title="Side views")
+p
+
+```
+
+<br>
+
+## Visualisation with UMAP
+```{asis, ref.label="umap"}
+```
+
+Here we plot the UMAP projection colored by clusters obtained using different resolutions. 
+```{r set_fig_height_test_clusters}
+# Define height of test clusters
+height_per_row = 3
+nr_cols = 3
+nr_rows = ceiling(length(cluster_resolutions)/nr_cols)
+fig_height_test_clusters = nr_rows * height_per_row
+```
+
+```{r run_umap_test, fig.height=fig_height_test_clusters}
+tree_resolutions = tree_resolutions[3:7]
+cluster_resolutions = sort(unique(c(param$cluster_resolution, param$cluster_resolution_test, tree_resolutions)))
+
+p_list = list()
+
+for(r in cluster_resolutions) {
+  r = as.character(r)
+  n = paste0(DefaultAssay(sc), "_snn_res.", r)
+  
+  cluster_cells = table(sc[[n, drop=TRUE]])
+  cluster_labels = paste0(names(cluster_cells)," (", cluster_cells,")")
+  
+  p_list[[r]] = Seurat::DimPlot(sc, reduction="umap", group.by=n, pt.size=param$pt_size, label=TRUE ) + 
+    scale_color_manual(values=Seurat::Misc(sc, "colour_lists")[[n]], labels=cluster_labels) +
+    AddStyle(title=r, legend_position="none", xlab = "UMAP 1", ylab = "UMAP 2") +
+    FontSize(x.text = 10, y.text = 10, x.title = 13, y.title = 13, main = 15)
+}
+  
+p = patchwork::wrap_plots(p_list, ncol=nr_cols) + patchwork::plot_annotation(title="UMAP, cells coloured by cluster identity for different resolution values")
+p
+```
+
+<br>
 
 
-The following plots offer a low dimension representation of your data combined via ...
 
 
+<br>
+<br>
 
-
-
-
-
-
-
-
-
-
+# Clustering
+```{r save_data}
+#{r save_data, file='..//save_data.R', eval=FALSE}
+#source(file.path(param$path_to_git,'modules//save_data.R'))
+message("Data were saved and exported")
+```
 
 
 <br>

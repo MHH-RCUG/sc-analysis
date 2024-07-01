@@ -34,7 +34,7 @@ param$downsample_cells_equally = FALSE
 
 ### Filter
 # Filter for cells
-param$cell_filter = list(nFeature_RNA=c(NA, NA), nCount_RNA=c(NA, NA), percent_mt=c(NA, NA))
+param$cell_filter = list(nFeature_RNA=c(20, NA), nCount_RNA=c(200, NA), percent_mt=c(0, 50))
 # Filter for features
 param$feature_filter = list(min_counts=1, min_cells=5)
 # Samples to drop
@@ -83,7 +83,7 @@ param$integrate_samples = list(method="merge")
 
 
 ### Dimensional reduction
-param$pc_n = 30
+param$pc_n = 20
 # k nearest neighbors to find clusters
 # k nearest neighbors to construct the UMAP
 # Scanpy uses 15 for both by default
@@ -92,9 +92,9 @@ param$cluster_k = 20
 param$umap_k = 30
 
 # Cluster resolutions to compute; multiple values possible (comma separated); Empty vector if not needed
-param$cluster_resolution_test = c(0.3, 0.7)
+param$cluster_resolution_test = c(0.5, 0.7, 0.8)
 # Cluster resolution to use for analysis
-param$cluster_resolution = 0.5
+param$cluster_resolution = 0.6
 
 
 ### Set reference

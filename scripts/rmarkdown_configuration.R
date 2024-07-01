@@ -43,6 +43,8 @@ rcug_ref = knitcitations::read.bibtex(file.path(param$path_to_git,"assets","rcug
 invisible(knitcitations::citep(rcug_ref))
 
 ### Figure heights
+# high figures
+fig_large_height = 8
 # Single figure, landscape
 fig_standard_height = 4
 # Two plots alongside (e.g. umaps)
