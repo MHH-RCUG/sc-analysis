@@ -16,12 +16,12 @@ css: "`r file.path(param$path_to_git, 'css/style.css')`"
 ---
 
 ```{r r_options, file='../../scripts/configuration.R'}
-source(file.path(param$path_to_git,'scripts/configuration.R'))
+#source(file.path(param$path_to_git,'scripts/configuration.R'))
 message("Set R options")
 ```
 
 ```{r rmarkdown, file='../../scripts/rmarkdown_configuration.R'}
-source(file.path(param$path_to_git,'scripts/rmarkdown_configuration.R'))
+#source(file.path(param$path_to_git,'scripts/rmarkdown_configuration.R'))
 message("Set Rmarkdown options")
 ```
 
@@ -51,7 +51,7 @@ library(knitr)
 Gene annotation including Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names, are loaded from a pre-prepared reference file or Ensembl. 
 
 ```{r read_gene_annotation, file='../read_data/read_gene_annotation.R'}
-source(file.path(param$path_to_git,'modules/read_data/read_gene_annotation.R'))
+#source(file.path(param$path_to_git,'modules/read_data/read_gene_annotation.R'))
 message("Read gene annotation")
 ```
 
@@ -62,7 +62,7 @@ message("Read gene annotation")
 Here, for the project `r param$project_id`, the following data are analysed:  
 
 ```{r read_rds, eval=!is.null(param$data), file='../read_data/read_rds.R', warning=FALSE}
-source(file.path(param$path_to_git,'modules/read_data/read_rds.R'))
+#source(file.path(param$path_to_git,'modules/read_data/read_rds.R'))
 message("Load Seurat object from rds file")
 ```
 
@@ -138,7 +138,7 @@ sc
 ```
 
 ```{r calculate_qc_metadata, file='./calculate_qc_metadata.R', warning=FALSE}
-source(file.path(param$path_to_git,'modules/pre-processing/calculate_qc_metadata.R'))
+#source(file.path(param$path_to_git,'modules/pre-processing/calculate_qc_metadata.R'))
 message("Calculate and add QC metadata")
 ```
 
@@ -384,7 +384,7 @@ p
 ```
 
 If multiple data sets are processed, we merge the datasets now.  
-```{r merge}
+```{r combine_datasets}
 if (length(sc) == 1) {
   # Default assay is set automatically
   sc = sc[[1]]
