@@ -58,7 +58,9 @@ sc_cell_metadata_factor_levels = purrr::map(which(sapply(sc_cell_metadata, is.fa
 # and https://github.com/satijalab/seurat/issues/6185
 # This integrates the variable features from a list of objects (separately SCTransform)
 # and ranks features by the number of data sets they are deemed variable in.
-SCTVariableFeatures = SelectIntegrationFeatures(sc, nfeatures = 3000)
+if (param$norm == "SCT") {
+  SCTVariableFeatures = SelectIntegrationFeatures(sc, nfeatures = 3000)
+}
 
 
 
