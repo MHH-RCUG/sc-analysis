@@ -16,7 +16,8 @@ env/*/*.Rproj
 !env/*/renv/activate.R
 
 data/
-output/
+output/*
+!output/Testdata/*
 references/
 
 
