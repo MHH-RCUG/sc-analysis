@@ -419,7 +419,7 @@ ExportSeuratAssayData = function(sc, dir="data", assays=NULL, slot="counts", ass
                                                   first_n_elements_to_string(missed)))
   
   assays = assays[order(match(assays, names(assay_name_to_feature_type)))]
-  feature_data = do.call(rbind, lapply(assays, function(a) { Seurat::GetAssayData(sc, assay=a, slot=slot) }))
+  feature_data = do.call(rbind, lapply(assays, function(a) { Seurat::GetAssayData(sc, assay=a, layer=slot) }))
   mh = file.path(d, "matrix.mtx")
   Matrix::writeMM(feature_data, file=mh)
   R.utils::gzip(mh, overwrite=TRUE)

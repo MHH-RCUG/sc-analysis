@@ -16,12 +16,12 @@ css: "`r file.path(param$path_to_git, 'css/style.css')`"
 ---
 
 ```{r r_options, file='../../scripts/configuration.R'}
-source(file.path(param$path_to_git,'scripts/configuration.R'))
+#source(file.path(param$path_to_git,'scripts/configuration.R'))
 message("Set R options")
 ```
 
 ```{r rmarkdown, file='../../scripts/rmarkdown_configuration.R'}
-source(file.path(param$path_to_git,'scripts/rmarkdown_configuration.R'))
+#source(file.path(param$path_to_git,'scripts/rmarkdown_configuration.R'))
 message("Set Rmarkdown options")
 ```
 
@@ -54,7 +54,7 @@ library(ggraph)
 Gene annotation including Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names, are loaded from a pre-prepared reference file or Ensembl. 
 
 ```{r read_gene_annotation, file='../read_data/read_gene_annotation.R'}
-source(file.path(param$path_to_git,'modules/read_data/read_gene_annotation.R'))
+#source(file.path(param$path_to_git,'modules/read_data/read_gene_annotation.R'))
 message("Read gene annotation")
 ```
 
@@ -141,14 +141,14 @@ sc
 ```
 
 ```{r calculate_qc_metadata, file='./calculate_qc_metadata.R', warning=FALSE}
-source(file.path(param$path_to_git,'modules/pre-processing/calculate_qc_metadata.R'))
+#source(file.path(param$path_to_git,'modules/pre-processing/calculate_qc_metadata.R'))
 message("Calculate and add QC metadata")
 ```
 
 <br>
 
 
-# scRNA-seq data pre-processing
+# Pre-processing
 The steps below represent a standard processing workflow for single-cell RNA-seq data, including quality control, the respective filtering of cells and genes, data normalization and scaling, the detection of highly variable genes, and dimensional reduction.  
 ```{asis, ref.label="pre-processing"}
 ```
@@ -720,27 +720,13 @@ p
 
 <br>
 
-
-
-
-<br>
-<br>
-
-# Clustering
-```{r save_data}
-#{r save_data, file='..//save_data.R', eval=FALSE}
-#source(file.path(param$path_to_git,'modules//save_data.R'))
-message("Data were saved and exported")
+```{r, child='../export_data/standard_export.Rmd'}
 ```
 
-
 <br>
 <br>
 <br>
 
-
-
-
-```{r, child='../../scripts/appendix.Rmd'}
+```{r, child='../export_data/appendix.Rmd'}
 ```
 

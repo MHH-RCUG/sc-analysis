@@ -14,22 +14,26 @@ renv::install("R.utils") # version 2.12.3
 
 # pre-processing
 renv::install("bioc::glmGamPoi") # version 1.10.2
-
-# dataset mapping
-renv::install("kableExtra") # version 1.4.0
-remotes::install_version("matrixStats", version="1.1.0")
-renv::install("bioc::SingleR") # version 2.0.0
+renv::install("ape") # version 5.8
+renv::install("clustertree") # version 0.5.1
+renv::install("cellgeni/sceasy") # version 0.0.7
 renv::install("ggsci") # version 3.0.1
-renv::install("bioc::SingleCellExperiment") # version 1.20.1
-renv::install("bioc::scran") # version 1.26.2
-renv::install("viridis") # version 0.6.5
-renv::install("pheatmap") # version 1.0.12
+renv::install("scCustomize") # version 2.1.2
 
 # rmarkdown
+renv::install("kableExtra") # version 1.4.0
 renv::install("sessioninfo") # version 1.2.2
 renv::install("markdown") # version 1.12
 remotes::install_version("xfun", version="0.41")
 renv::install("knitcitations") # version 1.0.12
+
+# dataset mapping
+remotes::install_version("matrixStats", version="1.1.0")
+renv::install("bioc::SingleR") # version 2.0.0
+renv::install("bioc::SingleCellExperiment") # version 1.20.1
+renv::install("bioc::scran") # version 1.26.2
+renv::install("viridis") # version 0.6.5
+renv::install("pheatmap") # version 1.0.12
 
 # Further packages:
 # reticulate 1.35.0
