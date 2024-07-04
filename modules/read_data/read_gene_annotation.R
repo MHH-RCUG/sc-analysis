@@ -7,10 +7,12 @@
 if (param$species=="human") {
   param$mart_dataset="hsapiens_gene_ensembl"
   param$mt = "^MT-"
+  param$enrichr_dbs = c("GO_Biological_Process_2018", "WikiPathways_2019_Human", "KEGG_2021_Human", "Azimuth_Cell_Types_2021")
 } else {
   if (param$species=="mouse") {
     param$mart_dataset="mmusculus_gene_ensembl"
     param$mt = "^mt-"
+    param$enrichr_dbs = c("GO_Biological_Process_2018", "WikiPathways_2019_Mouse", "KEGG_2019_Mouse", "Azimuth_Cell_Types_2021")
   } else {
     param$mart_dataset=param$mart_dataset
   }

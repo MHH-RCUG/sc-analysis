@@ -1,73 +1,59 @@
-### Standard parameter 
+### Advanced settings
 ################################################################################
 
-### Set rmarkdown parameter
-param$author = Sys.info()[["user"]]
-
-
-
 ### Dataset settings
-# Use test dataset
-param$download_test_datasets = NULL
-
-# Path to count matrices; data frame with name, type, and path
-param$path_data = NULL
-
-# Path to existing RDS file 
-param$data = NULL
-# Path to existing reference dataset for dataset mapping
-param$refdata = NULL
-
 # Set assay
 # Data type ("RNA", "Spatial")
-param$assay_raw = "RNA"
+param_advset$assay_raw = NULL
 
 # Downsample data to at most n cells per sample AFTER filtering (mainly for tests)
 # NULL to deactivate
-param$downsample_cells_n = NULL
+param_advset$downsample_cells_n = NULL
 
 # Downsample all samples equally according to the smallest sample
 # TRUE/FALSE
 # Overwritten by downsample_cells_n
-param$downsample_cells_equally = FALSE
+param_advset$downsample_cells_equally = NULL
 
 
 
 ### Filter
 # Filter for cells
-param$cell_filter = list(nFeature_RNA=c(20, NA), nCount_RNA=c(200, NA), percent_mt=c(0, 50))
+#param_advset$cell_filter = list(nFeature_RNA=c(20, NA), nCount_RNA=c(200, NA), percent_mt=c(0, 50))
+param_advset$cell_filter = NULL
 # Filter for features
-param$feature_filter = list(min_counts=1, min_cells=5)
+#param_advset$feature_filter = list(min_counts=1, min_cells=5)
+param_advset$feature_filter = NULL
 # Samples to drop
 # Cells from these samples will be dropped after initial QC
 # Example: samples_to_drop = c("<name of dataset>_<names of subsample>")
-param$samples_to_drop = c()
+param_advset$samples_to_drop = NULL
 # Drop samples with too few cells
-param$samples_min_cells = 10
+param_advset$samples_min_cells = NULL
 
 
 
 ### Normalization
 # Which normalization should be used for analysis? ("RNA", "SCT")
-param$norm="RNA"
+param_advset$norm=NULL
 
 # Whether or not to remove cell cycle effects
-param$cc_remove = FALSE
+param_advset$cc_remove = NULL
 # Should all cell cycle effects be removed, or only the difference between proliferating cells (G2M and S phase)?
 # Read https://satijalab.org/seurat/v3.1/cell_cycle_vignette.html, for an explanation
-param$cc_remove_all = FALSE
+param_advset$cc_remove_all = NULL
 # Whether or not to re-score cell cycle effects after data from different samples have been merged/integrated
-param$cc_rescore_after_merge = TRUE
+param_advset$cc_rescore_after_merge = NULL
 
 # Additional (unwanted) variables that will be regressed out for visualisation and clustering ("nCount_RNA", "percent_mt")
-param$vars_to_regress = c()
+param_advset$vars_to_regress = NULL
 
 # How to combine multiple datasets (method = "merge" or "integrate")
 # "merge": Concatenate data e.g. when samples were multiplexed on the same chip.
 # "integrate": Anchors are computed for all pairs of datasets. This will give all datasets the same weight during dataset integration but can be computationally intensive
-param$integrate_samples = list(method="merge")
+param_advset$integrate_samples = NULL
 
-if (param$integrate_samples[["method"]]=="integrate") {
+if (param_advset$integrate_samples[["method"]]=="integrate") {
   # Additional options for the "integrate" method:
   #   - integration_function: "CCAIntegration" or "RPCAIntegration"
   #   - dimensions: Number of dimensions to consider for integration
@@ -77,52 +63,57 @@ if (param$integrate_samples[["method"]]=="integrate") {
   #   - k_weight: Number of neighbors to consider when weighting anchors (default: min(100, minimum number of cells in a sample))
   #   - k_anchor: How many neighbors to use when picking anchors (default: min(5, minimum number of cells in a sample))
   #   - k_score: How many neighbors to use when scoring anchors (default: min(30, minimum number of cells in a sample))
-  param$integrate_samples = list(dimensions=30, k_anchor=20, reference=NULL, integration_function="CCAIntegration")
+  param_advset$integrate_samples = list(dimensions=30, k_anchor=20, reference=NULL, integration_function="CCAIntegration")
   # Similarity between samples ("homogene" or "heterogene")
-  param$experimental_groups = "homogene"
+  param_advset$experimental_groups = "homogene"
 }
 
 
 
 ### Dimensional reduction
-param$pc_n = 20
+param_advset$pc_n = NULL
 # k nearest neighbors to find clusters
 # k nearest neighbors to construct the UMAP
 # Scanpy uses 15 for both by default
 # Seurat uses 20 for cluster_k, and 30 for umap_k by default
-param$cluster_k = 20
-param$umap_k = 30
+param_advset$cluster_k = NULL
+param_advset$umap_k = NULL
 
 # Cluster resolutions to compute; multiple values possible (comma separated); Empty vector if not needed
-param$cluster_resolution_test = c(0.5, 0.7, 0.8)
+param_advset$cluster_resolution_test = NULL
 # Cluster resolution to use for analysis
-param$cluster_resolution = 0.6
+param_advset$cluster_resolution = NULL
 
 
 
 ### Set reference
-param$file_annot = NULL
-param$file_cc_genes = NULL 
+param_advset$file_annot = NULL
+param_advset$file_cc_genes = NULL 
 # Default is Ensembl release 98 which corresponds to 2020-A reference package of 10x Genomics Cell Ranger
-param$annot_version=98
-param$annot_main=c(ensembl="ensembl_gene_id", symbol="external_gene_name", entrez="entrezgene_accession")
-param$mart_attributes=c(c(ensembl="ensembl_gene_id", symbol="external_gene_name", entrez="entrezgene_accession"), 
-                        c("chromosome_name", "start_position", "end_position", "percentage_gene_gc_content", "gene_biotype", "strand", "description"))
-param$biomart_mirror=NULL
+# Ensembl release 110 which corresponds to 2024-A reference package of 10x Genomics Cell Ranger
+# ATTENTION: Translation cc genes between human and mouse does not work; Error in getLDS() since version 105 (https://github.com/grimbough/biomaRt/issues/66)
+# Means versions > 105 do not work for mouse
+param_advset$annot_version=NULL
+#param$annot_main=c(ensembl="ensembl_gene_id", symbol="external_gene_name", entrez="entrezgene_accession")
+param_advset$annot_main=NULL
+#param_advset$mart_attributes=c(c(ensembl="ensembl_gene_id", symbol="external_gene_name", entrez="entrezgene_accession"), 
+#                        c("chromosome_name", "start_position", "end_position", "percentage_gene_gc_content", "gene_biotype", "strand", "description"))
+param_advset$mart_attributes=NULL
+param_advset$biomart_mirror=NULL
 
 # List of marker genes
-param$file_known_markers = NULL
+param_advset$file_known_markers = NULL
 
 
 
 ### Marker genes and differential expression testing
 # Thresholds to define marker genes
-param$marker_padj = 0.05
-param$marker_log2FC = log2(2)
-param$marker_pct = 0.25
+param_advset$marker_padj = NULL
+param_advset$marker_log2FC = NULL
+param_advset$marker_pct = NULL
 
 # Additional (unwanted) variables to account for in statistical tests
-param$latent_vars = NULL
+param_advset$latent_vars = NULL
 
 # Contrasts to find differentially expressed genes (R data.frame or Excel file)
 # Required columns:
@@ -147,57 +138,55 @@ param$latent_vars = NULL
 # test: Type of test; "wilcox", "bimod", "roc", "t", "negbinom", "poisson", "LR", "MAST", "DESeq2"; (default: "wilcox")
 # downsample_cells_n: Downsample each group to at most n cells to speed up tests (default: NA)
 # latent_vars: Additional variables to account for; multiple variables need to be concatenated by semicolons; will overwrite the default by param$latent_vars (default: none).
-#param$deg_contrasts = data.frame(condition_column=c("orig.ident", "orig.ident", "Phase"),
+#param_advset$deg_contrasts = data.frame(condition_column=c("orig.ident", "orig.ident", "Phase"),
 #                             condition_group1=c("pbmc_10x", "pbmc_10x", "G1"),
 #                             condition_group2=c("pbmc_smartseq2_sample1", "pbmc_smartseq2_sample1", "G2M"),
 #                             subset_column=c(NA, "seurat_clusters", "seurat_clusters"),
 #                             subset_group=c(NA, "", "1;2"),
 #                             downsample_cells_n=c(NA, 50, 30))
-param$deg_contrasts = data.frame(condition_column=c("orig.ident"),
-                             condition_group1=c("sample1"),
-                             condition_group2=c("sample2"),
-                             subset_column=c("seurat_clusters"),
-                             subset_group=c(""),
-                             downsample_cells_n=c(50))
-#param$deg_contrasts = NULL
+#param_advset$deg_contrasts = data.frame(condition_column=c("orig.ident"),
+#                                 condition_group1=c("sample1"),
+#                                 condition_group2=c("sample2"),
+#                                 subset_column=c("seurat_clusters"),
+#                                 subset_group=c(""),
+#                                 downsample_cells_n=c(50))
+param_advset$deg_contrasts = NULL
 
 # Enrichr site ("Enrichr", "FlyEnrichr", "WormEnrichr", "YeastEnrichr", "FishEnrichr")
-param$enrichr_site = "Enrichr"
+param_advset$enrichr_site = NULL
 
 # P-value threshold for functional enrichment tests
-param$enrichr_padj = 0.05
+param_advset$enrichr_padj = NULL
+
+# Enrichr libraries
+param_advset$enrichr_dbs = NULL
 
 
 
-### Set standard colors
+### Set colors
 # Colour palette used for samples
-param$col_palette_samples = "ggsci::pal_lancet"
+param_advset$col_palette_samples = NULL
 # Colour palette used for cluster
-param$col_palette_clusters = "ggsci::pal_igv"
+param_advset$col_palette_clusters = NULL
 # Colour palette used for annotated cell types
-param$col_palette_annotation = "ggsci::pal_igv"
+param_advset$col_palette_annotation = NULL
 # Defined colours for samples
-param$col_samples = NULL
-param$col_samples_ref = NULL
+param_advset$col_samples = NULL
+param_advset$col_samples_ref = NULL
 # Defined colours for seurat_clusters
-param$col_clusters = NULL
-param$col_clusters_ref = NULL
+param_advset$col_clusters = NULL
+param_advset$col_clusters_ref = NULL
 # Defined colours for annotated cell types
-param$col_annotation = NULL
-param$col_annotation_ref = NULL
+param_advset$col_annotation = NULL
+param_advset$col_annotation_ref = NULL
 # Feature Plot colors - Highlights
-param$col = "#0086b3"
+param_advset$col = NULL
 # Feature Plot colors - Background
-param$col_bg = "#D3D3D3"
+param_advset$col_bg = NULL
 
 # Set dot size for umaps/tsne
-param$pt_size = 0.5
+param_advset$pt_size = NULL
 
-
-
-### Other parameters
-# Advanced parameter list
-param_advset = list()
 
 
 
