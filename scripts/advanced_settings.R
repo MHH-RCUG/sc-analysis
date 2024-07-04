@@ -53,7 +53,8 @@ param_advset$vars_to_regress = NULL
 # "integrate": Anchors are computed for all pairs of datasets. This will give all datasets the same weight during dataset integration but can be computationally intensive
 param_advset$integrate_samples = NULL
 
-if (param_advset$integrate_samples[["method"]]=="integrate") {
+if (!is.null(param_advset$integrate_samples)) {
+  if (param_advset$integrate_samples[["method"]]=="integrate") {
   # Additional options for the "integrate" method:
   #   - integration_function: "CCAIntegration" or "RPCAIntegration"
   #   - dimensions: Number of dimensions to consider for integration
@@ -66,6 +67,7 @@ if (param_advset$integrate_samples[["method"]]=="integrate") {
   param_advset$integrate_samples = list(dimensions=30, k_anchor=20, reference=NULL, integration_function="CCAIntegration")
   # Similarity between samples ("homogene" or "heterogene")
   param_advset$experimental_groups = "homogene"
+  }
 }
 
 
