@@ -17,7 +17,7 @@ env/*/*.Rproj
 
 data/
 output/*
-!output/Testdata/*
+!output/Testdata/*/*.html
 references/
 
 
