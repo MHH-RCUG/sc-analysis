@@ -12,16 +12,16 @@ output:
     highlight: "tango"
     theme: "paper"
 bibliography: "`r file.path(param$path_out, 'references.bib')`"
-css: "`r file.path(param$path_to_git, 'css/style.css')`"
+css: "`r file.path(param$path_to_git, 'assets/style.css')`"
 ---
 
-```{r r_options, file='../../scripts/configuration.R'}
-#source(file.path(param$path_to_git,'scripts/configuration.R'))
+```{r r_options, file='../../config/configuration.R'}
+#source(file.path(param$path_to_git,'config/configuration.R'))
 message("Set R options")
 ```
 
-```{r rmarkdown, file='../../scripts/rmarkdown_configuration.R'}
-#source(file.path(param$path_to_git,'scripts/rmarkdown_configuration.R'))
+```{r rmarkdown, file='../../config/rmarkdown_configuration.R'}
+#source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'))
 message("Set Rmarkdown options")
 ```
 
@@ -41,7 +41,7 @@ library(pheatmap)
 
 
 
-# Dataset description
+# Introduction
  
 Single cell transcriptomes can be difficult to annotate without extensive knowledge of the underlying biology. Hence, the biological knowledge (defined marker genes and cluster identities) can be propagated from an previously annotated dataset to the test dataset in an automated manner and aid in cluster identification.  
 
@@ -50,8 +50,8 @@ The reference and the query datasets have to be available as S4 class Seurat obj
 
 Be aware, that the output is highly impacted by the quality and contend of the reference dataset!
 
-```{r read_rds, file='../read_data/read_rds.R', warning=FALSE}
-#source(file.path(param$path_to_git,'modules/read_data/read_rds.R'))
+```{r read_rds, file='./read_data/read_rds.R', warning=FALSE}
+#source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
 
 # Expand colors for cell type annotation to to both datasets
 param$col_annotation_all = c(param$col_annotation_ref, 'NA' = "#BA6338FF")
@@ -432,12 +432,17 @@ p
 <br>
 <br>
 
-# Other output files
-```{r output_files}
-# Seurat object
-saveRDS(scR, file=file.path(param$path_out, "data", "scR.rds"))
-saveRDS(sc, file=file.path(param$path_out, "data", "sc.rds"))
+```{r, child='../export_data/standard_export.Rmd'}
 ```
 
-```{r, child='../../scripts/appendix.Rmd'}
+```{r output_ref_object}
+# Output reference seurat object
+saveRDS(scR, file=file.path(param$path_out, "data", "scR.rds"))
+```
+
+<br>
+<br>
+<br>
+
+```{r, child='../export_data/appendix.Rmd'}
 ```

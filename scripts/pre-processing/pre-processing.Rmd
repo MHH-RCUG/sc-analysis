@@ -12,21 +12,21 @@ output:
     highlight: "tango"
     theme: "paper"
 bibliography: "`r file.path(param$path_out, 'references.bib')`"
-css: "`r file.path(param$path_to_git, 'css/style.css')`"
+css: "`r file.path(param$path_to_git, 'assets/style.css')`"
 ---
 
-```{r r_options, file='../../scripts/configuration.R'}
-#source(file.path(param$path_to_git,'scripts/configuration.R'))
+```{r r_options, file='../../config/configuration.R'}
+#source(file.path(param$path_to_git,'config/configuration.R'))
 message("Set R options")
 ```
 
-```{r rmarkdown, file='../../scripts/rmarkdown_configuration.R'}
-#source(file.path(param$path_to_git,'scripts/rmarkdown_configuration.R'))
+```{r rmarkdown, file='../../config/rmarkdown_configuration.R'}
+#source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'))
 message("Set Rmarkdown options")
 ```
 
 ```{r, include=FALSE, cache=FALSE}
-knitr::read_chunk(file.path(param$path_to_git,'scripts/text.R'))
+knitr::read_chunk(file.path(param$path_to_git,'scripts/export_data/text.R'))
 ```
 
 ```{r load_packages, warning=FALSE, message=FALSE, results='hide'}
@@ -54,7 +54,7 @@ library(ggraph)
 Gene annotation including Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names, are loaded from a pre-prepared reference file or Ensembl. 
 
 ```{r read_gene_annotation, file='../read_data/read_gene_annotation.R'}
-#source(file.path(param$path_to_git,'modules/read_data/read_gene_annotation.R'))
+#source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
 message("Read gene annotation")
 ```
 
@@ -65,7 +65,7 @@ message("Read gene annotation")
 Here, for the project `r param$project_id`, the following data are analysed:  
 
 ```{r read_rds, eval=!is.null(param$data), file='../read_data/read_rds.R', warning=FALSE}
-#source(file.path(param$path_to_git,'modules/read_data/read_rds.R'))
+#source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
 message("Load Seurat object from rds file")
 ```
 
@@ -79,7 +79,7 @@ sc[[n]] = sc_original
 
 ```{r download_test_dataset, eval=!is.null(param$download_test_datasets), warning=FALSE, message=FALSE}
 # Download test dataset 
-param$path_test_dataset=paste0(param$path_to_git, "/modules/download_test_datasets/", param$download_test_datasets, ".R")
+param$path_test_dataset=paste0(param$path_to_git, "/scripts/download_test_datasets/", param$download_test_datasets, ".R")
 if (file.exists(param$path_test_dataset)) {
   message(paste0("Using test dataset '", gsub('download_','', param$download_test_datasets), "'."))
   # Data output in a data subfolder of the directory where it is run 
@@ -141,7 +141,7 @@ sc
 ```
 
 ```{r calculate_qc_metadata, file='./calculate_qc_metadata.R', warning=FALSE}
-#source(file.path(param$path_to_git,'modules/pre-processing/calculate_qc_metadata.R'))
+#source(file.path(param$path_to_git,'scripts/pre-processing/calculate_qc_metadata.R'))
 message("Calculate and add QC metadata")
 ```
 
@@ -446,7 +446,7 @@ In the following sections, we subsequently run a series of Seurat functions for 
 # Normalize data the original way
 #   This is required to score cell cycle (https://github.com/satijalab/seurat/issues/1679)
 if (!("data" %in% sc[[param$project_id]][["RNA"]][])) {
-  source(file.path(param$path_to_git,'modules/pre-processing/normalization.R'))
+  source(file.path(param$path_to_git,'scripts/pre-processing/normalization.R'))
 }
 ```
 
@@ -474,7 +474,7 @@ if (length(sc) == 1) {
   sc = sc[[1]]
   message("Your dataset contains 1 sample only. No merging/integrating required.")
 } else {
-  source(file.path(param$path_to_git,'modules/pre-processing/combine_samples.R'))
+  source(file.path(param$path_to_git,'scripts/pre-processing/combine_samples.R'))
 }
 
 

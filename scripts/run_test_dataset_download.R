@@ -8,7 +8,7 @@ setwd(param$path_to_git)
 
 # set environment
 renv::load(file.path(param$path_to_git,"env/basic"))
-source(file.path(param$path_to_git,'/scripts/configuration.R'))
+#source(file.path(param$path_to_git,'/config/configuration.R'))
 
 
 
@@ -27,7 +27,7 @@ param$download_test_datasets="download_10x_pbmc_small_split2samples"
 ################################################################################
 if (!is.null(param$download_test_datasets)) {
   # Download test dataset 
-  param$path_test_dataset=paste0(param$path_to_git, "/modules/download_test_datasets/", param$download_test_datasets, ".R")
+  param$path_test_dataset=paste0(param$path_to_git, "/scripts/download_test_datasets/", param$download_test_datasets, ".R")
   if (file.exists(param$path_test_dataset)) {
     message(paste0("Using test dataset '", gsub('download_','', param$download_test_datasets), "'."))
     # Data output in a data subfolder of the directory where it is run 

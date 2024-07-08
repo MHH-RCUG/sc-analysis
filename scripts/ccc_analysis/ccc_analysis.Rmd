@@ -1,5 +1,5 @@
 ---
-title: "Titel"
+title: "Deciphering Cell-Cell Communication"
 author: "`r param$author`"
 date: "`r format(Sys.time(), '%B, %Y')`"
 geometry: "margin=2cm"
@@ -12,16 +12,16 @@ output:
     highlight: "tango"
     theme: "paper"
 bibliography: "`r file.path(param$path_out, 'references.bib')`"
-css: "`r file.path(param$path_to_git, 'css/style.css')`"
+css: "`r file.path(param$path_to_git, 'assets/style.css')`"
 ---
 
-```{r r_options, file='../../scripts/configuration.R'}
-source(file.path(param$path_to_git,'scripts/configuration.R'))
+```{r r_options, file='../../config/configuration.R'}
+source(file.path(param$path_to_git,'config/configuration.R'))
 message("Set R options")
 ```
 
-```{r rmarkdown, file='../../scripts/rmarkdown_configuration.R'}
-source(file.path(param$path_to_git,'scripts/rmarkdown_configuration.R'))
+```{r rmarkdown, file='../../config/rmarkdown_configuration.R'}
+source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'))
 message("Set Rmarkdown options")
 ```
 
@@ -41,7 +41,7 @@ library(ggsci)
 ```
 
 
-# Deciphering Cell-Cell Communication
+# Introduction
  
 Cell-cell communication (CCC) is a process by which cells react to stimuli during many biological processes. CCC commonly focuses on ligand binding to its corresponding receptors but also includes interactions via extra-cellular matrix proteins and transporters. The stimuli commonly elicit in the receiver cells (the cells receiving the signal) a downstream response such as the induction of canonical pathways and transcription factor binding.
 
@@ -61,8 +61,8 @@ We load the dataset as S4 class Seurat objects.
 <br>
 <br>
 
-```{r read_rds, file='../read_data/read_rds.R', warning=FALSE}
-source(file.path(param$path_to_git,'modules/read_data/read_rds.R'))
+```{r read_rds, file='./read_data/read_rds.R', warning=FALSE}
+#source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
 ```
 
 <br>
@@ -165,13 +165,15 @@ p
 ```
 
 
+<br>
 
+```{r, child='../export_data/standard_export.Rmd'}
+```
 
 <br />
 <br />
 <br />
 
-
-```{r, child='../../scripts/appendix.Rmd'}
+```{r, child='../export_data/appendix.Rmd'}
 ```
 

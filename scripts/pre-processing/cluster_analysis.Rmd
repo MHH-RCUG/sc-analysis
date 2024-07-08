@@ -1,0 +1,285 @@
+---
+title: "Cluster analysis"
+author: "`r param$author`"
+date: "`r format(Sys.time(), '%B, %Y')`"
+geometry: "margin=2cm"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    code_folding: "hide"
+    highlight: "tango"
+    theme: "paper"
+bibliography: "`r file.path(param$path_out, 'references.bib')`"
+css: "`r file.path(param$path_to_git, 'assets/style.css')`"
+---
+
+```{r r_options, file='../../config/configuration.R'}
+source(file.path(param$path_to_git,'config/configuration.R'))
+message("Set R options")
+```
+
+```{r rmarkdown, file='../../config/rmarkdown_configuration.R'}
+source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'))
+message("Set Rmarkdown options")
+```
+
+```{r, include=FALSE, cache=FALSE}
+knitr::read_chunk(file.path(param$path_to_git,'scripts/export_data/text.R'))
+```
+
+```{r load_packages, warning=FALSE, message=FALSE, results='hide'}
+
+# Load renv and virtualenvs
+renv::load(file.path(param$path_to_git,"env/basic"))
+renv::use_python(type = "virtualenv", name = file.path(param$path_to_git,"env/basic/virtualenvs/r-reticulate"))
+#reticulate::use_virtualenv(file.path(param$path_to_git,"env/basic/virtualenvs/r-reticulate"))
+
+# Required libraries
+library(Seurat) # main
+library(ggplot2) # plots
+library(patchwork) # combination of plots
+library(magrittr) # %>% operator
+library(knitr)
+library(clustree)
+library(ggraph)
+
+```
+
+
+# Read data
+
+## Read gene annotation
+Gene annotation including Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names, are loaded from a pre-prepared reference file or Ensembl. 
+
+```{r read_gene_annotation, file='../read_data/read_gene_annotation.R'}
+source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
+message("Read gene annotation")
+```
+
+## Read scRNA-seq data
+```{asis, ref.label="read_data"}
+```
+
+Here, for the project `r param$project_id`, the following data are analysed:  
+
+```{r read_rds, eval=!is.null(param$data), file='../read_data/read_rds.R', warning=FALSE}
+#source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
+message("Load Seurat object from rds file")
+```
+
+```{r restructure_object, eval=!is.null(param$data), warning=FALSE}
+# Transfer object into a list
+sc_original = sc
+sc = list()
+n = param$project_id
+sc[[n]] = sc_original
+```
+
+
+
+
+
+
+
+
+
+```{r calculate_qc_metadata, file='./calculate_qc_metadata.R', warning=FALSE}
+source(file.path(param$path_to_git,'scripts/pre-processing/calculate_qc_metadata.R'))
+message("Calculate and add QC metadata")
+```
+
+<br>
+
+
+<br>  
+
+# Clustering
+```{asis, ref.label="cell_clustering"}
+```
+To get a first idea about how different cluster resolution values influence the clustering, we run and visualize the clustering multiple times. 
+ 
+
+```{r cluster_tree, warning=FALSE}
+#cluster_resolutions = sort(unique(c(param$cluster_resolution, param$cluster_resolution_test)))
+cluster_resolutions <- seq(from = 0, to = 1.2, by = 0.2)
+
+# Construct phylogenetic tree relating the "average" cell from each sample
+if (length(levels(sc$orig.ident)) > 1) {
+  sc = BuildClusterTree(sc, features=rownames(sc), verbose=FALSE)
+  Seurat::Misc(sc, "trees") = list(orig.ident = Seurat::Tool(sc, "BuildClusterTree"))
+}
+
+# The number of clusters can be optimized by tuning "resolution" -> based on feedback from the client whether or not clusters make sense
+# Choose the number of PCs to use for clustering
+sc = Seurat::FindNeighbors(sc, dims=1:param$pc_n, verbose=FALSE, k.param=param$cluster_k)
+
+# Seurat vignette suggests resolution parameter between 0.4-1.2 for datasets of about 3k cells
+# But we can run multiple resolutions if requested
+sc = Seurat::FindClusters(sc, algorithm=4, method="igraph", resolution=cluster_resolutions, verbose=FALSE)
+
+# Construct phylogenetic tree relating the "average" cell from each cluster for each clustering
+# Also add colour lists for each clustering
+for(r in cluster_resolutions) {
+  n = paste0(DefaultAssay(sc), "_snn_res.", r)
+  
+  # Tree
+  if (length(levels(sc[[n, drop=TRUE]])) > 1) {
+    Seurat::Idents(sc) = n
+    sc = suppressWarnings(BuildClusterTree(sc, dims=1:param$pc_n, verbose=FALSE))
+    l = list(Seurat::Tool(sc, "BuildClusterTree"))
+    names(l) = n
+    suppressWarnings({Seurat::Misc(sc, "trees") = c(Seurat::Misc(sc, "trees"), l)})
+  }
+  
+  col = GenerateColours(num_colours=length(levels(sc[[n, drop=TRUE]])), names=levels(sc[[n, drop=TRUE]]), 
+                                     palette=param$col_palette_clusters, alphas=1)
+  # Colours
+  l = list(col)
+  names(l) = n
+  sc = ScAddLists(sc, lists=l, lists_slot="colour_lists")
+}
+
+# Set default clustering
+n = paste0(DefaultAssay(sc), "_snn_res.", param$cluster_resolution)
+sc$seurat_clusters = sc[[n, drop=TRUE]]
+Seurat::Idents(sc) = sc$seurat_clusters
+if (length(levels(sc$seurat_clusters)) > 1) {
+  suppressWarnings({Seurat::Misc(sc, "trees") = c(Seurat::Misc(sc, "trees"), list(seurat_clusters = Seurat::Misc(sc, "trees")[[n]]))})
+}
+
+# Set up colors for default clustering
+sc = ScAddLists(sc, lists=list(seurat_clusters=Misc(sc, "colour_lists")[[n]]), lists_slot="colour_lists")
+param$col_clusters = Misc(sc, "colour_lists")[["seurat_clusters"]]
+```
+
+
+```{r run_umap, fig.height=fig_height_test_clusters}
+# Default UMAP
+sc = suppressWarnings(Seurat::RunUMAP(sc, dims=1:param$pc_n, verbose=FALSE, umap.method="uwot", n.neighbors=param$umap_k))
+```
+
+## Cluster tree
+```{r plot_cluster_tree, fig.height=fig_standard_height}
+
+p1 = clustree::clustree(sc, prefix = "RNA_snn_res.", layout = "sugiyama") +
+    scale_color_brewer(palette = "BrBG") +
+    scale_edge_color_continuous(low = "black", high = "gold")
+
+p2 = clustree::clustree(sc, prefix = "RNA_snn_res.", node_colour = "sc3_stability", layout = "sugiyama") 
+
+p = p1 + p2
+p
+
+```
+
+```{r plot_cluster_tree, fig.height=fig_standard_height}
+
+tbl_projection = as.data.frame(sc[["umap"]]@cell.embeddings[,1:2])
+tbl_resolutions = as.data.frame(sc@meta.data %>% dplyr::select(contains("res.")))
+tbl = cbind(tbl_projection, tbl_resolutions)
+
+overlay_list = clustree::clustree_overlay(tbl, prefix = "RNA_snn_res.", x_value = "umap_1", y_value = "umap_2", plot_sides = TRUE)
+
+p1 = overlay_list$overlay
+p2 = overlay_list$x_side
+p3 = overlay_list$y_side
+p = p1 + (p2 / p3)
+p
+
+```
+
+
+## Test resolutions
+```{r set_fig_height_test_clusters, eval=!is.null(param$cluster_resolution_test)}
+# Define height of test clusters
+height_per_row = 3
+nr_cols = 3
+nr_rows = ceiling(length(cluster_resolutions)/nr_cols)
+fig_height_test_clusters = nr_rows * height_per_row
+```
+
+```{r run_umap_test, eval=!is.null(param$cluster_resolution_test, fig.height=fig_height_test_clusters}
+# If there are any test resolutions other than the default, go ahead
+p_list = list()
+for(r in cluster_resolutions) {
+  r = as.character(r)
+  n = paste0(DefaultAssay(sc), "_snn_res.", r)
+  
+  cluster_cells = table(sc[[n, drop=TRUE]])
+  cluster_labels = paste0(names(cluster_cells)," (", cluster_cells,")")
+  
+  p_list[[r]] = Seurat::DimPlot(sc, reduction="umap", group.by=n, pt.size=param$pt_size, label=TRUE) + 
+    scale_color_manual(values=Seurat::Misc(sc, "colour_lists")[[n]], labels=cluster_labels) +
+    AddStyle(title=r, legend_position="none") +
+    FontSize(x.text = 10, y.text = 10, x.title = 13, y.title = 13, main = 15)
+}
+  
+p = patchwork::wrap_plots(p_list, ncol=nr_cols) + patchwork::plot_annotation(title="UMAP, cells coloured by cluster identity for different resolution values")
+p
+```
+
+
+
+
+
+## Visualisation with UMAP {.tabset}
+For this report, you chose the resolution value `r param$cluster_resolution` as the final value for further analyses.  
+
+### Coloured by cluster
+```{r umap_by_cluster}
+# Note that you can set `label = TRUE` or use the LabelClusters function to help label individual clusters
+cluster_cells = table(sc@active.ident)
+cluster_labels = paste0(levels(sc@active.ident)," (", cluster_cells[levels(sc@active.ident)],")")
+p = Seurat::DimPlot(sc, reduction="umap", group.by="seurat_clusters") + 
+  scale_color_manual(values=param$col_clusters, labels=cluster_labels) +
+  AddStyle(title="UMAP, cells coloured by cluster identity", legend_position="bottom", legend_title="Clusters")
+p = LabelClusters(p, id="seurat_clusters", box=TRUE, fill="white")
+p
+```
+
+### Coloured by cluster (per sample)
+```{r umap_by_cluster_separately}
+# Plot all samples separately
+# Repel will be deactivated if there are more than six samples; otherwise the plot may crash
+p = Seurat::DimPlot(sc, reduction="umap", group.by="seurat_clusters", pt.size=param$pt_size, split.by = "orig.ident", ncol = 2) +
+  scale_color_manual(values=param$col_clusters, labels=cluster_labels) +
+  AddStyle(title="UMAP, cells coloured by cluster identity", legend_position="bottom", legend_title="Clusters")
+p = LabelClusters(p, id="seurat_clusters", box=TRUE, fill="white", repel=ifelse(length(unique(sc$orig.ident)) <= 5, TRUE, FALSE))
+p
+```
+
+### Coloured by sample
+```{r umap_by_sample}
+sample_cells = table(sc$orig.ident)
+sample_labels = paste0(levels(sc$orig.ident)," (", sample_cells[levels(sc$orig.ident)],")")
+# Note: This is a hack to colour by sample but label by Cluster
+p = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident") +
+  scale_color_manual(values=param$col_samples, labels=sample_labels) +
+  AddStyle(title="UMAP, cells coloured by sample of origin", legend_position="bottom")
+p$data$seurat_clusters = sc[["seurat_clusters"]][rownames(p$data), ]
+p = LabelClusters(p, id="seurat_clusters", box=TRUE, segment.color="black", fill="white")
+p
+```
+
+### Coloured by sample (per sample)
+```{r umap_by_sample_separately}
+# Plot all samples separately
+# Repel will be deactivated if there are more than six samples; otherwise the plot may crash
+p = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident", pt.size=param$pt_size, split.by = "orig.ident", ncol = 2) +
+  scale_color_manual(values=param$col_samples, labels=sample_labels) +
+  AddStyle(title="UMAP, cells coloured by sample of origin", legend_position="bottom")
+p$data$seurat_clusters = sc[["seurat_clusters"]][rownames(p$data), ]
+p = LabelClusters(p, id="seurat_clusters", box=TRUE, segment.color="black", fill="white", repel=ifelse(length(unique(sc$orig.ident)) <= 5, TRUE, FALSE))
+p
+``` 
+
+
+<br>
+<br>
+<br>
+
+```{r, child='../export_data/appendix.Rmd'}
+```
+

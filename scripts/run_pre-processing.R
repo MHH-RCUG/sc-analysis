@@ -5,13 +5,13 @@ param=list()
 # Set paths
 param$path_to_git='/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis'
 setwd(param$path_to_git)
-param$scriptname = "modules/pre-processing/pre-processing.Rmd"
+param$scriptname = "scripts/pre-processing/pre-processing.Rmd"
 
 # Set environment
 renv::load(file.path(param$path_to_git,"env/basic"))
 
 # Set standard parameter
-source(file.path(param$path_to_git,"scripts/set_standard_parameter.R"))
+source(file.path(param$path_to_git,"config/set_standard_parameter.R"))
 
 
 
@@ -47,7 +47,7 @@ param$species="human"
 ########## Advanced settings ########## 
 
 # Set advanced parameter
-source(file.path(param$path_to_git,"scripts/advanced_settings.R"))
+source(file.path(param$path_to_git,"/advanced_settings.R"))
 
 # Filter for cells
 param_advset$cell_filter = list(nFeature_RNA=c(500, 2400), nCount_RNA=c(NA, NA), percent_mt=c(NA, 20))

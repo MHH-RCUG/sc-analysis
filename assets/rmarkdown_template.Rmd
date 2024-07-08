@@ -12,16 +12,16 @@ output:
     highlight: "tango"
     theme: "paper"
 bibliography: "`r file.path(param$path_out, 'references.bib')`"
-css: "`r file.path(param$path_to_git, 'css/style.css')`"
+css: "`r file.path(param$path_to_git, 'assets/style.css')`"
 ---
 
-```{r r_options, file='../../scripts/configuration.R'}
-#source(file.path(param$path_to_git,'scripts/configuration.R'))
+```{r r_options, file='../../config/configuration.R'}
+#source(file.path(param$path_to_git,'config/configuration.R'))
 message("Set R options")
 ```
 
-```{r rmarkdown, file='../../scripts/rmarkdown_configuration.R'}
-#source(file.path(param$path_to_git,'scripts/rmarkdown_configuration.R'))
+```{r rmarkdown, file='../../config/rmarkdown_configuration.R'}
+#source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'))
 message("Set Rmarkdown options")
 ```
 
@@ -58,9 +58,6 @@ Text
 <br>
 <br>
 
-
-
-
-```{r, child='../../scripts/appendix.Rmd'}
+```{r, child='../export_data/appendix.Rmd'}
 ```
 
