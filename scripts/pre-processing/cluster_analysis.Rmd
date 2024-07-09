@@ -42,8 +42,6 @@ library(ggplot2) # plots
 library(patchwork) # combination of plots
 library(magrittr) # %>% operator
 library(knitr)
-library(clustree)
-library(ggraph)
 
 ```
 
@@ -54,7 +52,7 @@ library(ggraph)
 Gene annotation including Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names, are loaded from a pre-prepared reference file or Ensembl. 
 
 ```{r read_gene_annotation, file='../read_data/read_gene_annotation.R'}
-source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
+#source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
 message("Read gene annotation")
 ```
 
@@ -65,17 +63,10 @@ message("Read gene annotation")
 Here, for the project `r param$project_id`, the following data are analysed:  
 
 ```{r read_rds, eval=!is.null(param$data), file='../read_data/read_rds.R', warning=FALSE}
-#source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
+source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
 message("Load Seurat object from rds file")
 ```
 
-```{r restructure_object, eval=!is.null(param$data), warning=FALSE}
-# Transfer object into a list
-sc_original = sc
-sc = list()
-n = param$project_id
-sc[[n]] = sc_original
-```
 
 
 
@@ -85,10 +76,8 @@ sc[[n]] = sc_original
 
 
 
-```{r calculate_qc_metadata, file='./calculate_qc_metadata.R', warning=FALSE}
-source(file.path(param$path_to_git,'scripts/pre-processing/calculate_qc_metadata.R'))
-message("Calculate and add QC metadata")
-```
+
+
 
 <br>
 
@@ -98,48 +87,8 @@ message("Calculate and add QC metadata")
 # Clustering
 ```{asis, ref.label="cell_clustering"}
 ```
-To get a first idea about how different cluster resolution values influence the clustering, we run and visualize the clustering multiple times. 
- 
 
-```{r cluster_tree, warning=FALSE}
-#cluster_resolutions = sort(unique(c(param$cluster_resolution, param$cluster_resolution_test)))
-cluster_resolutions <- seq(from = 0, to = 1.2, by = 0.2)
-
-# Construct phylogenetic tree relating the "average" cell from each sample
-if (length(levels(sc$orig.ident)) > 1) {
-  sc = BuildClusterTree(sc, features=rownames(sc), verbose=FALSE)
-  Seurat::Misc(sc, "trees") = list(orig.ident = Seurat::Tool(sc, "BuildClusterTree"))
-}
-
-# The number of clusters can be optimized by tuning "resolution" -> based on feedback from the client whether or not clusters make sense
-# Choose the number of PCs to use for clustering
-sc = Seurat::FindNeighbors(sc, dims=1:param$pc_n, verbose=FALSE, k.param=param$cluster_k)
-
-# Seurat vignette suggests resolution parameter between 0.4-1.2 for datasets of about 3k cells
-# But we can run multiple resolutions if requested
-sc = Seurat::FindClusters(sc, algorithm=4, method="igraph", resolution=cluster_resolutions, verbose=FALSE)
-
-# Construct phylogenetic tree relating the "average" cell from each cluster for each clustering
-# Also add colour lists for each clustering
-for(r in cluster_resolutions) {
-  n = paste0(DefaultAssay(sc), "_snn_res.", r)
-  
-  # Tree
-  if (length(levels(sc[[n, drop=TRUE]])) > 1) {
-    Seurat::Idents(sc) = n
-    sc = suppressWarnings(BuildClusterTree(sc, dims=1:param$pc_n, verbose=FALSE))
-    l = list(Seurat::Tool(sc, "BuildClusterTree"))
-    names(l) = n
-    suppressWarnings({Seurat::Misc(sc, "trees") = c(Seurat::Misc(sc, "trees"), l)})
-  }
-  
-  col = GenerateColours(num_colours=length(levels(sc[[n, drop=TRUE]])), names=levels(sc[[n, drop=TRUE]]), 
-                                     palette=param$col_palette_clusters, alphas=1)
-  # Colours
-  l = list(col)
-  names(l) = n
-  sc = ScAddLists(sc, lists=l, lists_slot="colour_lists")
-}
+```{r clustering, warning=FALSE}
 
 # Set default clustering
 n = paste0(DefaultAssay(sc), "_snn_res.", param$cluster_resolution)
@@ -154,77 +103,9 @@ sc = ScAddLists(sc, lists=list(seurat_clusters=Misc(sc, "colour_lists")[[n]]), l
 param$col_clusters = Misc(sc, "colour_lists")[["seurat_clusters"]]
 ```
 
-
-```{r run_umap, fig.height=fig_height_test_clusters}
-# Default UMAP
-sc = suppressWarnings(Seurat::RunUMAP(sc, dims=1:param$pc_n, verbose=FALSE, umap.method="uwot", n.neighbors=param$umap_k))
-```
-
-## Cluster tree
-```{r plot_cluster_tree, fig.height=fig_standard_height}
-
-p1 = clustree::clustree(sc, prefix = "RNA_snn_res.", layout = "sugiyama") +
-    scale_color_brewer(palette = "BrBG") +
-    scale_edge_color_continuous(low = "black", high = "gold")
-
-p2 = clustree::clustree(sc, prefix = "RNA_snn_res.", node_colour = "sc3_stability", layout = "sugiyama") 
-
-p = p1 + p2
-p
-
-```
-
-```{r plot_cluster_tree, fig.height=fig_standard_height}
-
-tbl_projection = as.data.frame(sc[["umap"]]@cell.embeddings[,1:2])
-tbl_resolutions = as.data.frame(sc@meta.data %>% dplyr::select(contains("res.")))
-tbl = cbind(tbl_projection, tbl_resolutions)
-
-overlay_list = clustree::clustree_overlay(tbl, prefix = "RNA_snn_res.", x_value = "umap_1", y_value = "umap_2", plot_sides = TRUE)
-
-p1 = overlay_list$overlay
-p2 = overlay_list$x_side
-p3 = overlay_list$y_side
-p = p1 + (p2 / p3)
-p
-
-```
-
-
-## Test resolutions
-```{r set_fig_height_test_clusters, eval=!is.null(param$cluster_resolution_test)}
-# Define height of test clusters
-height_per_row = 3
-nr_cols = 3
-nr_rows = ceiling(length(cluster_resolutions)/nr_cols)
-fig_height_test_clusters = nr_rows * height_per_row
-```
-
-```{r run_umap_test, eval=!is.null(param$cluster_resolution_test, fig.height=fig_height_test_clusters}
-# If there are any test resolutions other than the default, go ahead
-p_list = list()
-for(r in cluster_resolutions) {
-  r = as.character(r)
-  n = paste0(DefaultAssay(sc), "_snn_res.", r)
-  
-  cluster_cells = table(sc[[n, drop=TRUE]])
-  cluster_labels = paste0(names(cluster_cells)," (", cluster_cells,")")
-  
-  p_list[[r]] = Seurat::DimPlot(sc, reduction="umap", group.by=n, pt.size=param$pt_size, label=TRUE) + 
-    scale_color_manual(values=Seurat::Misc(sc, "colour_lists")[[n]], labels=cluster_labels) +
-    AddStyle(title=r, legend_position="none") +
-    FontSize(x.text = 10, y.text = 10, x.title = 13, y.title = 13, main = 15)
-}
-  
-p = patchwork::wrap_plots(p_list, ncol=nr_cols) + patchwork::plot_annotation(title="UMAP, cells coloured by cluster identity for different resolution values")
-p
-```
-
-
-
-
-
 ## Visualisation with UMAP {.tabset}
+```{asis, ref.label="umap"}
+```
 For this report, you chose the resolution value `r param$cluster_resolution` as the final value for further analyses.  
 
 ### Coloured by cluster
@@ -275,6 +156,236 @@ p = LabelClusters(p, id="seurat_clusters", box=TRUE, segment.color="black", fill
 p
 ``` 
 
+# Distribution of cells in clusters
+
+```{r cells_per_cluster}
+# Count cells per cluster per sample 
+cell_samples = sc[[]] %>% dplyr::pull(orig.ident) %>% levels()
+cell_clusters = sc[[]] %>% dplyr::pull(seurat_clusters) %>% levels()
+
+tbl = dplyr::count(sc[[c("orig.ident", "seurat_clusters")]], orig.ident, seurat_clusters) %>% tidyr::pivot_wider(names_from="seurat_clusters", names_prefix="Cl_", values_from=n, values_fill=0) %>% as.data.frame()
+rownames(tbl) = paste0(tbl[,"orig.ident"],"_n")
+tbl[,"orig.ident"] = NULL
+
+# Add percentages
+tbl_perc = round(t(tbl) / colSums(tbl) * 100, 2) %>% t()
+rownames(tbl_perc) = gsub(rownames(tbl_perc), pattern="_n$", replacement="_perc", perl=TRUE)
+tbl = rbind(tbl, tbl_perc)
+
+# Add enrichment
+if (length(cell_samples) > 1 & length(cell_clusters) > 1) tbl = rbind(tbl, CellsFisher(sc))
+
+# Sort
+tbl = tbl[order(rownames(tbl)),, drop=FALSE]
+
+# Plot percentages
+tbl_bar = tbl[paste0(cell_samples, "_perc"), , drop=FALSE] %>% 
+  tibble::rownames_to_column(var="Sample") %>%
+  tidyr::pivot_longer(tidyr::starts_with("Cl"), names_to="Cluster", values_to="Percentage")
+tbl_bar$Cluster = tbl_bar$Cluster %>% gsub(pattern="^Cl_", replacement="", perl=TRUE) %>% factor(levels=sc$seurat_clusters %>% levels())
+tbl_bar$Sample = tbl_bar$Sample %>% gsub(pattern="_perc$", replacement="", perl=TRUE) %>% as.factor()
+tbl_bar$Percentage = as.numeric(tbl_bar$Percentage)
+p = ggplot(tbl_bar, aes(x=Cluster, y=Percentage, fill=Sample)) + 
+  geom_bar(stat="identity" ) +
+  AddStyle(title="Percentage cells of samples in clusters",
+           fill=param$col_samples,
+           legend_title="Sample",
+           legend_position="bottom")
+p
+```
+
+The following table shows the number of cells per sample and cluster:   
+
+* n: Number of cells per sample and cluster   
+* perc: Percentage of cells per sample and cluster compared to all other cells of that cluster   
+
+In case the dataset contains 2 or more samples, we also calculate whether or not the number of cells of a sample in a cluster is significantly higher or lower than expected:      
+
+* oddsRatio: Odds ratio calculated for cluster c1 and sample s1 as (# cells s1 in c1 / # cells not s1 in c1) / (# cells s1 not in c1 / # cells not s1 not in c1)    
+* p: P-value calculated with a Fisher test to test whether "n" is higher or lower than expected  
+
+```{r cells_per_cluster_table}
+# Print table
+knitr::kable(tbl, align="l", caption="Number of cells per sample and cluster") %>% 
+  kableExtra::kable_styling(bootstrap_options=c("striped", "hover")) %>% 
+  kableExtra::scroll_box(width="100%", fixed_thead=TRUE)
+```
+
+```{r reset_default_assay}
+# Reset default assay, so we won't plot integrated data
+# Note: We need integrated data for UMAP, clusters
+DefaultAssay(sc) = ifelse(param$norm=="SCT", param$norm, param$assay_raw)
+```
+
+# Cell Cycle Effect
+
+How much do gene expression profiles in the dataset reflect the cell cycle phases the single cells were in? If a cell cycle score for each cell based on its expression of G2M and S phase markers was calculated, it will be displayed here. 
+
+```{r cellCycleEffect}
+# Set up colours for cell cycle effect and add to sc object
+col =  GenerateColours(num_colours=length(levels(sc$Phase)), names=levels(sc$Phase), palette="ggsci::pal_npg", alphas=1)
+sc = ScAddLists(sc, lists=list(Phase=col), lists_slot="colour_lists")
+
+# Get a feeling for how many cells are affected
+p1 = ggplot(sc[[]], aes(x=S.Score, y=G2M.Score, colour=Phase)) + 
+  geom_point() + 
+  scale_x_continuous("G1/S score") + 
+  scale_y_continuous("G2/M score") + 
+  AddStyle(col=Misc(sc, "colour_lists")[["Phase"]])
+
+p2 = ggplot(sc@meta.data %>% 
+              dplyr::group_by(seurat_clusters, Phase) %>% 
+              dplyr::summarise(num_cells=length(Phase)), 
+            aes(x=seurat_clusters, y=num_cells, fill=Phase)) + 
+  geom_bar(stat="identity", position="fill") + 
+  scale_x_discrete("Seurat clusters") + 
+  scale_y_continuous("Fraction of cells") + 
+  AddStyle(fill=Misc(sc, "colour_lists")[["Phase"]]) + 
+  theme(axis.text.x = element_text(angle=45, hjust=1, vjust=1)) 
+
+p3 = ggplot(sc[[]] %>% 
+              dplyr::group_by(orig.ident, Phase) %>% 
+              dplyr::summarise(num_cells=length(Phase)), 
+            aes(x=orig.ident, y=num_cells, fill=Phase)) + 
+  geom_bar(stat="identity", position="fill") + 
+  scale_y_continuous("Fraction of cells") +
+  AddStyle(fill=Misc(sc, "colour_lists")[["Phase"]]) + 
+  theme(axis.text.x = element_text(angle=30, hjust=1, vjust=1)) + xlab("")
+
+p = p1 + p2 + p3 & theme(legend.position="bottom")
+p = p + patchwork::plot_annotation(title="Cell cycle phases") + plot_layout(guides="collect")
+p
+```
+
+
+```{r cellCycleEffect_umap_s}
+if (any(!is.na(sc$Phase))) {
+  
+  p1 = Seurat::DimPlot(sc, group.by="Phase", pt.size=1, cols=Misc(sc, "colour_lists")[["Phase"]]) + 
+    AddStyle(title="Cell cycle phases", legend_title="Phase",  xlab = "UMAP 1", ylab = "UMAP 2")
+  p1$data$seurat_clusters = sc[["seurat_clusters"]][rownames(p1$data), ]
+  p1 = LabelClusters(p1, id="seurat_clusters", box=TRUE, segment.color="black", fill="white")
+  
+  p_list = list()
+  cc_features = c("S.Score", "G2M.Score", "CC.Difference")
+  title = c("S phase", "G2/M phase", "S and G2/M difference")
+  
+  for (n in seq(cc_features)) {
+  p_list[[n]] = Seurat::FeaturePlot(sc, features=cc_features[n], pt.size=1, min.cutoff="q1", max.cutoff="q99", cols=c("lightgrey", param$col)) +
+    AddStyle(title=title[n], xlab = "", ylab = "")
+  }
+  p = p1 + patchwork::wrap_plots(p_list, ncol=1) + 
+    plot_layout(widths = c(3, 1)) +
+    patchwork::plot_annotation(title="UMAP coloured by") 
+  p
+}
+```
+
+
+
+# Cluster QC  {.tabset}
+Do cells in individual clusters have particularly high counts, detected genes or mitochondrial content?
+
+
+```{r clusterQC, message=FALSE}
+p_list1 = list()
+qc_feature = c(paste0("nCount_", param$assay_raw), paste0("nFeature_", param$assay_raw), "percent_mt", "percent_ribo")
+title = c(paste0("Summed raw counts (nCount_", param$assay_raw, ", log10 scale)"), 
+            paste0("Number of features with raw count > 0 (nFeature_", param$assay_raw, ", log10 scale)"),
+            "Percent of mitochondrial features (percent_mt)", 
+            "Percent of ribosomal features (percent_ribo)")
+if ("percent_ercc" %in% colnames(sc[[]])) {
+  qc_feature = c(qc_feature, "percent_ercc")
+  title = c(title, "Percent of ERCC features (percent_ercc)")
+}
+
+
+for (n in seq(qc_feature)) {
+  p1 = suppressMessages(Seurat::FeaturePlot(sc, features=qc_feature[n]) + 
+                          AddStyle(title="Feature plot") + 
+                          scale_colour_gradient(low="lightgrey", high=param$col))
+
+   if (qc_feature[n]==paste0("nCount_", param$assay_raw) | qc_feature[n]==paste0("nFeature_", param$assay_raw)) {
+     p1 = p1 + scale_colour_gradient(low="lightgrey", high=param$col, trans="log10")
+   }
+  
+  p1 = LabelClusters(p1, id="ident", box=TRUE, segment.color="black", fill="white")
+  
+  
+  p2 = ggplot(sc[[]], aes(x=.data[["seurat_clusters"]], y=.data[[qc_feature[n]]], fill=.data[["seurat_clusters"]], group=.data[["seurat_clusters"]])) + 
+    geom_violin(scale="width") + 
+    AddStyle(title="Violin plot (log10 scale)", fill=param$col_clusters,
+           xlab="Cluster", legend_position="none")
+  
+  if (qc_feature[n]==paste0("nCount_", param$assay_raw) | qc_feature[n]==paste0("nFeature_", param$assay_raw)) {
+    p2 = p2 + scale_y_log10()
+  }
+  
+  
+  m = c(qc_feature[n], paste0("nFeature_", param$assay_raw))
+  p3 = ggplot(sc[[c(m, "seurat_clusters")]], aes(x=.data[[m[1]]], y=.data[[m[2]]], colour=.data[["seurat_clusters"]])) + 
+    geom_point() + 
+    AddStyle(col=param$col_clusters) + 
+    facet_wrap(~seurat_clusters) +
+    theme(legend.position = "none")
+  
+
+  p_list1[[n]] = (p1 | p2) / p3
+  p_list1[[n]] = p_list1[[n]] + patchwork::plot_annotation(title=title[n])
+}
+ 
+```
+
+## Number of counts 
+```{r plot_clusterQC_nCount}
+print(p_list1[[1]])
+```
+
+## Number of features
+```{r plot_clusterQC_nfeature}
+print(p_list1[[2]])
+```
+
+## Percent mitochondrial reads
+```{r plot_clusterQC_mt}
+print(p_list1[[3]])
+```
+
+## Percent ribosomal reads
+```{r plot_clusterQC_ribosomal}
+print(p_list1[[4]])
+```
+
+## Percent ERCC
+```{r plot_clusterQC_ercc}
+if ("percent_ercc" %in% colnames(sc[[]])) {
+  print(p_list1[[5]])
+} else {
+  message("No ERCC controls found.")
+}
+```
+
+
+# Cluster tree
+The relationship (similarity) between clusters can be represented in a cluster tree. I find this useful to identify which clusters might be candidates for merging.
+
+```{r cluster_tree}
+
+# Set seurat_clusters for as default tree
+sc@tools$BuildClusterTree = sc@misc$trees$seurat_clusters
+
+# pull the tree
+cluster_tree <- Tool(object = sc, slot = "BuildClusterTree")
+cluster_tree$tip.label <- paste0(" Cluster ", cluster_tree$tip.label)
+# plot the tree
+ape::plot.phylo(x = cluster_tree, type = "c", use.edge.length = TRUE, font = 2, cex = 1.5, tip.color = sc@misc$colour_lists$seurat_clusters, edge.width = 2)
+
+```
+
+<br>
+
+```{r, child='../export_data/standard_export.Rmd'}
+```
 
 <br>
 <br>
