@@ -46,7 +46,7 @@ These commonly used QC metrics, namely the number of unique genes detected in ea
   In cell QC these covariates are filtered via thresholding as they are a good indicator of cell viability. However, it is crucial to consider the three QC covariates jointly as otherwise it might lead to misinterpretation of cellular signals.  
   
   - Cells with very high number of genes should possibly be excluded as those might be duplicates. Since the total number of reads detected within a cell typically strongly correlates with the number of unique genes, we can focus on the number of unique genes for filtering.  
-  - Cells with very low count depth might be droplets with ambient RNA. If the dataset contains a high number of such events, it is advisable to perform additionally upstream correction for ambient RNA e.g. via SoupX `r knitcitations::citet("https://doi.org/10.1093/gigascience/giaa151")` as ambient RNA can confound the number of observed counts and adds background noise to the data.  
+  - Cells with very low count depth might be droplets with ambient RNA. If the dataset contains a high number of such events, it is advisable to perform additionally upstream correction for ambient RNA e.g. via SoupX (@young2020) as ambient RNA can confound the number of observed counts and adds background noise to the data.  
   - Low-quality cells such as dying, degraded and damaged cells will also often have very few genes ("nFeature_") and low total counts ("nCount_"). In addition, damaged cells often exhibit high mitochondrial ("percent_mt") or spike-in ("percent_ercc") content. As mitochondria have their own membranes, their RNA is often the last to degrade in damaged cells and can thus be found in high numbers. However, it is important to keep in mind that different cell types and cells isolated from various species may differ in their number of expressed genes and metabolism. For example, stem cells may express a higher number of unique genes, and metabolically active cells may express a higher number of mitochondrial genes. Hence, it is crucial to consider the three QC covariates jointly as otherwise it might lead to misinterpretation of cellular signals. E.g. a cell with a high fraction of mitochondrial counts might be a dying cell with a broken membrane in combination with a low number of counts, but in combination with a intermediate to high count depth it might be a cell involved in respiratory processes.  
 </details>
   
@@ -83,7 +83,7 @@ Dependent on the normalisation of your choice, we either:
 <details>
   <summary>What is __SCTransform__ special about?</summary>
   
-  The __standard log normalisation__ assumes that count depth influences all genes equally. However, it has been shown that the use of a single size factor will introduce different effects on highly and lowly expressed genes (`r Cite("10.1186/s13059-019-1874-1")`). __SCTransform__ is a new statistical approach for the modelling, normalization and variance stabilization of single-cell RNA-seq data. __SCTransform__ models the UMI counts (via a regularized negative binomial model) to remove the variation due to sequencing depth and adjusts the variance based on pooling information across genes with similar abundances and automatically regresses out sequencing depth (nCounts). Hence, __SCTransform__ can be applied to 10x (contains UMI counts) but not SmartSeq-2 data. Additional unwanted sources of variations can be regressed out during __SCTransform__. 
+  The __standard log normalisation__ assumes that count depth influences all genes equally. However, it has been shown that the use of a single size factor will introduce different effects on highly and lowly expressed genes (@hafemeister2019). __SCTransform__ is a new statistical approach for the modelling, normalization and variance stabilization of single-cell RNA-seq data. __SCTransform__ models the UMI counts (via a regularized negative binomial model) to remove the variation due to sequencing depth and adjusts the variance based on pooling information across genes with similar abundances and automatically regresses out sequencing depth (nCounts). Hence, __SCTransform__ can be applied to 10x (contains UMI counts) but not SmartSeq-2 data. Additional unwanted sources of variations can be regressed out during __SCTransform__. 
 </details>   
   
 While raw data is typically used for statistical tests such as finding marker genes, normalised data is mainly used for visualising gene expression values. Scaled data are mainly used to determine the structure of the dataset(s) with Principal Component Analysis, and indirectly to cluster and visualise cells in 2D space.
@@ -103,7 +103,7 @@ While raw data is typically used for statistical tests such as finding marker ge
   
   To determine variable genes, we need to separate biological variability from technical variability. Technical variability arises especially for lowly expressed genes, where high variability corresponds to small absolute changes that we are not interested in.  
   __standard log normalisation__:  
-  Here, we use the variance-stabilizing transformation (vst) method implemented in Seurat (`r Cite("10.1186/s13059-019-1874-1")`). This method first models the technical variability as a relationship between mean gene expression and variance using local polynomial regression. The model is then used to calculate the expected variance based on the observed mean gene expression. The difference between the observed and expected variance is called residual variance and likely reflects biological variability.  
+  Here, we use the variance-stabilizing transformation (vst) method implemented in Seurat (@hafemeister2019). This method first models the technical variability as a relationship between mean gene expression and variance using local polynomial regression. The model is then used to calculate the expected variance based on the observed mean gene expression. The difference between the observed and expected variance is called residual variance and likely reflects biological variability.  
   __SCTransform__:  
   Also __SCTransform__ returns a list of top 3,000 variable genes.
 </details>
@@ -165,14 +165,14 @@ PCs include biological signal as well as noise, and we need to determine the num
     
   Note that removing all signal associated to cell cycle can negatively impact downstream analysis. Cell cycle signals can be informative of the biology. For example, in differentiating processes, stem cells are quiescent and differentiated cells are proliferating (or vice versa), and removing all cell cycle effects can blur the distinction between these cells. Moreover, biological signals must be understood in context. Dependencies exist between diffferent cellular processes within the organism. Thus, correcting for one process may unintentionally mask the signal of another. Vice versa, due to a correlation of cell size and some transcriptomic effect attributed to the cell cycle (McDavid et al, 2016), correcting for cell size via normalization, also partially corrects for cell cycle effects in scRNA‐seq data.  
   
-  An alternative approach is to remove the difference between G2M and S phase scores. This way, signals separating non-cycling and cycling cells will be maintained, while differences in cell cycle phase amongst proliferating cells (which are often uninteresting), will be removed. For a more detailed explanation, see the cell cycle vignette for Seurat `r Cite("https://satijalab.org/seurat/v3.1/cell_cycle_vignette.html")`. 
+  An alternative approach is to remove the difference between G2M and S phase scores. This way, signals separating non-cycling and cycling cells will be maintained, while differences in cell cycle phase amongst proliferating cells (which are often uninteresting), will be removed. For a more detailed explanation, see the cell cycle vignette from Seurat (https://satijalab.org/seurat/v3.1/cell_cycle_vignette.html). 
 </details>   
   
 <details>
   <summary>How are cycle effects regressed out?</summary>
   
   Prior to calling the function CellCycleScoring the data need to be standard log normalized, since counts need to be comparable between cells. 
-  Once the data is normalized for sequencing depth, a score can be calculated for each cell based on its expression of G2M and S phase markers. Scoring is based on the strategy described in `r Cite("10.1126/science.aad0501")`, and human gene symbols are translated to gene symbols of the species of interest using biomaRt.  
+  Once the data is normalized for sequencing depth, a score can be calculated for each cell based on its expression of G2M and S phase markers. Scoring is based on the strategy described in @tirosh2016, and human gene symbols are translated to gene symbols of the species of interest using biomaRt.  
   If specified, cell cycle effects can be removed during scaling. In the process, for each gene, Seurat models the relationship between gene expression and the S and G2M cell cycle scores. The scaled residuals of this model represent a ‘corrected’ expression matrix. 
 </details>   
 
@@ -257,7 +257,7 @@ Anchor-based integration can be applied to either log-normalized or SCTransform-
 
 
 ## ---- cell_clustering --------
-The clustering method used by Seurat first constructs a graph structure, where nodes are cells and edges are drawn between cells with similar gene expression patterns. Technically speaking, Seurat first constructs a K-nearest neighbor (KNN) graph based on Euclidean distance in PCA space, and refines edge weights between cells based on the shared overlap in their local neighborhoods (Jaccard similarity). To partition the graph into highly interconnected parts, cells are iteratively grouped together using the Leiden algorithm `r Cite("10.1038/s41598-019-41695-z")`. 
+The clustering method used by Seurat first constructs a graph structure, where nodes are cells and edges are drawn between cells with similar gene expression patterns. Technically speaking, Seurat first constructs a K-nearest neighbor (KNN) graph based on Euclidean distance in PCA space, and refines edge weights between cells based on the shared overlap in their local neighborhoods (Jaccard similarity). To partition the graph into highly interconnected parts, cells are iteratively grouped together using the Leiden algorithm (@traag2019). 
 
 <details>
   <summary>Further explanation on clustering</summary>
@@ -289,6 +289,6 @@ Take care not to mis-read a UMAP:
 * Distances between clusters might not mean anything
 * You may need more than one plot
 
-For a nice read to intuitively understand UMAP, see `r Cite("https://pair-code.github.io/understanding-umap/")`.
+For a nice read to intuitively understand UMAP, see @coenen2024.  
 
 

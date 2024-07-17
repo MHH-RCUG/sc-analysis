@@ -44,12 +44,6 @@ invisible(ExportSeuratAssayData(sc,
 ### Export metadata
 openxlsx::write.xlsx(x=sc[[]] %>% tibble::rownames_to_column(var="Barcode"), file=file.path(param$path_out, "data", "cell_metadata.xlsx"), rowNames=FALSE, colNames=TRUE)
 
-### Export annotation as excel file
-openxlsx::write.xlsx(x=data.frame(seurat_id=rownames(sc), ensembl_gene_id=seurat_rowname_to_ensembl[rownames(sc)], row.names=rownames(sc)) %>%
-                       dplyr::inner_join(annot_ensembl, by="ensembl_gene_id"),
-                     file=file.path(param$path_out, "data", "gene_annotation.xlsx"), 
-                     rowNames=FALSE, colNames=TRUE)
-
 ```
 
 </details>
@@ -75,7 +69,7 @@ scCustomize::as.anndata(x = sc, file_path = file.path(param$path_out, "data"), f
 <details>
   <summary> Export to Loupe Cell Browser</summary>
   
-  If all provided datasets are of type "10x", we export the UMAP 2D visualization, metadata such as the cell clusters, and lists of differentially expressed genes, so you can open and work with these in the Loupe Cell Browser `r Cite("https://support.10xgenomics.com/single-cell-gene-expression/software/visualization/latest/what-is-loupe-cell-browser", "citep")`.  
+  If all provided datasets are of type "10x", we export the UMAP 2D visualization, metadata such as the cell clusters, and lists of differentially expressed genes, so you can open and work with these in the Loupe Cell Browser (https://support.10xgenomics.com/single-cell-gene-expression/software/visualization/latest/what-is-loupe-cell-browser).  
     
   Result files are:  
   * Loupe_projection_(umap|pca|...).csv: Seurat UMAP/PCA/... projections for visualization  

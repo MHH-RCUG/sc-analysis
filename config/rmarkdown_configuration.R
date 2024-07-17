@@ -39,8 +39,8 @@ library(magrittr)
 knitcitations::cleanbib()
 
 # If the DOI publication servers cannot be reached, there will be no citations, knitcitations will not write a references.bib file and pandoc will stop. This makes sure that there is always at least one citation.
-rcug_ref = knitcitations::read.bibtex(file.path(param$path_to_git,"assets","rcug_references.bib"))
-invisible(knitcitations::citep(rcug_ref))
+bib_ref = knitcitations::read.bibtex(file.path(param$path_to_git,"assets","sc_analysis_references.bib"))
+invisible(knitcitations::citep(bib_ref))
 
 ### Figure heights
 # high figures
