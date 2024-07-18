@@ -12,6 +12,8 @@ output:
     highlight: "tango"
     theme: "paper"
 bibliography: "`r file.path(param$path_out, 'references.bib')`"
+link-citations: yes
+csl: "`r file.path(param$path_to_git, 'assets/elsevier-harvard.csl')`"
 css: "`r file.path(param$path_to_git, 'assets/style.css')`"
 ---
 
