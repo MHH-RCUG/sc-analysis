@@ -8,7 +8,9 @@ setwd(param$path_to_git)
 
 # Set environment
 renv::load(file.path(param$path_to_git,"env/basic"))
-#source(file.path(param$path_to_git,'/config/configuration.R'))
+
+# Set R options
+source(file.path(param$path_to_git,'/config/configuration.R'))
 
 
 
@@ -22,15 +24,11 @@ param$species="mouse"
 
 
 
-########## Advanced settings ########## 
-
+### Read gene annotation 
+################################################################################
 # Set advanced parameter
 source(file.path(param$path_to_git,"/advanced_settings.R"))
 
-
-
-### Read gene annotation 
-################################################################################
 # Record advanced parameter settings
 param = modifyList(x = param, val = param_advset)
 

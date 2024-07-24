@@ -101,14 +101,18 @@ param$cluster_resolution = 0.6
 
 
 ### Set reference
+# All default references are set in read_gene_annotation.R
+# Here only parameter introduction that can be changed in advanced_settings
 param$file_annot = NULL
 param$file_cc_genes = NULL 
-# Default is Ensembl release 98 which corresponds to 2020-A reference package of 10x Genomics Cell Ranger
-param$annot_version=98
-param$annot_main=c(ensembl="ensembl_gene_id", symbol="external_gene_name", entrez="entrezgene_accession")
-param$mart_attributes=c(c(ensembl="ensembl_gene_id", symbol="external_gene_name", entrez="entrezgene_accession"), 
-                        c("chromosome_name", "start_position", "end_position", "percentage_gene_gc_content", "gene_biotype", "strand", "description"))
+param$mart_dataset = NULL
+param$mt = NULL
+param$annot_version=NULL
+param$annot_main=NULL
+param$mart_attributes=NULL
 param$biomart_mirror=NULL
+
+
 
 # List of marker genes
 param$file_known_markers = NULL
@@ -164,9 +168,15 @@ param$deg_contrasts = data.frame(condition_column=c("orig.ident"),
 # Enrichr site ("Enrichr", "FlyEnrichr", "WormEnrichr", "YeastEnrichr", "FishEnrichr")
 param$enrichr_site = "Enrichr"
 
+# Default set in read_gene_annotation.R
+# Here only parameter introduction that can be changed in advanced_settings
+param$enrichr_dbs=NULL
+
 # P-value threshold for functional enrichment tests
 param$enrichr_padj = 0.05
 
+# Cell type annotation database
+param$annotation_dbs = NULL
 
 
 ### Set standard colors
