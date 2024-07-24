@@ -1,5 +1,10 @@
 ### Advanced settings
 ################################################################################
+# Only set unequal 'NULL' if you want to change any settings. 
+
+### Output directory
+param$path_out = NULL
+
 
 ### Dataset settings
 # Set assay
@@ -163,6 +168,8 @@ param_advset$enrichr_padj = NULL
 # Enrichr libraries
 param_advset$enrichr_dbs = NULL
 
+# Cell type annotation database
+param$annotation_dbs = NULL
 
 
 ### Set colors
