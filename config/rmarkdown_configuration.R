@@ -17,6 +17,7 @@ knitr::opts_chunk$set(echo=TRUE,                     # output code
                       cache=FALSE,                   # do not cache results
                       message=TRUE,                  # show messages
                       warning=TRUE,                  # show warnings
+                      results = "hold",              # show results after running whole chunk
                       tidy=FALSE,                    # do not auto-tidy-up code
                       fig.width=10,                  # default fig width in inches
                       class.source='fold-hide',      # by default collapse code blocks
