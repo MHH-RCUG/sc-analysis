@@ -155,11 +155,14 @@ The steps below represent a standard processing workflow for single-cell RNA-seq
 ```{asis, ref.label="pre-processing"}
 ```
 
+<br>
+
 ## Quality control 
 Quality control (QC) is an important step of the pre-processing workflow. We start the analysis by removing unwanted cells from the dataset(s).  
 ```{asis, ref.label="qc"}
 ```
 
+<br>
 
 ### Filtering
 Cells and genes are filtered based on the following thresholds: 
@@ -304,6 +307,8 @@ After filtering, the size of the Seurat object is:
 sc
 ```
 
+<br>
+
 ### QC covariates 
 ```{r qc_plot_cells, fig.height=fig_patchwork4_height}
 
@@ -436,9 +441,10 @@ for (n in colnames(sc_cell_metadata[idx.factors])) {
 param$col_samples = param$col_samples[names(param$col_samples) %in% names(sc)]
 ```
 
-<br>
 
 In the following sections, we subsequently run a series of Seurat functions for each provided sample. We normalize, select variable genes, and combine the datasets according to the chosen methods. In the process cell cycle scores are assigned to each cell based on its normalized expression of G2/M and S phase markers and data are scaled while regressing out covariants if desired. 
+
+<br>
 
 ## Normalisation
 ```{asis, ref.label="normalization"}
@@ -456,6 +462,8 @@ if (!("data" %in% sc[[param$project_id]][["RNA"]][])) {
 message(paste0("Here, the ", ifelse(param$norm=="RNA","Standard log normalization","SCTransform")," method was used and no additional sources of variance regressed out."))
 ```
 
+<br>
+
 ### Variable genes
 The top 3,000 variable genes are selected. 
 ```{asis, ref.label="variable_genes"}
@@ -470,7 +478,7 @@ The top 3,000 variable genes are selected.
 ```{asis, ref.label="integration_methods"}
 ```
 
-```{r combine_datasets}
+```{r combine_datasets, results='hide'}
 if (length(sc) == 1) {
   # Default assay is set automatically
   sc = sc[[1]]
@@ -506,7 +514,7 @@ if (!("pca" %in% list_names(sc@reductions[]))) {
 ```{r scaling_message}
 message(
   paste0("Here, ", 
-               ifelse(is.null(param$vars_to_regress),"no additional sources of variance regressed out.", 
+               ifelse(is.null(param$vars_to_regress),"no additional sources of variance regressed out. ", 
                       paste0(param$vars_to_regress, " as sources of variance was/were regressed out. ")), 
                ifelse(param$cc_remove==FALSE,"No cell cycle effects removed for this report.",  
                       paste0(
@@ -515,6 +523,8 @@ message(
                       ))
          )
 )
+
+sc
 ```
 
 <br> 
@@ -522,6 +532,8 @@ message(
 ## Dimensional reduction
 ```{asis, ref.label="dimensional_reduction"}
 ```
+
+<br>
 
 ### Principal component analysis
 Running a PCA on our object, we see how the variance can be explained.  
@@ -559,7 +571,7 @@ message(paste0("For the current dataset ", param$pc_n," PCs were chosen."))
 ## Batch effects
 We visualize the sample distribution in low dimensional space to confirm that the chosen method for combining the samples was appropriate (see section [Combine datasets]). The following plots offer a low dimension representation of your data combined via `r ifelse(param$integrate_samples[["method"]]=="merge","dataset merging",paste0("dataset integration using ", param$integrate_samples[["integration_function"]]))`.  
 
-```{r run_umap}
+```{r run_umap, message=FALSE}
 # Default UMAP
 sc = suppressWarnings(Seurat::RunUMAP(sc, dims=1:param$pc_n, verbose=FALSE, umap.method="uwot", n.neighbors=param$umap_k))
 ```
@@ -567,12 +579,12 @@ sc = suppressWarnings(Seurat::RunUMAP(sc, dims=1:param$pc_n, verbose=FALSE, umap
 ```{r dim_reductions, fig.height=fig_patchwork6_height}
 ### Score plots
 # PCA score plots colored by sample
-p1 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples, pt.size = 1, dims = c(1,2)) + 
+p1 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples, pt.size=param$pt_size, dims = c(1,2)) + 
   AddStyle(legend_position="none", title = "", xlab = "PC 1", ylab = "PC 2")
-p2 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples,  pt.size = 1, dims = c(3,4)) + 
+p2 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples, pt.size=param$pt_size, dims = c(3,4)) + 
   AddStyle(legend_position="none", title = "", xlab = "PC 3", ylab = "PC 4")
 # Umap plot
-p3 = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident", cols = param$col_samples) +
+p3 = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident", cols = param$col_samples, pt.size=param$pt_size) +
   AddStyle(title="UMAP, cells coloured by sample of origin", legend_position="bottom", xlab = "UMAP 1", ylab = "UMAP 2")
 
 p = p3 + (p1 / p2) +
@@ -588,7 +600,7 @@ p
 To get a first idea about how different cluster resolution values influence the clustering, we run and visualize the clustering multiple times. 
 
 ```{r clustering, warning=FALSE, message=FALSE}
-tree_resolutions = seq(from = 0, to = 1.2, by = 0.2)
+tree_resolutions = seq(from = 0, to = 1.0, by = 0.2)
 cluster_resolutions = sort(unique(c(param$cluster_resolution, param$cluster_resolution_test, tree_resolutions)))
 
 
@@ -604,6 +616,8 @@ sc = Seurat::FindNeighbors(sc, dims=1:param$pc_n, verbose=FALSE, k.param=param$c
 
 # Seurat vignette suggests resolution parameter between 0.4-1.2 for datasets of about 3k cells
 # But we can run multiple resolutions if requested
+# method: Method for running leiden (defaults to matrix which is fast for small datasets). Enable method = "igraph" to avoid casting large data to a dense matrix.
+# algorithm: Algorithm for modularity optimization (1 = original Louvain algorithm; 2 = Louvain algorithm with multilevel refinement; 3 = SLM algorithm; 4 = Leiden algorithm). Leiden requires the leidenalg python.
 sc = Seurat::FindClusters(sc, algorithm=4, method="igraph", resolution=cluster_resolutions, verbose=FALSE)
 
 # Construct phylogenetic tree relating the "average" cell from each cluster for each clustering
@@ -623,9 +637,10 @@ for(r in cluster_resolutions) {
   col = GenerateColours(num_colours=length(levels(sc[[n, drop=TRUE]])), names=levels(sc[[n, drop=TRUE]]), 
                                      palette=param$col_palette_clusters, alphas=1)
   # Colours
-  l = list(col)
-  names(l) = n
-  sc = ScAddLists(sc, lists=l, lists_slot="colour_lists")
+  tree_color = col
+  tree_color_list = list(col)
+  names(tree_color_list) = n
+  sc = ScAddLists(sc, lists=tree_color_list, lists_slot="colour_lists")
 }
 
 ```
@@ -639,11 +654,11 @@ for(r in cluster_resolutions) {
 Here, we use the clustertree package `r Cite("10.1093/gigascience/giy083")`. While the nodes in the first graph are colored by the cluster resolution, the second plot is colored by SC3 stability index, a measures of cluster stability across resolutions.   
 ```{r plot_clustering_tree, fig.height=fig_large_height, message=FALSE}
 
-p1 = clustree::clustree(sc, prefix = "RNA_snn_res.", layout = "sugiyama") +
+p1 = clustree::clustree(sc, prefix = paste0(DefaultAssay(sc),"_snn_res."), layout = "sugiyama") +
     scale_color_brewer(palette = "BrBG") +
     scale_edge_color_continuous(low = "black", high = "gold")
 
-p2 = clustree::clustree(sc, prefix = "RNA_snn_res.", node_colour = "sc3_stability", layout = "sugiyama") 
+p2 = clustree::clustree(sc, prefix = paste0(DefaultAssay(sc),"_snn_res."), node_colour = "sc3_stability", layout = "sugiyama") 
 
 p = p1 + p2
 p
@@ -657,9 +672,7 @@ tbl_resolutions = as.data.frame(sc@meta.data %>% dplyr::select(contains("res."))
 tbl = cbind(tbl_projection, tbl_resolutions)
 
 # Plot overlay of cluster tree with umap
-overlay_list = clustree::clustree_overlay(tbl, prefix = "RNA_snn_res.", x_value = "umap_1", y_value = "umap_2", plot_sides = TRUE, use_colour = "points", alt_colour = "black")
-
-tree_color = sc@misc$colour_lists$RNA_snn_res.1.2
+overlay_list = clustree::clustree_overlay(tbl, prefix = paste0(DefaultAssay(sc),"_snn_res."), x_value = "umap_1", y_value = "umap_2", plot_sides = TRUE, use_colour = "points", alt_colour = "black")
 
 p1 = overlay_list$overlay +
   scale_color_manual(values = tree_color) +
@@ -725,8 +738,10 @@ p
 ```{r, child='../export_data/standard_export.Rmd'}
 ```
 
-<br>
-<br>
+```{r gene_annotation_export, file='../export_data/export_annotations.R', warning=FALSE, results="hide"}
+#source(file.path(param$path_to_git,'scripts/export_data/export_annotations.R'))
+```
+
 <br>
 
 ```{r, child='../export_data/appendix.Rmd'}
