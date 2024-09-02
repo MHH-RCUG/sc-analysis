@@ -229,7 +229,7 @@ DegsPlotNumbers = function(degs, group=NULL, title=NULL) {
       geom_bar(stat="identity") +
       xlab(group) +
       AddStyle(title=title,
-               fill=setNames(c("steelblue", "darkgoldenrod1"), c("Down", "Up")))
+               fill=setNames(c("navy", "darkgoldenrod1"), c("Down", "Up")))
     return(p)
   }
 }
@@ -715,6 +715,6 @@ FlattenEnrichr = function(enrichr_results) {
   enrichr_results_flat = purrr::map(names(enrichr_results), function(n) {
     return(data.frame(Database=rep(n, nrow(enrichr_results[[n]])), enrichr_results[[n]]))
   })
-  enrichr_results_flat = purrr::invoke(dplyr::bind_rows, enrichr_results_flat)
+  enrichr_results_flat = purrr::exec(dplyr::bind_rows, enrichr_results_flat)
   return(enrichr_results_flat)
 }
