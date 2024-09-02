@@ -15,6 +15,8 @@ bibliography: "`r file.path(param$path_out, 'references.bib')`"
 link-citations: yes
 csl: "`r file.path(param$path_to_git, 'assets/elsevier-harvard.csl')`"
 css: "`r file.path(param$path_to_git, 'assets/style.css')`"
+editor_options: 
+  chunk_output_type: inline
 ---
 
 ```{r r_options, file='../../config/configuration.R'}
@@ -44,6 +46,7 @@ library(ggplot2) # plots
 library(patchwork) # combination of plots
 library(magrittr) # %>% operator
 library(knitr)
+library(enrichR)
 
 ```
 
@@ -54,7 +57,7 @@ library(knitr)
 Gene annotation including Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names, are loaded from a pre-prepared reference file or Ensembl. 
 
 ```{r read_gene_annotation, file='../read_data/read_gene_annotation.R'}
-#source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
+source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
 message("Read gene annotation")
 ```
 
@@ -69,10 +72,7 @@ source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
 message("Load Seurat object from rds file")
 ```
 
-
 <br>
-
-
 <br>  
 
 # Clustering
@@ -95,7 +95,7 @@ param$col_clusters = Misc(sc, "colour_lists")[["seurat_clusters"]]
 ```
 
 ## Visualisation with UMAP {.tabset}
-```{asis, ref.label="umap"}
+```{asis, ref.label="umap_description"}
 ```
 For this report, you chose the resolution value `r param$cluster_resolution` as the final value for further analyses.  
 
@@ -106,8 +106,8 @@ cluster_cells = table(sc@active.ident)
 cluster_labels = paste0(levels(sc@active.ident)," (", cluster_cells[levels(sc@active.ident)],")")
 p_umap = Seurat::DimPlot(sc, reduction="umap", group.by="seurat_clusters") + 
   scale_color_manual(values=param$col_clusters, labels=cluster_labels) +
-  AddStyle(title="Cells coloured by cluster identity", legend_position="bottom", legend_title="Clusters", xlab = "UMAP 1", ylab = "UMAP 2")
-p_umap = LabelClusters(p_umap, id="seurat_clusters", box=TRUE, segment.color="black", fill="white")
+  AddStyle(title="Cells coloured by cluster identity", legend_position="", legend_title="", xlab = "UMAP 1", ylab = "UMAP 2")
+p_umap = LabelClusters(p_umap, id="seurat_clusters", box=TRUE, segment.color="black", fill="white", repel = TRUE)
 
 sample_cells = table(sc$orig.ident)
 sample_labels = paste0(levels(sc$orig.ident)," (", sample_cells[levels(sc$orig.ident)],")")
@@ -116,7 +116,7 @@ p2 = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident") +
   scale_color_manual(values=param$col_samples, labels=sample_labels) +
   AddStyle(title="Cells coloured by sample of origin", legend_position="bottom", xlab = "UMAP 1", ylab = "UMAP 2")
 p2$data$seurat_clusters = sc[["seurat_clusters"]][rownames(p2$data), ]
-p2 = LabelClusters(p2, id="seurat_clusters", box=TRUE, segment.color="black", fill="white")
+p2 = LabelClusters(p2, id="seurat_clusters", box=TRUE, segment.color="black", fill="white", repel = TRUE)
 
 p = p_umap + p2
 p
@@ -129,7 +129,7 @@ p
 p = Seurat::DimPlot(sc, reduction="umap", group.by="seurat_clusters", pt.size=param$pt_size, split.by = "orig.ident", ncol = 2) +
   scale_color_manual(values=param$col_clusters, labels=cluster_labels) +
   AddStyle(title="Cells coloured by cluster identity", legend_position="bottom", legend_title="Clusters", xlab = "UMAP 1", ylab = "UMAP 2")
-p = LabelClusters(p, id="seurat_clusters", box=TRUE, fill="white")
+p = LabelClusters(p, id="seurat_clusters", box=TRUE, segment.color="black", fill="white", repel = TRUE)
 p
 ```
 
@@ -150,9 +150,8 @@ p
 <br>
 
 
-# Cluster QC  {.tabset}
-Do cells in individual clusters have particularly high counts, detected genes or mitochondrial content?
-
+## Cluster QC  {.tabset}
+Exploration of quality control metrics: determine whether clusters are unbalanced in their number of counts, detected genes or mitochondrial content.
 
 ```{r clusterQC, message=FALSE}
 p_list1 = list()
@@ -175,8 +174,8 @@ for (n in seq(qc_feature)) {
    if (qc_feature[n]==paste0("nCount_", param$assay_raw) | qc_feature[n]==paste0("nFeature_", param$assay_raw)) {
      p1 = p1 + scale_colour_gradient(low="lightgrey", high=param$col, trans="log10")
    }
-  
-  p1 = LabelClusters(p1, id="ident", box=TRUE, segment.color="black", fill="white")
+  p1$data$seurat_clusters = sc[["seurat_clusters"]][rownames(p1$data), ]
+  p1 = LabelClusters(p1, id="seurat_clusters", box=TRUE, segment.color="black", fill="white", repel = TRUE)
   
   
   p2 = ggplot(sc[[]], aes(x=.data[["seurat_clusters"]], y=.data[[qc_feature[n]]], fill=.data[["seurat_clusters"]], group=.data[["seurat_clusters"]])) + 
@@ -203,27 +202,27 @@ for (n in seq(qc_feature)) {
  
 ```
 
-## Number of counts 
+### Number of counts 
 ```{r plot_clusterQC_nCount, fig.height=fig_patchwork6_height}
 print(p_list1[[1]])
 ```
 
-## Number of features
+### Number of features
 ```{r plot_clusterQC_nfeature, fig.height=fig_patchwork6_height}
 print(p_list1[[2]])
 ```
 
-## Percent mitochondrial reads
+### Percent mitochondrial reads
 ```{r plot_clusterQC_mt, fig.height=fig_patchwork6_height}
 print(p_list1[[3]])
 ```
 
-## Percent ribosomal reads
+### Percent ribosomal reads
 ```{r plot_clusterQC_ribosomal, fig.height=fig_patchwork6_height}
 print(p_list1[[4]])
 ```
 
-## Percent ERCC
+### Percent ERCC
 ```{r plot_clusterQC_ercc, fig.height=fig_patchwork6_height}
 if ("percent_ercc" %in% colnames(sc[[]])) {
   print(p_list1[[5]])
@@ -236,7 +235,7 @@ if ("percent_ercc" %in% colnames(sc[[]])) {
 <br>
 
 
-# Cell Cycle Effect
+## Cell Cycle Effect
 
 How much do gene expression profiles in the dataset reflect the cell cycle phases the single cells were in? If a cell cycle score for each cell based on its expression of G2M and S phase markers was calculated, it will be displayed here. 
 
@@ -250,7 +249,8 @@ p1 = ggplot(sc[[]], aes(x=S.Score, y=G2M.Score, colour=Phase)) +
   geom_point() + 
   scale_x_continuous("G1/S score") + 
   scale_y_continuous("G2/M score") + 
-  AddStyle(col=Misc(sc, "colour_lists")[["Phase"]])
+  AddStyle(col=Misc(sc, "colour_lists")[["Phase"]]) +
+  NoLegend()
 
 p2 = ggplot(sc@meta.data %>% 
               dplyr::group_by(seurat_clusters, Phase) %>% 
@@ -260,6 +260,7 @@ p2 = ggplot(sc@meta.data %>%
   scale_x_discrete("Seurat clusters") + 
   scale_y_continuous("Fraction of cells") + 
   AddStyle(fill=Misc(sc, "colour_lists")[["Phase"]]) + 
+  NoLegend() +
   theme(axis.text.x = element_text(angle=45, hjust=1, vjust=1)) 
 
 p3 = ggplot(sc[[]] %>% 
@@ -269,10 +270,11 @@ p3 = ggplot(sc[[]] %>%
   geom_bar(stat="identity", position="fill") + 
   scale_y_continuous("Fraction of cells") +
   AddStyle(fill=Misc(sc, "colour_lists")[["Phase"]]) + 
+  NoLegend() +
   theme(axis.text.x = element_text(angle=30, hjust=1, vjust=1)) + xlab("")
 
-p = p1 + p2 + p3 & theme(legend.position="bottom")
-p = p + patchwork::plot_annotation(title="Cell cycle phases") + plot_layout(guides="collect")
+p23 = p2 + p3 + patchwork::plot_layout(guides = "collect") & theme(legend.position = 'bottom')
+p = p1 + p23
 p
 ```
 
@@ -283,11 +285,11 @@ if (any(!is.na(sc$Phase))) {
   p1 = Seurat::DimPlot(sc, group.by="Phase", pt.size=1, cols=Misc(sc, "colour_lists")[["Phase"]]) + 
     AddStyle(title="Cell cycle phases", legend_title="Phase",  xlab = "UMAP 1", ylab = "UMAP 2")
   p1$data$seurat_clusters = sc[["seurat_clusters"]][rownames(p1$data), ]
-  p1 = LabelClusters(p1, id="seurat_clusters", box=TRUE, segment.color="black", fill="white")
+  p1 = LabelClusters(p1, id="seurat_clusters", box=TRUE, segment.color="black", fill="white", repel = TRUE)
   
   p_list = list()
   cc_features = c("S.Score", "G2M.Score", "CC.Difference")
-  title = c("S phase", "G2/M phase", "S and G2/M difference")
+  title = c("S phase", "G2/M phase", "G2/M & S difference")
   
   for (n in seq(cc_features)) {
   p_list[[n]] = Seurat::FeaturePlot(sc, features=cc_features[n], pt.size=1, min.cutoff="q1", max.cutoff="q99", cols=c("lightgrey", param$col)) +
@@ -305,13 +307,14 @@ if (any(!is.na(sc$Phase))) {
 <br>
 
 
-# Distribution of cells in clusters
+## Distribution of cells in clusters
 
 ```{r cells_per_cluster, fig.height=fig_standard2_height}
 # Count cells per cluster per sample 
 cell_samples = sc[[]] %>% dplyr::pull(orig.ident) %>% levels()
 cell_clusters = sc[[]] %>% dplyr::pull(seurat_clusters) %>% levels()
 
+# Make table
 tbl = dplyr::count(sc[[c("orig.ident", "seurat_clusters")]], orig.ident, seurat_clusters) %>% tidyr::pivot_wider(names_from="seurat_clusters", names_prefix="Cl_", values_from=n, values_fill=0) %>% as.data.frame()
 rownames(tbl) = paste0(tbl[,"orig.ident"],"_n")
 tbl[,"orig.ident"] = NULL
@@ -336,14 +339,10 @@ tbl_bar$Sample = tbl_bar$Sample %>% gsub(pattern="_perc$", replacement="", perl=
 tbl_bar$Percentage = as.numeric(tbl_bar$Percentage)
 p1 = ggplot(tbl_bar, aes(x=Cluster, y=Percentage, fill=Sample)) + 
   geom_bar(stat="identity" ) +
-  AddStyle(title="Percentage cells of samples in clusters",
+  AddStyle(title="Sample identity per clusters",
            fill=param$col_samples,
            legend_title="Sample",
            legend_position="bottom")
-
-
-
-
 
 p = p1 | p_umap
 p
@@ -366,6 +365,76 @@ knitr::kable(tbl, align="l", caption="Number of cells per sample and cluster") %
   kableExtra::scroll_box(width="100%", fixed_thead=TRUE)
 ```
 
+<br>
+
+## Fraction of clusters per sample
+```{r cells_per_sample, fig.height=fig_standard3_height}
+
+# Make table
+tbl = dplyr::count(sc[[c("orig.ident", "seurat_clusters")]], orig.ident, seurat_clusters) %>% tidyr::pivot_wider(names_from="seurat_clusters", values_from=n, values_fill=0) %>% as.data.frame()
+rownames(tbl) = paste0(tbl[,"orig.ident"])
+tbl[,"orig.ident"] = NULL
+
+# Plot counts
+tbl_bar = tbl[cell_samples, , drop=FALSE] %>% 
+  tibble::rownames_to_column(var="Sample") %>%
+  tidyr::pivot_longer(cols = tidyselect::all_of(cell_clusters), names_to="Cluster", values_to="Counts")
+tbl_bar$Counts = as.numeric(tbl_bar$Counts)
+tbl_bar$Cluster <- factor(tbl_bar$Cluster,levels = cell_clusters)
+tbl_bar$Sample <- factor(tbl_bar$Sample, levels = cell_samples)
+
+# Plot counts per condition
+p1 = ggplot(tbl_bar, aes(x=Sample, y=Counts, fill=Cluster)) + 
+  geom_bar(stat="identity" ) +
+  AddStyle(title="", xlab = "",
+           fill=param$col_clusters,
+           legend_position="") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Calculate percentages
+tbl_perc = round(t(tbl) / colSums(t(tbl)) * 100, 2) %>% t() %>% as.data.frame()
+tbl_perc = round(tbl / rowSums(tbl) * 100, 2) %>% as.data.frame()
+
+# Plot percentages
+tbl_bar_perc = tbl_perc[cell_samples, , drop=FALSE] %>% 
+  tibble::rownames_to_column(var="Sample") %>%
+  tidyr::pivot_longer(cols = tidyselect::all_of(cell_clusters), names_to="Clusters", values_to="Percentage")
+tbl_bar_perc$Percentage = as.numeric(tbl_bar_perc$Percentage)
+tbl_bar_perc$Clusters <- factor(tbl_bar_perc$Clusters,levels = cell_clusters)
+tbl_bar_perc$Sample <- factor(tbl_bar_perc$Sample, levels = cell_samples)
+
+p2 = ggplot(tbl_bar_perc, aes(x=Sample, y=Percentage, fill=Clusters)) + 
+  geom_bar(stat="identity" ) +
+  AddStyle(title="", xlab = "",
+           fill=param$col_clusters,
+           legend_position="") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+p_umap = p_umap + 
+  AddStyle(title="")
+
+p = p1 | p2 + 
+  patchwork::plot_annotation(title="Cluster identity per sample") 
+p = p | p_umap
+p
+```
+
+```{r cells_per_sample_table}
+# Combine tables
+rownames(tbl) = paste0(rownames(tbl),"_n")
+rownames(tbl_perc) = paste0(rownames(tbl_perc),"_perc")
+tbl = rbind(tbl, tbl_perc) 
+
+# Sort
+tbl = tbl[order(rownames(tbl)),, drop=FALSE]
+
+# Print table
+knitr::kable(tbl, align="l", caption="Number of cells per cluster and sample") %>% 
+  kableExtra::kable_styling(bootstrap_options=c("striped", "hover")) %>% 
+  kableExtra::scroll_box(width="100%", fixed_thead=TRUE)
+```
+
+
 ```{r reset_default_assay}
 # Reset default assay, so we won't plot integrated data
 # Note: We need integrated data for UMAP, clusters
@@ -375,9 +444,9 @@ DefaultAssay(sc) = ifelse(param$norm=="SCT", param$norm, param$assay_raw)
 <br>
 
 
-
-# Cluster tree
-The relationship (similarity) between clusters can be represented in a cluster tree. I find this useful to identify which clusters might be candidates for merging.
+## Assessing cluster separation
+### Cluster tree
+Here, the relationship (similarity) between clusters is represented in a cluster tree. The cluster tree can help to identify which clusters might be candidates for merging.
 
 ```{r cluster_tree, fig.height=fig_patchwork6_height, fig.width=15}
 
@@ -394,9 +463,455 @@ p2 = p_umap / plot_spacer() +
   plot_layout(widths = c(1, 2))
 p_list = list(p1, plot_spacer(), p2)
 p = wrap_plots(p_list) + 
-  plot_layout(widths = c(6, 1, 2))
+  plot_layout(widths = c(10, 1, 4))
 p
 
+```
+
+### Silhouette plot
+In contrast, the silhouette plot can aid in assessing cluster assignment. 
+
+```{asis, ref.label="silhouette_plot_description"}
+```
+
+```{r silhouette_plot, fig.height=fig_patchwork6_height, fig.width=15}
+# Extracting distance matrix
+distance_matrix = dist(Embeddings(sc[['pca']])[, 1:param$pc_n])
+clusters = sc@meta.data$seurat_clusters
+silhouette = cluster::silhouette(as.numeric(clusters), dist = distance_matrix)
+sc@meta.data$silhouette_score = silhouette[,3]
+mean_silhouette_score = mean(sc@meta.data$silhouette_score)
+
+# Generate table
+silhouette_tbl = sc@meta.data %>%
+  dplyr::mutate(barcode = rownames(.)) %>%
+  dplyr::arrange(seurat_clusters,-silhouette_score) %>%
+  dplyr::mutate(barcode = factor(barcode, levels = barcode))
+
+# Plot
+legend_title <- "Cluster"
+p = ggplot(silhouette_tbl) +
+  geom_col(aes(barcode, silhouette_score, fill = seurat_clusters), show.legend = TRUE) +
+  geom_hline(yintercept = mean_silhouette_score, color = 'red', linetype = 'dashed') +
+  scale_x_discrete(name = 'Cells') +
+  scale_y_continuous(name = 'Silhouette score') +
+  scale_fill_manual(legend_title, values = param$col_clusters) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+p
+```
+
+<br>
+<br> 
+
+# Marker genes
+We next identify genes that are differentially expressed in one cluster compared to all other clusters, based on `r param$norm` data and the method "MAST". Note that markers may bleed over between closely-related groups, i.e. they are not forced to be specific to only one cluster.  
+Resulting _p_-values are adjusted using the Bonferroni method. However, note that the _p_-values are likely inflated, since both clusters and marker genes were determined based on the same gene expression data, and there ought to be gene expression differences by design. Nevertheless, _p_-values can be used to sort and prioritize marker genes. We require marker genes to be expressed in at least `r param$marker_pct * 100`% of cells in the respective cluster, with a minimum log2 fold change of `r param$marker_log2FC` and adjusted p-value of at most `r param$marker_padj`. The results written to file "markers_cluster_vs_rest.xlsx".  
+
+```{asis, ref.label="marker_genes"}
+```
+
+```{r markers, warning=FALSE, message=FALSE}
+# Find DEGs for every cluster compared to all remaining cells, report positive (=markers) and negative ones
+# min.pct = requires feature to be detected at this minimum percentage in either of the two groups of cells 
+# logfc.threshold = requires a feature to be differentially expressed on average by some amount between the two groups
+# only.pos = find only positive markers 
+
+# Review recommends using "MAST"; Or "wilcox" or "LR"
+# ALWAYS USE: assay="RNA"/"Spatial" or assay="SCT"
+# DONT USE: assay=integrated datasets
+# Note: By default, the function uses slot="data". Mast requires log data, so this is the correct way to do it.
+#   https://www.bioconductor.org/packages/release/bioc/vignettes/MAST/inst/doc/MAST-interoperability.html
+DefaultAssay(sc) = param$norm
+
+if (param$norm=="SCT" & param$experimental_groups=="homogene") {
+  sc = PrepSCTFindMarkers(sc)
+}
+
+markers = Seurat::FindAllMarkers(sc, assay=param$norm, test.use="MAST", only.pos=FALSE,
+                                 min.pct=param$marker_pct, logfc.threshold=param$marker_log2FC,
+                                 latent.vars=param$latent_vars, verbose=FALSE, silent=TRUE)
+
+# If no markers were found, initialise the degs table so that further downstream (export) chunks run
+if (ncol(markers)==0) markers = DegsEmptyMarkerResultsTable(levels(sc$seurat_clusters))
+
+# For Seurat versions until 3.2, log fold change is based on the natural log. Convert to log base 2.
+if ("avg_logFC" %in% colnames(markers) & !"avg_log2FC" %in% colnames(markers)) {
+  lfc_idx = grep("avg_log\\S*FC", colnames(markers))
+  markers[,lfc_idx] = marker_deg_results[,lfc_idx] / log(2)
+  col_nms = colnames(markers)
+  col_nms[2] = "avg_log2FC"
+  colnames(markers) = col_nms
+}
+
+# Sort markers
+markers = markers %>% DegsSort(group=c("cluster"))
+  
+# Filter markers 
+markers_filt = DegsFilter(markers, cut_log2FC=param$marker_log2FC, cut_padj=param$marker_padj)
+markers_found = nrow(markers_filt$all)>0
+
+# Add average data to table
+markers_out = cbind(markers_filt$all, DegsAvgDataPerIdentity(sc, genes=markers_filt$all$gene, assay=param$assay_raw))
+
+# Split by cluster and write to file
+additional_readme = data.frame(Column=c("cluster",
+                                        "p_val_adj_score",
+                                        "avg_<assay>_<slot>_id<cluster>"), 
+                               Description=c("Cluster",
+                                             "Score calculated as follows: -log10(p_val_adj)*sign(avg_log2FC)",
+                                             "Average expression value for cluster; <assay>: RNA or SCT; <slot>: raw counts or normalised data"))
+
+
+# Create directory
+if (!file.exists(file.path(param$path_out, "data", "marker_genes"))) dir.create(file.path(param$path_out, "data", "marker_genes"), recursive=TRUE, showWarnings=FALSE)
+
+invisible(DegsWriteToFile(split(markers_out, markers_out$cluster),
+                                       annot_ensembl=annot_ensembl,
+                                       gene_to_ensembl=seurat_rowname_to_ensembl,
+                                       additional_readme=additional_readme,
+                                       file=file.path(param$path_out, "data", "marker_genes", "markers_cluster_vs_rest.xlsx")))
+
+
+# Plot number of differentially expressed genes
+p = DegsPlotNumbers(markers_filt$all, 
+                      group="cluster", 
+                      title=paste0("Number of DEGs, comparing each cluster to the rest\n(FC=", 2^param$marker_log2FC, ", adj. p-value=", param$marker_padj, ")")) 
+
+# Add marker table to seurat object
+Seurat::Misc(sc, "markers") = list(condition_column="seurat_clusters", test="MAST", padj=param$marker_padj, 
+                                   log2FC=param$marker_log2FC, min_pct=param$marker_pct, assay=param$assay_raw, slot="data",
+                                   latent_vars=param$latent_vars,
+                                   results=markers_filt$all,
+                                   enrichr=EmptyEnrichrDf(overlap_split=TRUE))
+
+# Add marker lists to seurat object
+marker_genesets_up = split(markers_filt$up$gene, markers_filt$up$cluster)
+names(marker_genesets_up) = paste0("markers_up_cluster", names(marker_genesets_up))
+marker_genesets_down = split(markers_filt$down$gene, markers_filt$down$cluster)
+names(marker_genesets_down) = paste0("markers_down_cluster", names(marker_genesets_down))
+sc = ScAddLists(sc, lists=c(marker_genesets_up, marker_genesets_down), lists_slot="gene_lists")
+
+if (markers_found) {
+  p
+} else {
+  warning("No differentially expressed genes (cluster vs rest) found. The following related code is not executed, no related plots and tables are generated.")
+}
+```
+
+<br> 
+
+## Table of top marker genes
+We use the term "marker genes" to specifically describe genes that are up-regulated in cells of one cluster compared to the rest.
+
+```{r markers_table, eval=markers_found}
+if (markers_found) {
+  markers_top = DegsUpDisplayTop(markers_filt$up, n=5)
+  markers_top_6 = DegsUpDisplayTop(markers_filt$up, n=6)
+  markers_top_10 = DegsUpDisplayTop(markers_filt$up, n=10)
+  
+  # Add labels
+  markers_top$labels = paste0(markers_top$cluster, ": ", markers_top$gene)
+
+  # Show table
+  knitr::kable(markers_top %>% dplyr::select(-labels), align="l", caption="Up to top 5 marker genes per cell cluster") %>% 
+    kableExtra::kable_styling(bootstrap_options=c("striped", "hover")) %>% 
+    kableExtra::scroll_box(width="100%", height="500px") 
+}
+```
+
+<br> 
+
+## Visualisation of top marker genes {.tabset}
+The following plots visualize the top marker genes for each cluster, respectively. Clear marker genes indicate good clusters that represent cell types. 
+
+```{r markers_fig_heights}
+# Note: We need to run this chunk as it specifies a variable that is used in chunk definitions below
+if (markers_found) {
+
+  # Feature plots and violin plots: each row contains 3 plots
+  #   The plot has 5 columns and 1 rows per cluster, hence the layout works nicely if we find 
+  height_per_row = 2.5
+  nr_rows_5cols = ceiling(nrow(markers_top)/5)
+  fig_height_5cols = height_per_row * nr_rows_5cols
+  
+  # Violin plots and violin plots: each row contains 3 plots
+  #   The plot has 4 columns and 2 rows per cluster, hence the layout works nicely if we find 
+  #     at least 6 markers per cluster
+  height_per_row = 1.5
+  nr_rows_3cols = ceiling(nrow(markers_top_6)/3)
+  fig_height_3cols = height_per_row * nr_rows_3cols
+  
+  # Dotplots: each row contains 2 plots
+  # The height of dotplots is dependent on the number of clusters
+  height_per_row_variable = max(3, 0.3 * length(levels(sc$seurat_clusters)))
+  nr_rows_dp_2cols = ceiling(length(levels(sc$seurat_clusters))/2)
+  fig_height_dp_2cols = height_per_row_variable * nr_rows_dp_2cols %>% min(100)
+  
+} else {
+  fig_height_5cols = nr_rows_3cols = fig_height_dp_2cols = 7 
+}
+```
+
+### Feature plots
+
+```{r markers_plot_umap, eval=markers_found, fig.height=fig_height_5cols}
+if (markers_found) {
+  # Plot each marker one by one, and then combine them all at the end
+  p_list = list()
+  for (i in 1:nrow(markers_top)) { 
+    p_list[[i]] = Seurat::FeaturePlot(sc, features=markers_top$gene[i], 
+                                      cols=c("lightgrey", param$col_clusters[markers_top$cluster[i]]),  
+                                      combine=TRUE, label=TRUE) + 
+      AddStyle(title=markers_top$labels[i], 
+               xlab="", ylab="", 
+               legend_position="bottom")
+  }
+  
+  # Combine all plots
+  p = patchwork::wrap_plots(p_list, ncol=5) + 
+    patchwork::plot_annotation(title="UMAP, cells coloured by normalised gene expression data, top marker genes per cluster")
+  p
+}
+```
+
+### Violin plots (normalised)
+
+```{r markers_plot_violin_raw, eval=markers_found, fig.height=fig_height_3cols}
+if (markers_found) {
+  # Plot violin plots per marker gene, and combine it all at the end
+  # This layout works out nicely if there are 4 marker genes per cluster
+  p_list = list()
+  for(i in 1:nrow(markers_top_6)) { 
+    p_list[[i]] = Seurat::VlnPlot(sc, features=markers_top_6$gene[i], assay=param$norm, pt.size=0, cols=param$col_clusters) + 
+      AddStyle(title=markers_top_6$labels[i], xlab="") + 
+      theme(axis.text.x = element_text(angle=45, hjust=1, vjust=1)) 
+  }
+  p = patchwork::wrap_plots(p_list, ncol=3) + 
+    patchwork::plot_annotation(title="Violin plot of for normalised gene expression data, top marker genes per cluster") & theme(legend.position="none")
+  p
+}
+```
+
+### Dot plot (scaled)
+<details>
+  <summary>What shows a dotplot?</summary>
+  
+A dot plot visualizes how gene expression changes across different clusters. The size of a dot encodes the percentage of cells in a cluster that expresses the gene, while the color encodes the scaled average expression across all cells within the cluster. Per gene (column), we group cells based on cluster identity (rows), calculate average expression per cluster, subtract the mean of average expression values and divide by the standard deviation. The resulting scores describe how high or low a gene is expressed in a cluster compared to all other clusters. 
+</details>
+
+```{r markers_plot_dot_scaled, eval=markers_found, fig.height=fig_height_dp_2cols}
+if (markers_found) {
+  # Visualises how feature expression changes across different clusters
+  # Plot dotplots per cluster, and combine it all at the end
+  p_list = lapply(markers_top_10$cluster %>% sort() %>% unique(), function(cl) {
+    genes = markers_top_10 %>% dplyr::filter(cluster==cl) %>% dplyr::pull(gene)
+    p = suppressMessages(Seurat::DotPlot(sc, features=genes) + 
+                           scale_colour_gradient2(low="navy", mid="steelblue", high="darkgoldenrod1") +
+                           AddStyle(title=paste0("Top marker genes in cluster ", cl), ylab="Cluster", xlab = "", legend_position="top") + 
+                           theme(axis.text.x = element_text(angle=90, hjust=1, vjust=.5)) + 
+                           guides(size=guide_legend(order=1)))
+    return(p)
+  })
+  
+  p = patchwork::wrap_plots(p_list, ncol=2) + patchwork::plot_annotation("Dotplot with top 10 up-regulated marker genes (scaled)")
+  p
+}
+```
+
+<br> 
+<br> 
+
+## Expression per cluster per sample {.tabset}
+If the dataset contains multiple samples, we visualize the expression of marker genes that are up-regulated in a cluster separately for each sample.  
+
+```{r markers_plot_dotplotpercl_height}
+#fig_height_degs_per_cl = max(5, 
+#                             max(2, 0.3 * (sc$orig.ident %>% unique() %>% length())) * length(levels(sc$seurat_clusters)) * 1) # We multiply by 2, as the legend requires quite some space
+
+height_per_row_variable = max(3, 0.3 * (sc$orig.ident %>% unique() %>% length()))
+nr_rows_dp_2cols = ceiling(length(levels(sc$seurat_clusters))/2)
+fig_height_degs_per_cl = height_per_row_variable * nr_rows_dp_2cols %>% min(100)
+
+```
+
+### Non-scaled dotplots
+First, we plot normalized expression with no further scaling. This plot helps to get an impression of the total expression of a gene. 
+
+```{r markers_plot_dotplotpercl_unscaled, fig.height=fig_height_degs_per_cl, eval=markers_found}
+if (markers_found) {
+  n_genes_max_dotplot = 25
+  p_list = list()
+  for (cl in levels(sc$seurat_clusters)) {            
+    markers_filt_up_cl_top = markers_filt$up %>% 
+      dplyr::filter(cluster==cl) %>% 
+      dplyr::top_n(n=n_genes_max_dotplot, wt=p_val_adj_score) %>% 
+      dplyr::pull(gene)
+    if (length(markers_filt_up_cl_top) > 0) {
+      p_list[[cl]] = DotPlotUpdated(sc, features=markers_filt_up_cl_top, idents=cl, group.by="orig.ident", scale=FALSE, cols=c("navy", "steelblue", "darkgoldenrod1")) +
+        AddStyle(title=paste0("Cluster ", cl), ylab="", xlab = "", legend_position="top") + 
+        theme(axis.text.x=element_text(angle=90, hjust=1, vjust=.5)) + 
+        guides(size=guide_legend(order=1))
+    }
+  }
+  
+  p = patchwork::wrap_plots(p_list, ncol=2) + patchwork::plot_annotation("Dotplot per cluster with top 25 up-regulated marker genes (not scaled)") 
+  p
+}
+```
+
+### Scaled dotplots
+Second, we plot scaled expression as explained above. This plot allows us to judge whether the expression of a gene is increased in one sample as compared to the other samples. However, for small sample numbers, this plot might be misleading as differences can appear inflated.  
+
+```{r markers_plot_dotplotpercl_scaled, fig.height=fig_height_degs_per_cl, eval=markers_found, warning=FALSE}
+if (markers_found) {
+  p_list = list()
+  markers_filt_up_top = DegsUpDisplayTop(degs=markers_filt$up, n=25)
+  for (cl in levels(sc$seurat_clusters)) {  
+    markers_filt_up_cl_top = markers_filt_up_top %>% 
+      dplyr::filter(cluster==cl) %>% 
+      dplyr::pull(gene)
+
+    if (length(markers_filt_up_cl_top) > 0) {
+      p_list[[cl]] = suppressMessages(Seurat::DotPlot(sc, features=markers_filt_up_cl_top, idents=cl, group.by="orig.ident") +
+        scale_colour_gradient2(low="navy", mid="steelblue", high="darkgoldenrod1") + 
+        #viridis::scale_color_viridis(option = "D") +
+        AddStyle(title=paste0("Cluster ", cl), ylab="", xlab = "", legend_position="top") + 
+        theme(axis.text.x=element_text(angle=90, hjust=1, vjust=.5)) + 
+        guides(size=guide_legend(order=1)))
+    }
+  }
+  p = patchwork::wrap_plots(p_list, ncol=2) + patchwork::plot_annotation("Dotplot per cluster with top 25 up-regulated marker genes (scaled)") 
+  p
+}
+```
+
+<br>
+
+## Functional enrichment analysis {.tabset}
+To gain first insights into potential functions of cells in a cluster, we test for over-representation of functional terms among up- and down-regulated genes of each cluster. We first translate gene symbols of up- and down-regulated genes per cluster into Entrez gene symbols, and then use the "enrichR" R-package to access the "Enrichr" website (https://amp.pharm.mssm.edu/Enrichr/). You can choose to test functional enrichment from a wide range of databases. Over-represented terms are written to files "functions_marker_up_cluster_X_vs_rest.xlsx" and "functions_marker_down_cluster_X_vs_rest.xlsx".  
+
+```{r markers_functional_enrichment, message=FALSE, eval=markers_found, results='hide'}
+
+# Set Enrichr database
+enrichR::setEnrichrSite(param$enrichr_site)
+
+if (markers_found) {
+  
+  # Create directory
+  if (!file.exists(file.path(param$path_out, "data", "marker_genes"))) dir.create(file.path(param$path_out, "data", "marker_genes"), recursive=TRUE, showWarnings=FALSE)
+
+  
+  # Upregulated markers
+  
+  # Convert Seurat names of upregulated marker per cluster to Entrez; use named lists for translation
+  # Is that still neccessary?
+  marker_genesets_up = sapply(levels(sc$seurat_clusters), function(x) {
+    tmp = markers_filt$up %>% dplyr::filter(cluster==x) %>% dplyr::pull(gene)
+    tmp = sapply(tmp, function(n) seurat_rowname_to_entrez[[n]][1], USE.NAMES=TRUE, simplify=TRUE) %>% unlist() %>% as.character()
+    return(tmp[!is.na(tmp)])
+  }, USE.NAMES=TRUE, simplify=TRUE)
+  
+  # Tests done by Enrichr
+  marker_genesets_up_enriched = purrr::map(marker_genesets_up, EnrichrTest, databases=param$enrichr_dbs, padj=param$enrichr_padj)
+  marker_genesets_up_enriched = purrr::map(list_names(marker_genesets_up_enriched), function(n) {
+    return(purrr::map(marker_genesets_up_enriched[[n]], function(d){
+      return(cbind(d, Cluster=rep(n, nrow(d)), Direction=rep("up", nrow(d))))
+    }))
+  })
+
+  # Write to files
+  invisible(purrr::map(names(marker_genesets_up_enriched), function(n) {
+    EnrichrWriteResults(enrichr_results=marker_genesets_up_enriched[[n]],
+                        file=file.path(param$path_out, "data", "marker_genes", paste0("functions_marker_up_cluster_", n, "_vs_rest.xlsx")))
+  }))
+  
+  
+  # Downregulated markers
+  
+  # Convert Seurat names of downregulated marker per cluster to Entrez; use named lists for translation
+  # Is that still neccessary?
+  marker_genesets_down = sapply(levels(sc$seurat_clusters), function(x) {
+    tmp = markers_filt$down %>% dplyr::filter(cluster==x) %>% dplyr::pull(gene)
+    tmp = sapply(tmp, function(x) seurat_rowname_to_entrez[[x]][1], USE.NAMES=TRUE, simplify=TRUE) %>% unlist() %>% as.character()
+    return(tmp[!is.na(tmp)])
+  }, USE.NAMES=TRUE, simplify=TRUE)
+  
+  #  Tests done by Enrichr
+  marker_genesets_down_enriched = purrr::map(marker_genesets_down, EnrichrTest, databases=param$enrichr_dbs, padj=param$enrichr_padj)
+  marker_genesets_down_enriched = purrr::map(list_names(marker_genesets_down_enriched), function(n) {
+    return(purrr::map(marker_genesets_down_enriched[[n]], function(d){
+      return(cbind(d, Cluster=rep(n, nrow(d)), Direction=rep("down", nrow(d))))
+    }))
+  })
+  
+  # Write to files
+  invisible(purrr::map(names(marker_genesets_down_enriched), function(n) {
+    EnrichrWriteResults(enrichr_results=marker_genesets_down_enriched[[n]],
+                        file=file.path(param$path_out, "data", "marker_genes", paste0("functions_marker_down_cluster_", n, "_vs_rest.xlsx")))
+  }))
+  
+  # Combine, flatten into data.frame and add to sc misc slot
+  marker_genesets_enriched = c(marker_genesets_up_enriched, marker_genesets_down_enriched)
+  marker_genesets_enriched = unname(marker_genesets_enriched)
+  marker_genesets_enriched = purrr::map(marker_genesets_enriched, FlattenEnrichr) %>% dplyr::bind_rows()
+  marker_genesets_enriched$Cluster = factor(marker_genesets_enriched$Cluster, levels=levels(sc$seurat_clusters))
+  marker_genesets_enriched$Direction = factor(marker_genesets_enriched$Direction, levels=c("up", "down"))
+  
+  misc_content = Misc(sc, "markers")
+  misc_content[["enrichr"]] = marker_genesets_enriched
+  suppressWarnings({Misc(sc, "markers") = misc_content})
+}
+```
+
+The following table contains the top enriched terms per cluster and utilized database (`r param$enrichr_dbs`).
+
+```{r functional_enrichment_results, eval=markers_found, results="asis"}
+# Top enriched terms (TODO: better plots, functions)
+if (markers_found) {
+  
+  # Get top ten up and down over all databases per cluster
+  marker_genesets_top_enriched = marker_genesets_enriched %>% dplyr::group_by(Cluster, Database) %>% dplyr::filter(Direction=="up") %>%
+    dplyr::top_n(n=5, wt=Combined.Score)
+
+  # Print as tabs
+  enr_table = list()
+  #cat("### {.tabset} \n \n")
+  
+  for(n in levels(marker_genesets_top_enriched$Cluster)){
+    #cat("#### ", n, " \n")
+    enr_table[[n]] = marker_genesets_top_enriched %>% dplyr::ungroup() %>% dplyr::filter(Cluster==n) %>%
+      dplyr::select(Database, Term, Direction, Adjusted.P.value, Odds.Ratio, Combined.Score)
+    #enr_table = marker_genesets_top_enriched %>% dplyr::ungroup() %>% dplyr::filter(Cluster==n) %>%
+    #  dplyr::select(Database, Term, Direction, Adjusted.P.value, Odds.Ratio, Combined.Score)
+    #print(knitr::kable(enr_table, align="l", caption="Top ten enriched terms per geneset", format="html") %>% 
+    #kableExtra::kable_styling(bootstrap_options=c("striped", "hover")) %>% 
+    #kableExtra::scroll_box(width="100%", height="700px"))
+    #cat(" \n \n")
+  }
+  
+  #cat(" \n \n")
+  concat_enr_table = data.table::rbindlist(enr_table, use.names = TRUE, idcol = "Cluster")
+  
+ knitr::kable(concat_enr_table, align="l", caption="Top ten enriched terms per geneset", format="html") %>% 
+    kableExtra::kable_styling(bootstrap_options=c("striped", "hover")) %>% 
+    kableExtra::scroll_box(width="100%", height="500px")
+}
+```
+
+<br>
+<br>
+<br>
+
+# Cell type annotation with SingleR
+
+```{r, child='../dataset_mapping/cell_annotation.Rmd'}
 ```
 
 <br>

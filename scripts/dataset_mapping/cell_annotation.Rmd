@@ -1,0 +1,260 @@
+Single cell transcriptomes can be difficult to annotate without extensive knowledge of the underlying biology. Given a reference dataset (of samples from single-cell or bulk RNA sequencing) with known labels, it is possible to assign labels to the cells from a test dataset based on similarity to that reference. Hence, the biological knowledge (defined marker genes and cluster identities) can be propagated from the reference dataset to the test dataset in an automated manner and aid in cluster identification.  
+
+Here, we performed cell and cluster annotation with cell types from the reference dataset `r param$annotation_dbs` obtained from celldex (https://bioconductor.org/packages/3.14/data/experiment/vignettes/celldex/inst/doc/userguide.html). The celldex package provides access to several reference datasets (mostly derived from bulk RNA-seq or microarray data).
+```{r load_celldex_reference, warning=FALSE, message=FALSE}
+# Required libraries
+library(SingleR)
+library(celldex)
+
+# Load reference datasets
+# Reference dataset obtained from celldex for singleR
+# https://bioconductor.org/packages/3.14/data/experiment/vignettes/celldex/inst/doc/userguide.html
+# Function to paste reference name and download reference dataset
+str_eval=function(x) {return(eval(parse(text=x)))}
+ref = str_eval(param$annotation_dbs)
+ref_name = gsub("[()]","",param$annotation_dbs)
+
+```
+
+```{r singleR, warning=FALSE, message=FALSE}
+# Annotate cells and clusters using SingleR with reference dataset form celldex
+sce_ann_cells = SingleR::SingleR(test = GetAssayData(sc, assay = param$norm, slot = 'data'),
+  ref = ref, assay.type.test = 1, labels = ref@colData@listData$label.main)
+
+sce_ann_clusters = SingleR::SingleR(test = GetAssayData(sc, assay = param$norm, slot = 'data'),
+  ref = ref, assay.type.test = 1, labels = ref@colData@listData$label.main, clusters = sc$seurat_clusters)
+
+annotated_cells = table(sce_ann_cells$labels)
+annotated_clusters = table(sce_ann_clusters$labels)
+
+sc[["SingleR.labels"]] = sce_ann_cells$labels
+sc[["SingleR.cluster.labels"]] = sce_ann_clusters$labels[match(sc[[]][["seurat_clusters"]], rownames(sce_ann_clusters))]
+
+```
+
+## Annotation of single cells
+UMAPs display cells colored by Seurat clusters and cell types annotated by SingleR. Annotation was performed for each cell. The annotation of each cell is more sensitive, but also more prone to artefacts compared to the annotation of clusters as performed in later steps. Here, we perform annotation of single cells for annotation diagnostics, that means for assessment of the reliability of cell type annotation and how close all cells resemble the cell types of the reference dataset. 
+
+```{r singleR_cells_table, warning=FALSE, message=FALSE}
+# Print table with cell annotation
+knitr::kable(annotated_cells, align="l", caption="Cell types assigned to cells", format="html") %>% 
+    kableExtra::kable_styling(bootstrap_options=c("striped", "hover")) %>% 
+    kableExtra::scroll_box(width="100%", height="300px")
+```
+
+```{r singleR_cells, fig.height=fig_standard2_height, warning=FALSE, message=FALSE}
+# Visualization of clusters
+p_umap = Seurat::DimPlot(sc, reduction="umap", group.by="seurat_clusters", pt.size=param$pt_size) + 
+  scale_color_manual(values=param$col_clusters, labels=cluster_labels) +
+  AddStyle(title="Clusters", xlab = "UMAP 1", ylab = "UMAP 2", legend_position = "bottom") +
+  theme(title = element_text(size = 10)) +
+  NoGrid() + 
+  NoLegend()
+p_umap = LabelClusters(p_umap, id="seurat_clusters", box=TRUE, segment.color="black", fill="white", repel = TRUE)
+
+# Visualization of singleR annotation of cells
+p2 = Seurat::DimPlot(sc, reduction="umap", group.by="SingleR.labels", pt.size=param$pt_size) + 
+  AddStyle(title="Cell types \n(annotation per cell)", xlab = "UMAP 1", ylab = "UMAP 2", legend_position="bottom", legend_title="Cell types") +
+  theme(title = element_text(size = 10)) +
+  NoGrid()
+
+p = p_umap + p2
+p
+```
+
+<br />
+
+## Annotation diagnostics
+Heatmap displays the scores for all cells across all reference labels, allowing to assess the confidence of the corresponding predicted labels. Ideally, each cell should have one score that is distinctively higher than the rest, indicating that an unambiguous assignment.
+```{r annotation_diagnostics_heatmap, warning=FALSE, message=FALSE}
+# Annotation diagnostics
+# https://bioconductor.org/packages/devel/bioc/vignettes/SingleR/inst/doc/SingleR.html
+
+p = plotScoreHeatmap(sce_ann_cells)
+p
+```
+
+<br />
+<br />
+
+Plot displaying per-cell “deltas” (the difference between the score for the assigned label and the median across all labels). Low deltas indicate that the assignment is uncertain. The minimum threshold on the deltas is defined using an outlier-based approach. Yellow marked points represents outliers that fell below the threshold.
+
+```{r diagnostics_fig_heights}
+# Set figure height for diagnostic plot
+number_fig_dig = length(unique(sce_ann_cells$pruned.labels))
+fig_height_dig = ceiling(number_fig_dig/6)*3
+
+```
+
+```{r annotation_diagnostics_deltas, fig.height=fig_height_dig, warning=FALSE, message=FALSE}
+# Annotation diagnostics
+p = plotDeltaDistribution(sce_ann_cells, ncol = 6) +
+  NoLegend()
+p
+
+number_pruned_table = table(is.na(sce_ann_cells$pruned.labels))
+number_pruned_table[3]=round((number_pruned_table[1]/(number_pruned_table[1]+number_pruned_table[2])*100),2)
+number_pruned_table[4]=round((number_pruned_table[2]/(number_pruned_table[1]+number_pruned_table[2])*100),2)
+names(number_pruned_table) = c("assigned", "ambiguous", "% assigned", "% ambiguous")
+
+number_pruned_table = (t(number_pruned_table))
+knitr::kable(number_pruned_table, align="l", caption="Number of annotated cells") %>% 
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover")) 
+```
+
+<br />
+
+## Annotation of clusters  {.tabset}
+UMAPs display cells colored by Seurat clusters and cell types annotated by SingleR. Annotation was performed for each cluster as unit.
+
+```{r singleR_clusters_table, warning=FALSE, message=FALSE}
+
+# Set to annotation metadata column
+sc$annotation = sc$SingleR.cluster.labels
+
+# Set colors for cell types based on annotation 
+if (!is.null(sc@meta.data[["annotation"]])) {
+  if (length(unique(sc@meta.data[["annotation"]]))!=length(param$col_annotation)) {
+    message(paste0("No or wrong number of distinct colors for cell tpye annotation provieded. Generate colors using color palette", param$col_palette_annotation))
+    annotation_colours_out = suppressWarnings(SetAnnotationColours(sc, param$col_palette_annotation)) 
+    sc = annotation_colours_out[[1]]
+    param$col_annotation = annotation_colours_out[[2]]
+  }
+}
+
+
+# Print table with cell annotation
+knitr::kable(annotated_clusters, align="l", caption="Cell types assigned to clusters", format="html") %>% 
+    kableExtra::kable_styling(bootstrap_options=c("striped", "hover")) %>% 
+    kableExtra::scroll_box(width="100%", height="300px")
+```
+
+<br />
+
+### Coloured by cell type 
+```{r singleR_clusters, fig.height=fig_standard2_height, warning=FALSE, message=FALSE}
+# Visualization of singleR annotation of clusters
+p2 = Seurat::DimPlot(sc, reduction="umap", group.by="annotation", cols = param$col_annotation, pt.size=param$pt_size) + 
+  AddStyle(title="Cell types \n(annotation per cluster)", xlab = "UMAP 1", ylab = "UMAP 2", legend_position="right", legend_title="Cell types") +
+  theme(title = element_text(size = 10)) +
+  NoGrid()
+p2$data$seurat_clusters = sc[["seurat_clusters"]][rownames(p2$data), ]
+p2 = LabelClusters(p2, id="seurat_clusters", box=TRUE, segment.color="black", fill="white", repel = TRUE)
+
+p = p_umap + p2
+p
+```
+
+### Coloured by cell type (per sample)
+```{r singleR_clusters_separately, fig.height=fig_standard2_height}
+# Visualization of singleR annotation of clusters separately per sample
+p = Seurat::DimPlot(sc, reduction="umap", group.by="annotation", split.by = "orig.ident", cols = param$col_annotation, pt.size=param$pt_size) + 
+  AddStyle(title="", xlab = "UMAP 1", ylab = "UMAP 2", legend_position="right", legend_title="Cell types") +
+  theme(title = element_text(size = 10)) +
+  NoGrid()
+p$data$seurat_clusters = sc[["seurat_clusters"]][rownames(p$data), ]
+p = LabelClusters(p, id="seurat_clusters", box=TRUE, segment.color="black", fill="white", repel = TRUE)
+p
+```
+
+<br>
+<br>
+
+## Fraction of sample per cell type
+```{r samples_per_celltype, fig.height=fig_standard3_height}
+# Set 
+cell_samples = levels(sc$orig.ident)
+cell_celltype = unique(sc$annotation)
+
+# Make count table
+tbl = dplyr::count(sc[[c("orig.ident", "annotation")]], orig.ident, annotation) %>% tidyr::pivot_wider(names_from="annotation", values_from=n, values_fill=0) %>% as.data.frame()
+rownames(tbl) = paste0(tbl[,"orig.ident"])
+tbl[,"orig.ident"] = NULL
+
+tbl_bar = tbl[cell_samples, , drop=FALSE] %>% 
+  tibble::rownames_to_column(var="Sample") %>%
+  tidyr::pivot_longer(cols = tidyselect::all_of(cell_celltype), names_to="Celltype", values_to="Counts")
+tbl_bar$Counts = as.numeric(tbl_bar$Counts)
+tbl_bar$Celltype <- factor(tbl_bar$Celltype,levels = cell_celltype)
+tbl_bar$Sample <- factor(tbl_bar$Sample, levels = cell_samples)
+
+# Plot counts
+p1 = ggplot(tbl_bar, aes(x=Celltype, y=Counts, fill=Sample)) + 
+  geom_bar(stat="identity" ) +
+  AddStyle(title="",
+           fill=param$col_samples,
+           legend_title="Sample",
+           legend_position="bottom") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Make table with percentages
+tbl_perc = round(t(tbl) / colSums(tbl) * 100, 2) %>% t() %>% as.data.frame()
+
+tbl_bar_perc = tbl_perc[cell_samples, , drop=FALSE] %>% 
+  tibble::rownames_to_column(var="Sample") %>%
+  tidyr::pivot_longer(cols = tidyselect::all_of(cell_celltype), names_to="Celltype", values_to="Percentage")
+tbl_bar_perc$Percentage = as.numeric(tbl_bar_perc$Percentage)
+tbl_bar_perc$Celltype <- factor(tbl_bar_perc$Celltype,levels = cell_celltype)
+tbl_bar_perc$Sample <- factor(tbl_bar_perc$Sample, levels = cell_samples)
+
+# Plot percentages
+p2 = ggplot(tbl_bar_perc, aes(x=Celltype, y=Percentage, fill=Sample)) + 
+  geom_bar(stat="identity" ) +
+  AddStyle(title="",
+           fill=param$col_samples,
+           legend_title="Sample",
+           legend_position="") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+p = p1 + p2
+p
+```
+
+<br>
+
+## Fraction of cell types per sample
+```{r celltype_per_sample, fig.height=fig_standard3_height}
+# Plot counts
+p1 = ggplot(tbl_bar, aes(x=Sample, y=Counts, fill=Celltype)) + 
+  geom_bar(stat="identity" ) +
+  AddStyle(title="", xlab = "",
+           fill=param$col_annotation,
+           legend_title="Sample",
+           legend_position="bottom") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Calculate percentages
+tbl_perc = round(t(tbl) / colSums(t(tbl)) * 100, 2) %>% t() %>% as.data.frame()
+tbl_perc = round(tbl / rowSums(tbl) * 100, 2) %>% as.data.frame()
+
+# Plot percentages
+tbl_bar_perc = tbl_perc[cell_samples, , drop=FALSE] %>% 
+  tibble::rownames_to_column(var="Sample") %>%
+  tidyr::pivot_longer(cols = tidyselect::all_of(cell_celltype), names_to="Cell_type", values_to="Percentage")
+tbl_bar_perc$Percentage = as.numeric(tbl_bar_perc$Percentage)
+tbl_bar_perc$Cell_type <- factor(tbl_bar_perc$Cell_type,levels = cell_celltype)
+tbl_bar_perc$Sample <- factor(tbl_bar_perc$Sample, levels = cell_samples)
+
+p2 = ggplot(tbl_bar_perc, aes(x=Sample, y=Percentage, fill=Cell_type)) + 
+  geom_bar(stat="identity" ) +
+  AddStyle(title="", xlab = "",
+           fill=param$col_annotation,
+           legend_position="") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+p = p1 + p2 
+p
+```
+
+```{r dotplot_celltypes_per_sample, fig.height=fig_standard3_height}
+p = ggplot(data = tbl_bar_perc, aes(x = Cell_type, y = Sample)) +
+  geom_point(aes(color = Percentage, size = ifelse(Percentage==0, NA, Percentage))) +
+  labs(col="Percentage", size="") + 
+  scale_colour_gradient2(low="navy", mid="steelblue", high="darkgoldenrod1") +
+  #viridis::scale_color_viridis(option = "D") +
+  AddStyle(title="", ylab="Sample", legend_position="bottom") + 
+  theme(axis.text.x = element_text(angle=90, hjust=1, vjust=.5)) + 
+  guides(size=guide_legend(order=1))
+
+p
+```
