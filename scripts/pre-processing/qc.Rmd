@@ -45,6 +45,11 @@ library(patchwork) # combination of plots
 library(magrittr) # %>% operator
 library(knitr)
 
+
+### Adjustments
+# Here only merging!
+param$integrate_samples[["method"]]="merge"
+
 ```
 
 # Read data
@@ -261,19 +266,19 @@ p
 
 <br>  
 
-To save time and computational resources, we __down-sample__ the cell number before continuing with further quality assessment. According to provided number of samples the cell number is down-sampled to 1000 cells (1 sample), 500 (2-3 samples), or 300 (4 and more samples).
+To save time and computational resources, we __down-sample__ the cell number before continuing with further quality assessment. According to provided number of samples the cell number is down-sampled to 1500 cells (1 sample), 600 (2-3 samples), or 400 (4 and more samples).
 
 ```{r downsampling}
 # downsample 
 # according to samples number to 1000 cells (1 sample), 500 (2-3 samples), or 300 (4 and more samples)
 
 if (length(sc) >= 4) {
-  param$downsample_cells_n = 300
+  param$downsample_cells_n = 400
 } else {
   if (length(sc) > 1) {
-    param$downsample_cells_n = 500
+    param$downsample_cells_n = 600
   } else {
-    param$downsample_cells_n = 1000
+    param$downsample_cells_n = 1500
   }
 }
 
@@ -297,6 +302,7 @@ if (!is.null(param$downsample_cells_n) | param$downsample_cells_equally) {
   message(paste0("Your data has been down-sampled to ", param$downsample_cells_n, " cells." ))
   print(sc)
 }
+
 ```
 
 <br>   
@@ -344,6 +350,32 @@ p
 if (!("data" %in% sc[[param$project_id]][["RNA"]][])) {
   source(file.path(param$path_to_git,'scripts/pre-processing/normalization.R'))
 }
+
+# For testing, perform normalization also for the other method
+if (param$norm=="RNA") {
+  # Change to perform SCTransform
+  param$norm="SCT"
+  source(file.path(param$path_to_git,'scripts/pre-processing/normalization.R'))
+  # Change back to originally selected standard log normalization
+  param$norm="RNA"
+  for (i in seq(sc)) {
+    DefaultAssay(sc[[i]]) = "RNA"
+  }
+
+} else if (param$norm=="SCT") {
+  # Change to perform standard log normalization
+  for (i in seq(sc)) {
+    DefaultAssay(sc[[i]]) = "RNA"
+  }
+  param$norm="RNA"
+  source(file.path(param$path_to_git,'scripts/pre-processing/normalization.R'))
+  # Change back to originally selected SCTransform
+  param$norm="SCT"
+  for (i in seq(sc)) {
+    DefaultAssay(sc[[i]]) = "SCT"
+  }
+}
+
 ```
 
 ```{r normalization_message}
@@ -393,6 +425,7 @@ if (length(sc) == 1) {
   message("Your dataset contains 1 sample only. No merging/integrating required.")
 } else {
   source(file.path(param$path_to_git,'scripts/pre-processing/combine_samples.R'))
+  message("In this workflow, sample combination is always performed via dataset merging as merged object is required for streamlined integration.")
 }
 
 
@@ -416,7 +449,7 @@ if (!("pca" %in% list_names(sc@reductions[]))) {
 To better understand the efficiency of the applied normalization procedures, we plot the relative log expression of genes in 100 randomly selected cells per sample before and after normalization. This type of plot reveals unwanted variation in your data.  
 The concept is taken from `r knitcitations::citet("10.1371/journal.pone.0191629")`. In brief, we remove variation between genes by calculating for each gene its median expression across all cells, and then calculate the deviation from this median for each cell. For each cell, we plot the median expression (black), the interquartile range (<span style="color:lightgrey;font-weight:bold">lightgrey</span>), whiskers defined as 1.5 times the interquartile range (<span style="color:darkgrey;font-weight:bold">darkgrey</span>), and outliers (`r paste0('<span style="color:', param$col_samples, ';font-weight:bold">', param$col_samples, '</span>', collapse=', ')`).  
 If expression levels of most genes are supposed to be similar in all cell types, sample heterogeneity is a sign of unwanted variation.  
-```{r plot_RLE_raw, fig.height=fig_standard_height}
+```{r plot_RLE_raw, fig.height=fig_standard2_height}
 
 n_cells_rle_plot = 100
 
@@ -432,12 +465,17 @@ p1 = PlotRLE(as.matrix(log2(GetAssayData(subset(sc, cells=cells_subset$rowname),
             col=param$col_samples) + 
   labs(title="log2(raw counts + 1)")
 
-p2 = PlotRLE(as.matrix(GetAssayData(subset(sc, cells=cells_subset$rowname), assay=param$norm, layer = "data")), 
+p2 = PlotRLE(as.matrix(GetAssayData(subset(sc, cells=cells_subset$rowname), assay="RNA", layer = "data")), 
             id=cells_subset$orig.ident, 
             col=param$col_samples) + 
-  labs(title="Normalised data")
+  labs(title="Standard logNormalised data")
 
-p = p1 / p2
+p3 = PlotRLE(as.matrix(GetAssayData(subset(sc, cells=cells_subset$rowname), assay="SCT", layer = "data")), 
+            id=cells_subset$orig.ident, 
+            col=param$col_samples) + 
+  labs(title="SCTransformed data")
+
+p = p1 / p2 / p3
 p
 ```
 
@@ -525,12 +563,12 @@ col =  GenerateColours(num_colours=length(levels(sc$Phase)), names=levels(sc$Pha
 sc = ScAddLists(sc, lists=list(Phase=col), lists_slot="colour_lists")
 
 # Plot umap colored by cell cycle phase
-p1 = Seurat::DimPlot(sc, reduction="umap", group.by="Phase", pt.size = param$pt_size) +
+p1 = Seurat::DimPlot(sc, reduction="umap", group.by="Phase", pt.size = param$pt_size, cols = col) +
   AddStyle(title="", xlab = "UMAP 1", ylab = "UMAP 2") +
   NoLegend()
 
 # Plot umap colored by cell cycle phase
-p2 = Seurat::DimPlot(sc, reduction="umap", group.by="Phase", split.by = "Phase", pt.size = param$pt_size, ncol = 1) +
+p2 = Seurat::DimPlot(sc, reduction="umap", group.by="Phase", split.by = "Phase", pt.size = param$pt_size, cols = col, ncol = 1) +
   AddStyle(title="", xlab = "UMAP 1", ylab = "UMAP 2") +
   NoLegend()
 
@@ -602,28 +640,27 @@ To explore the results of data merging and different integration methods, here i
 The following plots offer a low dimension representation of your data combined via the different methods. 
 
 ```{r streamlined_integrative_analysis, file='./streamlined_integrative_analysis.R', warning=FALSE, message=FALSE}
-source(file.path(param$path_to_git,'scripts/pre-processing/streamlined_integrative_analysis.R'))
-
+#source(file.path(param$path_to_git,'scripts/pre-processing/streamlined_integrative_analysis.R'))
 ```
 
 ```{r dim_reductions}
 ### Score plots
 # PCA score plots colored by sample
-p1 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples, pt.size = 1, dims = c(1,2)) + 
+p1 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples, pt.size = param$pt_size, dims = c(1,2)) + 
   AddStyle(legend_position="none", title = "", xlab = "PC 1", ylab = "PC 2")
-p2 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples,  pt.size = 1, dims = c(3,4)) + 
+p2 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples, pt.size = param$pt_size, dims = c(3,4)) + 
   AddStyle(legend_position="none", title = "", xlab = "PC 3", ylab = "PC 4")
 
 # CCA integrated score plots colored by sample
-p3 = Seurat::DimPlot(sc, reduction="integrated.cca", group.by = "orig.ident", cols=param$col_samples, pt.size = 1, dims = c(1,2)) + 
+p3 = Seurat::DimPlot(sc, reduction="integrated.cca", group.by = "orig.ident", cols=param$col_samples, pt.size=param$pt_size, dims = c(1,2)) + 
   AddStyle(legend_position="none", title = "", xlab = "PC 1", ylab = "PC 2")
-p4 = Seurat::DimPlot(sc, reduction="integrated.cca", group.by = "orig.ident", cols=param$col_samples,  pt.size = 1, dims = c(3,4)) + 
+p4 = Seurat::DimPlot(sc, reduction="integrated.cca", group.by = "orig.ident", cols=param$col_samples, pt.size=param$pt_size, dims = c(3,4)) + 
   AddStyle(legend_position="none", title = "", xlab = "PC 3", ylab = "PC 4")
 
 # RPCA integrated score plots colored by sample
-p5 = Seurat::DimPlot(sc, reduction="integrated.rpca", group.by = "orig.ident", cols=param$col_samples, pt.size = 1, dims = c(1,2)) + 
+p5 = Seurat::DimPlot(sc, reduction="integrated.rpca", group.by = "orig.ident", cols=param$col_samples, pt.size=param$pt_size, dims = c(1,2)) + 
   AddStyle(legend_position="none", title = "", xlab = "PC 1", ylab = "PC 2")
-p6 = Seurat::DimPlot(sc, reduction="integrated.rpca", group.by = "orig.ident", cols=param$col_samples,  pt.size = 1, dims = c(3,4)) + 
+p6 = Seurat::DimPlot(sc, reduction="integrated.rpca", group.by = "orig.ident", cols=param$col_samples, pt.size=param$pt_size, dims = c(3,4)) + 
   AddStyle(legend_position="none", title = "", xlab = "PC 3", ylab = "PC 4")
 
 ### Umaps
