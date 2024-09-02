@@ -52,15 +52,7 @@ sc_cell_metadata_factor_levels = purrr::map(which(sapply(sc_cell_metadata, is.fa
   return(levels(sc_cell_metadata[, n, drop=TRUE]))
 })
 
-# Save variable features
-# necessary for runPCA of merged, SCTransformed data
-# According to https://github.com/satijalab/seurat/issues/5205 
-# and https://github.com/satijalab/seurat/issues/6185
-# This integrates the variable features from a list of objects (separately SCTransform)
-# and ranks features by the number of data sets they are deemed variable in.
-if (param$norm == "SCT") {
-  SCTVariableFeatures = SelectIntegrationFeatures(sc, nfeatures = 3000)
-}
+
 
 
 
@@ -70,6 +62,17 @@ if (param$norm == "SCT") {
 # Data for different samples can be merged if no integration is needed, 
 #   for example, when samples were multiplexed on the same chip
 if (param$integrate_samples[["method"]]=="merge") {
+  
+  # Save variable features
+  # necessary for runPCA of merged, SCTransformed data
+  # According to https://github.com/satijalab/seurat/issues/5205 
+  # and https://github.com/satijalab/seurat/issues/6185
+  # This integrates the variable features from a list of objects (separately SCTransform)
+  # and ranks features by the number of data sets they are deemed variable in.
+  if (param$norm == "SCT" & param$experimental_groups == "homogene") {
+    integrate_SCT_features = SelectIntegrationFeatures(sc, nfeatures = 3000)
+  }
+  
   sc = merge(x=sc[[1]], y=sc[2:length(sc)], project=param$project_id, merge.data = TRUE)
   
 
@@ -83,6 +86,7 @@ if (param$integrate_samples[["method"]]=="merge") {
 
 
 ### Integrate data
+# Here integration is performed on gene expression levels, instead of in low-dimensional space (as for streamlined (one-line) integrative analysis)
 # CCA computationally intensive.
 if (param$integrate_samples[["method"]]=="integrate") {
   
@@ -96,21 +100,22 @@ if (param$integrate_samples[["method"]]=="integrate") {
                       ndims=param$integrate_samples[["dimensions"]], 
                       verbose=FALSE, 
                       reference=param$integrate_samples[["reference"]], 
-                      k_filter=param$integrate_samples[["k.filter"]], 
-                      k_weight=param$integrate_samples[["k.weight"]], 
-                      k_anchor=param$integrate_samples[["k.anchor"]],
-                      k_score=param$integrate_samples[["k.score"]])
+                      k_filter=param$integrate_samples[["k_filter"]], 
+                      k_weight=param$integrate_samples[["k_weight"]], 
+                      k_anchor=param$integrate_samples[["k_anchor"]],
+                      k_score=param$integrate_samples[["k_score"]])
   
-  if (param$norm == "RNA") { 
-    # Join layers (counts, data, scaled.data) of RNA assay 
-    sc[["RNA"]] = JoinLayers(sc[["RNA"]])
-  }
+
+  # Join layers (counts, data, scaled.data) of RNA assay 
+  sc[["RNA"]] = JoinLayers(sc[["RNA"]])
+
   
   # Is this necessary???
   # Add sample as latent_vars for marker detection
   param$latent_vars = c(param$latent_vars, "orig.ident")
   
-  message("Data values for all samples have been integrated.")
+  message(paste0("Data values for all samples have been integrated via ", param$integrate_samples[["integration_function"]],
+                 ". Stregth of allignment was defined by setting the k_anchor parameter to ", param$integrate_samples[["k_anchor"]], "."))
 }
 
 
@@ -151,17 +156,30 @@ if (param$integrate_samples[["method"]]=="merge") {DefaultAssay(sc) = ifelse(par
 if (param$integrate_samples[["method"]]=="integrate") {DefaultAssay(sc) = paste0(param$norm, "integrated") } 
 
 if (param$norm == "RNA") { 
-  # Find variable features in RNA assay
-  sc = Seurat::FindVariableFeatures(sc, selection.method="vst", nfeatures=3000, verbose=FALSE)
+  
+  if (param$integrate_samples[["method"]]=="merge") {
+    # Find variable features in RNA assay
+    sc = Seurat::FindVariableFeatures(sc, selection.method="vst", nfeatures=3000, verbose=FALSE)
+  }
   # Scale RNA assay
   sc = Seurat::ScaleData(sc, features=rownames(sc), vars.to.regress=param$vars_to_regress, verbose=FALSE)
   
 } else if (param$norm == "SCT") {
-  if (param$experimental_groups == "homogene") { 
-    # Re-running of SCT not recommended https://github.com/satijalab/seurat/issues/6054 
-    # and https://github.com/satijalab/seurat/issues/7407
+  # Re-running of SCT not recommended for homogene experimental_groups https://github.com/satijalab/seurat/issues/6054 
+  # and https://github.com/satijalab/seurat/issues/7407
+  if (param$experimental_groups == "homogene" & param$integrate_samples[["method"]]=="merge") {
     # Set variable features
-    VariableFeatures(sc) = SCTVariableFeatures
+    # necessary for runPCA of merged, SCTransformed data
+    # For integrated samples, variables already set in Integration funciton
+    VariableFeatures(sc) = integrate_SCT_features
+    
+    # Prepare object to run differential expression on SCT assay with multiple models
+    # For merged or integrated object with multiple SCT models https://satijalab.org/seurat/reference/prepsctfindmarkers
+    # Uses minimum of the median UMI of individual objects to reverse the individual SCT regression model 
+    # to construct recorrected counts (replaces counts slot) and the data slot is replaced with log1p of recorrected counts.
+    sc = PrepSCTFindMarkers(sc, assay = "SCT", verbose = TRUE)
+    
+    message("Combined object with multiple SCT models, i.e. SCTransform was not re-run on combined data")
   
   } else if (param$experimental_groups == "heterogene") {
     # (Re)-run SCTransform
@@ -174,6 +192,10 @@ if (param$norm == "RNA") {
                                       verbose=FALSE, 
                                       return.only.var.genes=FALSE,
                                       method=ifelse(packages_installed("glmGamPoi"), "glmGamPoi", "poisson")))
+    
+    DefaultAssay(sc) = "SCTintegrated" 
+    
+    message("SCTransform was re-run on combined data")
   }
 }
 
