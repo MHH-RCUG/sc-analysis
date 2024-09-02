@@ -119,7 +119,7 @@ RunIntegration = function(sc, ndims=30, reduction='cca', reference=NULL, verbose
                                                        verbose=verbose)
     
     # Find integration anchors for assay RNA
-    integrate_RNA_anchors = Seurat::FindIntegrationAnchors(object.list=sc, 
+    integrate_RNA_anchors = suppressWarnings(Seurat::FindIntegrationAnchors(object.list=sc, 
                                                            dims=1:ndims,
                                                            normalization.method="LogNormalize",
                                                            anchor.features=integrate_RNA_features, 
@@ -128,19 +128,24 @@ RunIntegration = function(sc, ndims=30, reduction='cca', reference=NULL, verbose
                                                            k.score=k_score,
                                                            reference=reference,
                                                            verbose=verbose,
-                                                           reduction=reduction)
+                                                           reduction=reduction))
     
     # Integrate RNA data 
-    sc = Seurat::IntegrateData(integrate_RNA_anchors, 
+    sc = suppressWarnings(Seurat::IntegrateData(integrate_RNA_anchors, 
                                new.assay.name="RNAintegrated",
                                normalization.method="LogNormalize",
                                dims=1:ndims,
                                k.weight=k_weight,
-                               verbose=verbose)
+                               verbose=verbose))
     
     rm(integrate_RNA_anchors, integrate_RNA_features)
   } else if (assay == "SCT") {
     # Find integration anchors for assay SCT
+    # necessary for runPCA of merged, SCTransformed data
+    # According to https://github.com/satijalab/seurat/issues/5205 
+    # and https://github.com/satijalab/seurat/issues/6185
+    # This integrates the variable features from a list of objects (separately SCTransform)
+    # and ranks features by the number of data sets they are deemed variable in.
     integrate_SCT_features = Seurat::SelectIntegrationFeatures(object.list=sc, 
                                                        nfeatures=3000,
                                                        verbose=verbose)
@@ -152,7 +157,7 @@ RunIntegration = function(sc, ndims=30, reduction='cca', reference=NULL, verbose
                                  verbose=verbose)
     
     # Find integration anchors for assay SCT
-    integrate_SCT_anchors = Seurat::FindIntegrationAnchors(object.list=sc,
+    integrate_SCT_anchors = suppressWarnings(Seurat::FindIntegrationAnchors(object.list=sc,
                                                    dims=1:ndims, 
                                                    normalization.method="SCT", 
                                                    anchor.features=integrate_SCT_features, 
@@ -161,15 +166,18 @@ RunIntegration = function(sc, ndims=30, reduction='cca', reference=NULL, verbose
                                                    k.score=k_score,
                                                    reference=reference,
                                                    verbose=verbose,
-                                                   reduction=reduction)
+                                                   reduction=reduction))
     
     # Integrate SCT data
-    sc = Seurat::IntegrateData(integrate_SCT_anchors, 
+    sc = suppressWarnings(Seurat:: IntegrateData(integrate_SCT_anchors, 
                                     new.assay.name="SCTintegrated",
                                     normalization.method="SCT",
                                     dims=1:ndims, 
                                     k.weight=k_weight,
-                                    verbose=verbose)
+                                    verbose=verbose))
+    
+    # Set variable features
+    VariableFeatures(sc) = integrate_SCT_features
 
     rm(integrate_SCT_features, integrate_SCT_anchors)
   }
