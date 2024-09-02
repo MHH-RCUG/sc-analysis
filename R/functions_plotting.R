@@ -124,7 +124,7 @@ PercentAbove <- function(x, threshold) {
   return(length(x = x[x > threshold]) / length(x = x))
 }
 
-DotPlotUpdated = function (object, assay = NULL, features, cols = c("lightgrey", 
+DotPlotUpdated = function (object, assay = NULL, features, cols = c("navy", "steelblue",
                                                                     "blue"), col.min = -2.5, col.max = 2.5, dot.min = 0, dot.scale = 6, 
                            idents = NULL, group.by = NULL, split.by = NULL, cluster.idents = FALSE, 
                            scale = TRUE, scale.by = "radius", scale.min = NA, scale.max = NA) 
@@ -254,10 +254,9 @@ DotPlotUpdated = function (object, assay = NULL, features, cols = c("lightgrey",
     data.plot$feature.groups <- factor(x = feature.groups[data.plot$features.plot], 
                                        levels = unique(x = feature.groups))
   }
-  plot <- ggplot(data = data.plot, mapping = aes_string(x = "features.plot", 
-                                                        y = "id")) + geom_point(mapping = aes_string(size = "pct.exp", 
-                                                                                                     color = color.by)) + scale.func(range = c(0, dot.scale), 
-                                                                                                                                     limits = c(scale.min, scale.max)) + theme(axis.title.x = element_blank(), 
+  plot <- ggplot(data = data.plot, mapping = aes(x = .data[["features.plot"]], y = .data[["id"]])) + 
+    geom_point(mapping = aes(size = .data[["pct.exp"]], color = .data[[color.by]])) + 
+    scale.func(range = c(0, dot.scale), limits = c(scale.min, scale.max)) + theme(axis.title.x = element_blank(), 
                                                                                                                                                                                axis.title.y = element_blank()) + guides(size = guide_legend(title = "Percent Expressed")) + 
     labs(x = "Features", y = ifelse(test = is.null(x = split.by), 
                                     yes = "Identity", no = "Split Identity")) + cowplot::theme_cowplot()
@@ -273,7 +272,7 @@ DotPlotUpdated = function (object, assay = NULL, features, cols = c("lightgrey",
     plot <- plot + scale_color_distiller(palette = cols)
   }
   else {
-    plot <- plot + scale_color_gradient(low = cols[1], high = cols[2])
+    plot <- plot + scale_color_gradient2(low = cols[1], mid = cols[2], high = cols[3])
   }
   if (!split.colors) {
     plot <- plot + guides(color = guide_colorbar(title = "Average Expression"))
