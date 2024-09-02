@@ -14,13 +14,54 @@ if (is.null(param$data)) {
     
     # Transfer original params to loaded object
     if ("parameters" %in% list_names(sc@misc[])) {
+      # Retrieve previous parameter settings
       orig_param = sc@misc$parameters
+      if ("SCT" %in% names(sc@assays)) {
+        if ("scale.data" %in% Layers(sc[["SCT"]])) {
+          orig_param$norm = "SCT"
+        } else {
+          orig_param$norm = "RNA"
+        }
+      } else {
+        orig_param$norm = "RNA"
+      }
       
-      param_keep = param[c("path_to_git", "scriptname", "author", "project_id", "data", "path_out", "file_annot", "file_cc_genes")]
+      # Keep some parameter settings from object and project defined
+      orig_param_keep = orig_param[c("annot_version", "species")]
+      basic_param_keep = param[c("path_to_git", "scriptname", "author", "project_id", "data", "path_out", "file_annot", "file_cc_genes")]
+      # Test for reference concordance
+      rerun_read_gene_annotation = (orig_param$species == param$species & orig_param$annot_version == param$annot_version)
+      # Integrate parameter
       param = modifyList(x = param, val = orig_param)
-      param = modifyList(x = param, val = param_keep)
+      param = modifyList(x = param, val = basic_param_keep)
       param = modifyList(x = param, val = param_advset)
+      param = modifyList(x = param, val = orig_param_keep)
     }
+    
+    # Rerun read_gene_annotation.R if not fitting to loaded object
+    if (!rerun_read_gene_annotation == TRUE) {
+      source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
+    }
+    
+    # Confirm correct setting of existing normalization method
+    if (param$norm %in% names(sc@assays)) {
+      if (param$norm == "RNA") {
+        if ("scale.data" %in% Layers(sc[["RNA"]])) {
+            param$norm = "RNA"
+        } else {
+          param$norm = "SCT"
+        }
+      } else if (param$norm == "SCT") {
+        if ("scale.data" %in% Layers(sc[["SCT"]])) {
+          param$norm = "SCT"
+        } else {
+          param$norm = "RNA"
+        }
+      } else {
+        param$norm = orig_param$norm
+      }
+    } 
+
     
     ### Set colors
     # Set sample colors based on orig.ident

@@ -16,7 +16,7 @@ param_advset$assay_raw = NULL
 param_advset$downsample_cells_n = NULL
 
 # Downsample all samples equally according to the smallest sample
-# TRUE/FALSE
+# TRUE/FALSE (default: FALSE)
 # Overwritten by downsample_cells_n
 param_advset$downsample_cells_equally = NULL
 
@@ -24,7 +24,7 @@ param_advset$downsample_cells_equally = NULL
 
 ### Filter
 # Filter for cells
-#param_advset$cell_filter = list(nFeature_RNA=c(20, NA), nCount_RNA=c(200, NA), percent_mt=c(0, 50))
+#param_advset$cell_filter = list(nFeature_RNA=c(20, NA), nCount_RNA=c(200, NA), percent_mt=c(0, 25))
 param_advset$cell_filter = NULL
 # Filter for features
 #param_advset$feature_filter = list(min_counts=1, min_cells=5)
@@ -54,27 +54,27 @@ param_advset$cc_rescore_after_merge = NULL
 param_advset$vars_to_regress = NULL
 
 # How to combine multiple datasets (method = "merge" or "integrate")
-# "merge": Concatenate data e.g. when samples were multiplexed on the same chip.
+# "merge" (default): Concatenate data e.g. when samples were multiplexed on the same chip.
 # "integrate": Anchors are computed for all pairs of datasets. This will give all datasets the same weight during dataset integration but can be computationally intensive
-param_advset$integrate_samples = NULL
+# "streamlined_integrate": Use streamlined integration workflow in v5 (faster), i. e. perform correction in low-dimensional space (IntegrateLayers function) rather than on gene expression levels 
+# The steps of the integration workflow are baasically the same for "integrate" and "streamlined_integrate" (https://github.com/satijalab/seurat/issues/8653)
+# Additional options for the "integrate" method:
+#   - integration_function: "CCAIntegration" or "RPCAIntegration"
+#   - dimensions: Number of dimensions to consider for integration
+#   - reference: Use one or more datasets (separate by comma) as reference and compute anchors for all other datasets. Computationally faster but less accurate.
+#   - use_reciprocal_pca: Compute anchors in PCA space. Even faster but less accurate. Recommended for big datasets.
+#   - k_filter: How many neighbors to use when filtering anchors (default: min(200, minimum number of cells in a sample))
+#   - k_weight: Number of neighbors to consider when weighting anchors (default: min(100, minimum number of cells in a sample))
+#   - k_anchor: How many neighbors to use when picking anchors (default: min(10, minimum number of cells in a sample))
+#   - k_score: How many neighbors to use when scoring anchors (default: min(30, minimum number of cells in a sample))
+#param$integrate_samples[["method"]]="integrate"
+#param$integrate_samples[["integration_function"]]="RPCAIntegration"
+# TO SET param$integrate_samples[["method"]]="streamlined_integrate"
 
-if (!is.null(param_advset$integrate_samples)) {
-  if (param_advset$integrate_samples[["method"]]=="integrate") {
-  # Additional options for the "integrate" method:
-  #   - integration_function: "CCAIntegration" or "RPCAIntegration"
-  #   - dimensions: Number of dimensions to consider for integration
-  #   - reference: Use one or more datasets (separate by comma) as reference and compute anchors for all other datasets. Computationally faster but less accurate.
-  #   - use_reciprocal_pca: Compute anchors in PCA space. Even faster but less accurate. Recommended for big datasets.
-  #   - k_filter: How many neighbors to use when filtering anchors (default: min(200, minimum number of cells in a sample))
-  #   - k_weight: Number of neighbors to consider when weighting anchors (default: min(100, minimum number of cells in a sample))
-  #   - k_anchor: How many neighbors to use when picking anchors (default: min(5, minimum number of cells in a sample))
-  #   - k_score: How many neighbors to use when scoring anchors (default: min(30, minimum number of cells in a sample))
-  param_advset$integrate_samples = list(dimensions=30, k_anchor=20, reference=NULL, integration_function="CCAIntegration")
-  # Similarity between samples ("homogene" or "heterogene")
-  param_advset$experimental_groups = "homogene"
-  }
-}
-
+# Similarity between samples ("homogene" or "heterogene")
+# "heterogene" (default): If samples are biologically heterogeneous or under different treatments.
+# "homogene": If samples (with roughly the same celltype composition) are technically noisy (i.e. have batch effect) with only simple shifts in mean expression.
+param_advset$experimental_groups = NULL
 
 
 ### Dimensional reduction
@@ -169,10 +169,10 @@ param_advset$enrichr_padj = NULL
 param_advset$enrichr_dbs = NULL
 
 # Cell type annotation database
-param$annotation_dbs = NULL
-
+param_advset$annotation_dbs = NULL
 
 ### Set colors
+# See https://r-charts.com/color-palettes/ and https://nanx.me/ggsci/articles/ggsci.html for palette characteristics
 # Colour palette used for samples
 param_advset$col_palette_samples = NULL
 # Colour palette used for cluster

@@ -1,20 +1,25 @@
 ## Read gene annotation
 # We read gene annotation from file. 
 # We generate several dictionaries to translate between Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names. 
+# ATTENTION: ONLY for human and mouse!!!
 
 ### Set reference
 ################################################################################
 if (param$species=="human") {
-  ifelse(is.null(param$mart_dataset), "hsapiens_gene_ensembl", param$mart_dataset)
-  ifelse(is.null(param$mt), "^MT-", param$mt)
-  ifelse(is.null(param$enrichr_dbs), c("GO_Biological_Process_2018", "WikiPathways_2019_Human", "KEGG_2021_Human", "Azimuth_Cell_Types_2021"), param$param$enrichr_dbs)
-  ifelse(is.null(param$annotation_dbs), "HumanPrimaryCellAtlasData()", param$param$enrichr_dbs)
+  param$mart_dataset = ifelse(is.null(param$mart_dataset), "hsapiens_gene_ensembl", param$mart_dataset)
+  param$mt = ifelse(is.null(param$mt), "^MT-", param$mt)
+  param$enrichr_dbs = if(is.null(param$enrichr_dbs)) {
+    c("GO_Biological_Process_2023", "WikiPathway_2023_Human", "Azimuth_2023", "CellMarker_2024")
+  }
+  param$annotation_dbs = ifelse(is.null(param$annotation_dbs), "BlueprintEncodeData()", param$annotation_dbs)
 } else {
   if (param$species=="mouse") {
-    ifelse(is.null(param$mart_dataset), "mmusculus_gene_ensembl", param$mart_dataset)
-    ifelse(is.null(param$mt), "^mt-", param$mt)
-    ifelse(is.null(param$enrichr_dbs), c("GO_Biological_Process_2018", "WikiPathways_2019_Mouse", "KEGG_2019_Mouse", "Azimuth_Cell_Types_2021"), param$param$enrichr_dbs)
-    ifelse(is.null(param$annotation_dbs), "MouseRNAseqData()", param$param$enrichr_dbs)
+    param$mart_dataset = ifelse(is.null(param$mart_dataset), "mmusculus_gene_ensembl", param$mart_dataset)
+    param$mt = ifelse(is.null(param$mt), "^mt-", param$mt)
+    param$enrichr_dbs = if(is.null(param$enrichr_dbs)) {
+      c("GO_Biological_Process_2023", "WikiPathways_2019_Mouse", "Azimuth_2023", "CellMarker_2024")
+    }
+    param$annotation_dbs = ifelse(is.null(param$annotation_dbs), "MouseRNAseqData()", param$annotation_dbs)
   } else {
     param$mart_dataset=param$mart_dataset
   }
@@ -22,15 +27,19 @@ if (param$species=="human") {
 
 # Set defaults
 # Default is Ensembl release 98 which corresponds to 2020-A reference package of 10x Genomics Cell Ranger
-ifelse(is.null(param$annot_version), 98, param$annot_version)
-ifelse(is.null(param$annot_main), c(ensembl="ensembl_gene_id", symbol="external_gene_name", entrez="entrezgene_accession"), param$annot_main)
-ifelse(is.null(param$mart_attributes), c(c(ensembl="ensembl_gene_id", symbol="external_gene_name", entrez="entrezgene_accession"), 
-                                         c("chromosome_name", "start_position", "end_position", "percentage_gene_gc_content", "gene_biotype", "strand", "description")), param$mart_attributes)
+param$annot_version = ifelse(is.null(param$annot_version), 98, param$annot_version)
+param$annot_main = if(is.null(param$annot_main)) {
+  c(ensembl="ensembl_gene_id", symbol="external_gene_name", entrez="entrezgene_accession")
+}
+param$mart_attributes = if(is.null(param$mart_attributes)) {
+  c(c(ensembl="ensembl_gene_id", symbol="external_gene_name", entrez="entrezgene_accession"), 
+    c("chromosome_name", "start_position", "end_position", "percentage_gene_gc_content", "gene_biotype", "strand", "description"))
+}
 
-param$path_reference=file.path(param$path_to_git, "references", param$mart_dataset, param$annot_version)
-param$reference=paste0(param$mart_dataset, ".v", param$annot_version, ".annot.txt")
-ifelse(is.null(param$file_annot), file.path(param$path_reference, param$reference), param$file_annot)
-ifelse(is.null(param$file_cc_genes), file.path(param$path_reference, "cell_cycle_markers.xlsx"), param$file_cc_genes)
+param$path_reference = file.path(param$path_to_git, "references", param$mart_dataset, param$annot_version)
+param$reference = paste0(param$mart_dataset, ".v", param$annot_version, ".annot.txt")
+param$file_annot = ifelse(is.null(param$file_annot), file.path(param$path_reference, param$reference), param$file_annot)
+param$file_cc_genes = ifelse(is.null(param$file_cc_genes), file.path(param$path_reference, "cell_cycle_markers.xlsx"), param$file_cc_genes)
 
 
 

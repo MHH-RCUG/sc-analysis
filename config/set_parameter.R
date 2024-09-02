@@ -1,8 +1,13 @@
-### Specific parameter 
+### Parameter
 ################################################################################
+# Read standard parameter
+source(file.path(param$path_to_git,"config/standard_parameter.R"))
+
+# Read basic settings
+source(param$path_to_basic_settings)
 
 # Read advanced parameter
-source(file.path(param$path_to_git,"/advanced_settings.R"))
+source(param$path_to_advanced_settings)
 
 # Set output folder
 param$path_out = file.path(param$path_to_git, "output", param$project_id, gsub(".Rmd", "", basename(param$scriptname)))
@@ -12,3 +17,4 @@ param = modifyList(x = param, val = param_advset)
 
 # Create output directories
 if (!file.exists(param$path_out)) dir.create(param$path_out, recursive=TRUE, showWarnings=FALSE)
+

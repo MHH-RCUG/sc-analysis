@@ -35,7 +35,7 @@ param$downsample_cells_equally = FALSE
 
 ### Filter
 # Filter for cells
-param$cell_filter = list(nFeature_RNA=c(20, NA), nCount_RNA=c(200, NA), percent_mt=c(0, 50))
+param$cell_filter = list(nFeature_RNA=c(20, NA), nCount_RNA=c(200, NA), percent_mt=c(0, 20))
 # Filter for features
 param$feature_filter = list(min_counts=1, min_cells=5)
 # Samples to drop
@@ -62,26 +62,25 @@ param$cc_rescore_after_merge = TRUE
 # Additional (unwanted) variables that will be regressed out for visualisation and clustering ("nCount_RNA", "percent_mt")
 param$vars_to_regress = c()
 
-# How to combine multiple datasets (method = "merge" or "integrate")
+# How to combine multiple datasets; all parameter saved in one list 
+# - method = "merge" or "integrate"
 # "merge": Concatenate data e.g. when samples were multiplexed on the same chip.
 # "integrate": Anchors are computed for all pairs of datasets. This will give all datasets the same weight during dataset integration but can be computationally intensive
-param$integrate_samples = list(method="merge")
+# Additional options for the "integrate" method:
+#   - integration_function: "CCAIntegration" or "RPCAIntegration"
+#   - dimensions: Number of dimensions to consider for integration
+#   - reference: Use one or more datasets (separate by comma) as reference and compute anchors for all other datasets. Computationally faster but less accurate.
+#   - use_reciprocal_pca: Compute anchors in PCA space. Even faster but less accurate. Recommended for big datasets.
+#   - k_filter: How many neighbors to use when filtering anchors (default: min(200, minimum number of cells in a sample))
+#   - k_weight: Number of neighbors to consider when weighting anchors (default: min(100, minimum number of cells in a sample))
+#   - k_anchor: How many neighbors to use when picking anchors (default: min(10, minimum number of cells in a sample))
+#   - k_score: How many neighbors to use when scoring anchors (default: min(30, minimum number of cells in a sample))
+param$integrate_samples = list(method="merge", dimensions=30, k_anchor=10, k_weight=100, reference=NULL, integration_function="CCAIntegration")
 
-if (param$integrate_samples[["method"]]=="integrate") {
-  # Additional options for the "integrate" method:
-  #   - integration_function: "CCAIntegration" or "RPCAIntegration"
-  #   - dimensions: Number of dimensions to consider for integration
-  #   - reference: Use one or more datasets (separate by comma) as reference and compute anchors for all other datasets. Computationally faster but less accurate.
-  #   - use_reciprocal_pca: Compute anchors in PCA space. Even faster but less accurate. Recommended for big datasets.
-  #   - k_filter: How many neighbors to use when filtering anchors (default: min(200, minimum number of cells in a sample))
-  #   - k_weight: Number of neighbors to consider when weighting anchors (default: min(100, minimum number of cells in a sample))
-  #   - k_anchor: How many neighbors to use when picking anchors (default: min(5, minimum number of cells in a sample))
-  #   - k_score: How many neighbors to use when scoring anchors (default: min(30, minimum number of cells in a sample))
-  param$integrate_samples = list(dimensions=30, k_anchor=20, reference=NULL, integration_function="CCAIntegration")
-  # Similarity between samples ("homogene" or "heterogene")
-  param$experimental_groups = "homogene"
-}
-
+# Similarity between samples ("homogene" or "heterogene")
+# "heterogene" (default): If samples are biologically heterogeneous or under different treatments.
+# "homogene": If samples (with roughly the same celltype composition) are technically noisy (i.e. have batch effect) with only simple shifts in mean expression.
+param$experimental_groups = "homogene"
 
 
 ### Dimensional reduction
@@ -157,16 +156,18 @@ param$latent_vars = NULL
 #                             subset_column=c(NA, "seurat_clusters", "seurat_clusters"),
 #                             subset_group=c(NA, "", "1;2"),
 #                             downsample_cells_n=c(NA, 50, 30))
-param$deg_contrasts = data.frame(condition_column=c("orig.ident"),
-                             condition_group1=c("sample1"),
-                             condition_group2=c("sample2"),
-                             subset_column=c("seurat_clusters"),
-                             subset_group=c(""),
-                             downsample_cells_n=c(50))
-#param$deg_contrasts = NULL
+#param$deg_contrasts = data.frame(condition_column=c("orig.ident"),
+#                             condition_group1=c("sample1"),
+#                             condition_group2=c("sample2"),
+#                             subset_column=c("seurat_clusters"),
+#                             subset_group=c(""),
+#                             downsample_cells_n=c(50))
+param$deg_contrasts = NULL
 
 # Enrichr site ("Enrichr", "FlyEnrichr", "WormEnrichr", "YeastEnrichr", "FishEnrichr")
 param$enrichr_site = "Enrichr"
+# Enrichr libraries
+param$enrichr_dbs = NULL
 
 # Default set in read_gene_annotation.R
 # Here only parameter introduction that can be changed in advanced_settings
@@ -180,12 +181,13 @@ param$annotation_dbs = NULL
 
 
 ### Set standard colors
+# See https://r-charts.com/color-palettes/ and https://nanx.me/ggsci/articles/ggsci.html for palette characteristics 
 # Colour palette used for samples
-param$col_palette_samples = "ggsci::pal_lancet"
+param$col_palette_samples = "ggsci::pal_igv"
 # Colour palette used for cluster
 param$col_palette_clusters = "ggsci::pal_igv"
 # Colour palette used for annotated cell types
-param$col_palette_annotation = "ggsci::pal_igv"
+param$col_palette_annotation = "ggsci:pal_ucscgb()"
 # Defined colours for samples
 param$col_samples = NULL
 param$col_samples_ref = NULL
