@@ -7,7 +7,7 @@ memInKB = as.integer(unlist(strsplit(unlist(strsplit(nodeInfo[grep("CfgTRES", no
 
 options(stringsAsFactors=FALSE,
         dplyr.summarise.inform=FALSE, 
-        future.globals.maxSize=min(memInKB, 2 * 1024^3),
+        future.globals.maxSize=min(memInKB, 20 * 1024^3),
         mc.cores=min(cpus,1),
         future.fork.enable=TRUE, future.plan="multicore",
         future.rng.onMisuse="ignore")
