@@ -12,8 +12,8 @@ param$project_id = "Testdata"
 
 ### Dataset
 # Either load existing object
-param$data = NULL
-#param$data = "/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis/output/Testdata/pre-processing/data/sc.rds"
+#param$data = NULL
+param$data = "/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis/output/Testdata/pre-processing/data/sc.rds"
 
 # Or use test dataset included in ./modules/download_test_datasets/
 # Does only work for 10x data automatically at the moment
