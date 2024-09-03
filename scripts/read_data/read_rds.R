@@ -42,25 +42,6 @@ if (is.null(param$data)) {
     if (!rerun_read_gene_annotation == TRUE) {
       source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
     }
-    
-    # Confirm correct setting of existing normalization method
-    if (param$norm %in% names(sc@assays)) {
-      if (param$norm == "RNA") {
-        if ("scale.data" %in% Layers(sc[["RNA"]])) {
-            param$norm = "RNA"
-        } else {
-          param$norm = "SCT"
-        }
-      } else if (param$norm == "SCT") {
-        if ("scale.data" %in% Layers(sc[["SCT"]])) {
-          param$norm = "SCT"
-        } else {
-          param$norm = "RNA"
-        }
-      } else {
-        param$norm = orig_param$norm
-      }
-    } 
 
     
     ### Set colors

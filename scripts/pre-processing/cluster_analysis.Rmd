@@ -72,6 +72,31 @@ Here, for the project `r param$project_id`, the following data are analysed:
 message("Load Seurat object from rds file")
 ```
 
+```{r confirm_param_norm}
+# Confirm correct setting of normalization method
+# Normalization method can not be overwritten with advanced_settings as long as the object was not normalized using the respective method
+if (param$norm %in% names(sc@assays)) {
+  if (param$norm == "RNA") {
+    if ("scale.data" %in% Layers(sc[["RNA"]])) {
+      param$norm = "RNA"
+    } else {
+      param$norm = "SCT"
+    }
+  } else if (param$norm == "SCT") {
+    if ("scale.data" %in% Layers(sc[["SCT"]])) {
+      param$norm = "SCT"
+    } else {
+      param$norm = "RNA"
+    }
+  } else {
+    param$norm = orig_param$norm
+  }
+} else {
+  param$norm = "RNA"
+}
+message(paste0("Chosen normalisation method and normlized values detecte in provided object were harmonised and set to: ", ifelse(param$norm=="RNA", "Standard log normalisation", "SCTransform")))
+```
+
 <br>
 <br>  
 
