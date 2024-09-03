@@ -33,6 +33,31 @@
         "S4Vectors"
       ]
     },
+    "AnnotationHub": {
+      "Package": "AnnotationHub",
+      "Version": "3.6.0",
+      "Source": "Bioconductor",
+      "git_url": "https://git.bioconductor.org/packages/AnnotationHub",
+      "git_branch": "RELEASE_3_16",
+      "git_last_commit": "3315a73",
+      "git_last_commit_date": "2022-11-01",
+      "Hash": "f7f6672c863be452a07f4794bbd8456a",
+      "Requirements": [
+        "AnnotationDbi",
+        "BiocFileCache",
+        "BiocGenerics",
+        "BiocManager",
+        "BiocVersion",
+        "RSQLite",
+        "S4Vectors",
+        "curl",
+        "dplyr",
+        "httr",
+        "interactiveDisplayBase",
+        "rappdirs",
+        "yaml"
+      ]
+    },
     "BH": {
       "Package": "BH",
       "Version": "1.84.0-0",
@@ -149,6 +174,17 @@
         "rsvd"
       ]
     },
+    "BiocVersion": {
+      "Package": "BiocVersion",
+      "Version": "3.16.0",
+      "Source": "Bioconductor",
+      "git_url": "https://git.bioconductor.org/packages/BiocVersion",
+      "git_branch": "master",
+      "git_last_commit": "c681e06",
+      "git_last_commit_date": "2022-04-26",
+      "Hash": "44c5824508b9a10e52dbb505c34fa880",
+      "Requirements": []
+    },
     "Biostrings": {
       "Package": "Biostrings",
       "Version": "2.66.0",
@@ -208,6 +244,23 @@
       "Hash": "164809cd72e1d5160b4cb3aa57f510fe",
       "Requirements": []
     },
+    "DT": {
+      "Package": "DT",
+      "Version": "0.33",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "64ff3427f559ce3f2597a4fe13255cb6",
+      "Requirements": [
+        "crosstalk",
+        "htmltools",
+        "htmlwidgets",
+        "httpuv",
+        "jquerylib",
+        "jsonlite",
+        "magrittr",
+        "promises"
+      ]
+    },
     "DelayedArray": {
       "Package": "DelayedArray",
       "Version": "0.24.0",
@@ -242,6 +295,25 @@
         "S4Vectors",
         "matrixStats",
         "sparseMatrixStats"
+      ]
+    },
+    "ExperimentHub": {
+      "Package": "ExperimentHub",
+      "Version": "2.6.0",
+      "Source": "Bioconductor",
+      "git_url": "https://git.bioconductor.org/packages/ExperimentHub",
+      "git_branch": "RELEASE_3_16",
+      "git_last_commit": "557ba29",
+      "git_last_commit_date": "2022-11-01",
+      "Hash": "a5e2e197693608ea872a7a3d04de919c",
+      "Requirements": [
+        "AnnotationHub",
+        "BiocFileCache",
+        "BiocGenerics",
+        "BiocManager",
+        "S4Vectors",
+        "curl",
+        "rappdirs"
       ]
     },
     "FNN": {
@@ -377,6 +449,33 @@
       "Repository": "CRAN",
       "Hash": "4bf2c61e656bbc238634c798c208d386",
       "Requirements": []
+    },
+    "MAST": {
+      "Package": "MAST",
+      "Version": "1.27.1",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "RGLab",
+      "RemoteRepo": "MAST",
+      "RemoteRef": "devel",
+      "RemoteSha": "1c60223ed85bad087665c11ffe7ce7db2b04e835",
+      "Hash": "7ab3f1527d826bc7b2b3f7701b26b0bd",
+      "Requirements": [
+        "Biobase",
+        "BiocGenerics",
+        "Matrix",
+        "S4Vectors",
+        "SingleCellExperiment",
+        "SummarizedExperiment",
+        "abind",
+        "data.table",
+        "ggplot2",
+        "plyr",
+        "progress",
+        "reshape2",
+        "stringr"
+      ]
     },
     "Matrix": {
       "Package": "Matrix",
@@ -785,6 +884,14 @@
         "S4Vectors"
       ]
     },
+    "WriteXLS": {
+      "Package": "WriteXLS",
+      "Version": "6.7.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "0dfdfb157b9c5dc8c3bab82355da011f",
+      "Requirements": []
+    },
     "XML": {
       "Package": "XML",
       "Version": "3.99-0.16.1",
@@ -1065,6 +1172,25 @@
       "Requirements": [
         "R6",
         "processx"
+      ]
+    },
+    "celldex": {
+      "Package": "celldex",
+      "Version": "1.8.0",
+      "Source": "Bioconductor",
+      "git_url": "https://git.bioconductor.org/packages/celldex",
+      "git_branch": "RELEASE_3_16",
+      "git_last_commit": "9b8a161",
+      "git_last_commit_date": "2022-11-01",
+      "Hash": "0abc74e1bbb8ef34416c1ee3cc54a98f",
+      "Requirements": [
+        "AnnotationDbi",
+        "AnnotationHub",
+        "DelayedArray",
+        "DelayedMatrixStats",
+        "ExperimentHub",
+        "S4Vectors",
+        "SummarizedExperiment"
       ]
     },
     "cellranger": {
@@ -1409,6 +1535,20 @@
       "Hash": "bb0eec2fe32e88d9e2836c2f73ea2077",
       "Requirements": [
         "rlang"
+      ]
+    },
+    "enrichR": {
+      "Package": "enrichR",
+      "Version": "3.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "d6fe55ea717f33189d37cf78c698f490",
+      "Requirements": [
+        "WriteXLS",
+        "curl",
+        "ggplot2",
+        "httr",
+        "rjson"
       ]
     },
     "evaluate": {
@@ -2066,6 +2206,21 @@
         "pkgconfig",
         "rlang",
         "vctrs"
+      ]
+    },
+    "interactiveDisplayBase": {
+      "Package": "interactiveDisplayBase",
+      "Version": "1.36.0",
+      "Source": "Bioconductor",
+      "git_url": "https://git.bioconductor.org/packages/interactiveDisplayBase",
+      "git_branch": "RELEASE_3_16",
+      "git_last_commit": "79a0552",
+      "git_last_commit_date": "2022-11-01",
+      "Hash": "12715eb5fa4404c11c17cd0d20814943",
+      "Requirements": [
+        "BiocGenerics",
+        "DT",
+        "shiny"
       ]
     },
     "irlba": {

@@ -26,13 +26,17 @@ renv::install("sessioninfo") # version 1.2.2
 renv::install("markdown") # version 1.12
 remotes::install_version("xfun", version="0.41")
 renv::install("knitcitations") # version 1.0.12
+renv::install("DT") # version 0.33
 
 # DEG
 renv::install("immunogenomics/presto") # version 1.0.0
+renv::install("RGLab/MAST") # version 1.27.1
+renv::install("enrichR") # version 3.2 
 
 # dataset mapping
 remotes::install_version("matrixStats", version="1.1.0")
 renv::install("bioc::SingleR") # version 2.0.0
+renv::install("bioc::celldex") # version 1.8.0
 renv::install("bioc::SingleCellExperiment") # version 1.20.1
 renv::install("bioc::scran") # version 1.26.2
 renv::install("viridis") # version 0.6.5

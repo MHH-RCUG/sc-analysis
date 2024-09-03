@@ -1,0 +1,17 @@
+{
+  "R": {
+    "Version": "4.2.1",
+    "Repositories": [
+      {
+        "Name": "CRAN",
+        "URL": "https://cloud.r-project.org"
+      }
+    ]
+  },
+  "Packages": [],
+  "Python": {
+    "Version": "3.8.10",
+    "Type": "virtualenv",
+    "Name": "./env/basic/virtualenvs/r-reticulate"
+  }
+}
