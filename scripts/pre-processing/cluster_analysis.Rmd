@@ -20,12 +20,12 @@ editor_options:
 ---
 
 ```{r r_options, file='../../config/configuration.R'}
-source(file.path(param$path_to_git,'config/configuration.R'))
+#source(file.path(param$path_to_git,'config/configuration.R'))
 message("Set R options")
 ```
 
 ```{r rmarkdown, file='../../config/rmarkdown_configuration.R'}
-source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'))
+#source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'))
 message("Set Rmarkdown options")
 ```
 
@@ -57,7 +57,7 @@ library(enrichR)
 Gene annotation including Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names, are loaded from a pre-prepared reference file or Ensembl. 
 
 ```{r read_gene_annotation, file='../read_data/read_gene_annotation.R'}
-source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
+#source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
 message("Read gene annotation")
 ```
 
@@ -68,7 +68,7 @@ message("Read gene annotation")
 Here, for the project `r param$project_id`, the following data are analysed:  
 
 ```{r read_rds, file='../read_data/read_rds.R', warning=FALSE}
-source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
+#source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
 message("Load Seurat object from rds file")
 ```
 
