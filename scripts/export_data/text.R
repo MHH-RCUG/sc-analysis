@@ -279,7 +279,7 @@ Clustering is used to group similar samples. One problem when conducting cluster
 </details>
   
 
-## ---- umap --------
+## ---- umap_description --------
 We use a UMAP to visualise and explore the dataset. The goal is to place similar cells together in 2D space, and learn about the biology underlying the data. Cells are color-coded according to the graph-based clustering, and clusters typcially co-localise on the UMAP.
 
 Take care not to mis-read a UMAP:
@@ -290,5 +290,26 @@ Take care not to mis-read a UMAP:
 * You may need more than one plot
 
 For a nice read to intuitively understand UMAP, see @coenen2024.  
+
+
+## ---- silhouette_plot_description --------
+<details>
+  <summary>What does a silhouette plot?</summary>   
+
+The silhouette plot visualizes the separation distance between clusters, i.e. how close each point in one cluster is to points in the neighboring clusters, measured as a silhouette score or coefficients. This score has a range of [-1, 1]. A score near +1 indicate that the sample is far away from the neighboring clusters. A value of 0 indicates that the sample is on or very close to the decision boundary between two neighboring clusters and negative values indicate that those samples might have been assigned to the wrong cluster. Hence, the silhouette plot can aid in assignment cluster assignement and confirming the choice of cluster resolution. Each cluster would ideally contain large positive silhouette widths, indicating that it is well-separated from other clusters. In contrast, smaller widths can arise from the presence of internal subclusters or overclustering.
+
+</details>
+
+
+## ---- marker_genes --------
+<details>
+  <summary>What are marker genes?</summary>
+
+As described above, cell clusters approximate cell types and states. But how do we know which cell types these are? To characterize cell clusters, we identify marker genes. Good marker genes are genes that are particularly expressed in one cluster, and existing knowledge of these marker genes can be used to extrapolate biological functions for the cluster. A good clustering of cells typically results in good marker genes. Hence, if you cannot find good marker genes you may need to go back to the start of the workflow and adapt your parameters. Note that we also determine genes that are particularly down-regulated in one cluster, even if these are not marker genes in the classical sense.
+
+Good marker genes are highly and possibly even only expressed in one cluster as compared to all other clusters. However, sometimes marker genes are also expressed in other clusters, or are declared as marker genes in these clusters, for example cell lineage markers that are shared by different cell subtypes. To evaluate marker genes, it is essential to visualize their expression patterns.
+
+In addition to detecting marker genes, it might be informative to detect genes that are differentially expressed between one specific cluster and one or several other clusters. This approach allows a more specific distinction of individual clusters and investigation of more subtle differences, see the section “Differentially expressed genes” below. 
+</details>
 
 
