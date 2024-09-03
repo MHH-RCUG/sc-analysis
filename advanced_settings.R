@@ -24,8 +24,8 @@ param_advset$downsample_cells_equally = NULL
 
 ### Filter
 # Filter for cells
-#param_advset$cell_filter = list(nFeature_RNA=c(20, NA), nCount_RNA=c(200, NA), percent_mt=c(0, 25))
-param_advset$cell_filter = NULL
+#param_advset$cell_filter = list(nFeature_RNA=c(20, NA), nCount_RNA=c(200, NA), percent_mt=c(0, 20))
+param_advset$cell_filter = list(nFeature_RNA=c(20, NA), nCount_RNA=c(200, 20000), percent_mt=c(0, 18))
 # Filter for features
 #param_advset$feature_filter = list(min_counts=1, min_cells=5)
 param_advset$feature_filter = NULL
@@ -78,7 +78,7 @@ param_advset$experimental_groups = NULL
 
 
 ### Dimensional reduction
-param_advset$pc_n = NULL
+param_advset$pc_n = 8
 # k nearest neighbors to find clusters
 # k nearest neighbors to construct the UMAP
 # Scanpy uses 15 for both by default
@@ -88,7 +88,7 @@ param_advset$umap_k = NULL
 
 # Cluster resolutions to compute; multiple values possible (comma separated); Empty vector if not needed
 param_advset$cluster_resolution_test = NULL
-# Cluster resolution to use for analysis
+# Cluster resolution to use for analysis (default: 0.6)
 param_advset$cluster_resolution = NULL
 
 
