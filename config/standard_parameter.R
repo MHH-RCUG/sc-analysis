@@ -187,7 +187,7 @@ param$col_palette_samples = "ggsci::pal_igv"
 # Colour palette used for cluster
 param$col_palette_clusters = "ggsci::pal_igv"
 # Colour palette used for annotated cell types
-param$col_palette_annotation = "ggsci:pal_ucscgb()"
+param$col_palette_annotation = "ggsci::pal_ucscgb"
 # Defined colours for samples
 param$col_samples = NULL
 param$col_samples_ref = NULL
