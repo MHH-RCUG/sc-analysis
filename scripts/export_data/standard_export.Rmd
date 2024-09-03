@@ -20,7 +20,7 @@ saveRDS(sc, file=file.path(param$path_out, "data", "sc.rds"))
 
 ```
 
-```{r loupe_export, file='./convert.R', warning=FALSE, results="hide"}
+```{r loupe_export, file='./convert.R', warning=FALSE, message=FALSE, results="hide"}
 ### Export different output formats
 #source(file.path(param$path_to_git,'scripts/export_data/convert.R'))
 ```
