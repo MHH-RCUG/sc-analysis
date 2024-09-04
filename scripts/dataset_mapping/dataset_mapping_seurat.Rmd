@@ -52,9 +52,12 @@ The reference and the query datasets have to be available as S4 class Seurat obj
 
 Be aware, that the output is highly impacted by the quality and contend of the reference dataset!
 
-```{r read_rds, file='./read_data/read_rds.R', warning=FALSE}
+```{r read_rds, file='../read_data/read_rds.R', warning=FALSE}
 #source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
+message("Load Seurat object from rds file")
+```
 
+```{r set_na_color}
 # Expand colors for cell type annotation to to both datasets
 param$col_annotation_all = c(param$col_annotation_ref, 'NA' = "#BA6338FF")
 ```
