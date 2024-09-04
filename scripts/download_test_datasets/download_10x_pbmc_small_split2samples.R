@@ -5,11 +5,11 @@
 
 # Data output in a input_data subfolder of the directory where it is run 
 
+unlink("filtered_feature_bc_matrix", recursive=T)
 unlink("counts", recursive=T)
 dir.create("counts", showWarnings=FALSE)
 dir.create("counts/sample1", showWarnings=FALSE)
 dir.create("counts/sample2", showWarnings=FALSE)
-unlink("filtered_feature_bc_matrix", recursive=T)
 
 # Download dataset
 url = 'https://cf.10xgenomics.com/samples/cell-exp/3.0.0/pbmc_1k_v3/pbmc_1k_v3_filtered_feature_bc_matrix.tar.gz'
@@ -74,6 +74,6 @@ openxlsx::write.xlsx(data.frame(bcell=c("ENSG00000105369", "ENSG00000156738"),
                                 myeloid=c("ENSG00000101439", "ENSG00000090382"),
                                 monocytes=c("ENSG00000203747", NA),
                                 dendritic=c("ENSG00000179639", NA)),
-                     "known_markers.xlsx")
+                     "counts/known_markers.xlsx")
 
 setwd(param$path_to_git)
