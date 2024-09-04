@@ -15,8 +15,6 @@ bibliography: "`r file.path(param$path_out, 'references.bib')`"
 link-citations: yes
 csl: "`r file.path(param$path_to_git, 'assets/elsevier-harvard.csl')`"
 css: "`r file.path(param$path_to_git, 'assets/style.css')`"
-editor_options: 
-  chunk_output_type: inline
 ---
 
 ```{r r_options, file='../../config/configuration.R'}
@@ -95,6 +93,11 @@ if (param$norm %in% names(sc@assays)) {
   param$norm = "RNA"
 }
 message(paste0("Chosen normalisation method and normlized values detecte in provided object were harmonised and set to: ", ifelse(param$norm=="RNA", "Standard log normalisation", "SCTransform")))
+
+# Rerun read_gene_annotation.R if choosen annotation set is not fitting to loaded object
+if (!orig_param$species == param$species | !orig_param$annot_version == param$annot_version) {
+  source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
+}
 ```
 
 <br>

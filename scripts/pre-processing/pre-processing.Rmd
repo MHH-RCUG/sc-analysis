@@ -77,6 +77,11 @@ sc_original = sc
 sc = list()
 n = param$project_id
 sc[[n]] = sc_original
+
+# Rerun read_gene_annotation.R if choosen annotation set is not fitting to loaded object
+if (!orig_param$species == param$species | !orig_param$annot_version == param$annot_version) {
+  source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
+}
 ```
 
 ```{r download_test_dataset, eval=!is.null(param$download_test_datasets), warning=FALSE, message=FALSE}

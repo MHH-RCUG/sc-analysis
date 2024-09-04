@@ -29,8 +29,7 @@ if (is.null(param$data)) {
       # Keep some parameter settings from object and project defined
       orig_param_keep = orig_param[c("annot_version", "species")]
       basic_param_keep = param[c("path_to_git", "scriptname", "author", "project_id", "data", "path_out", "file_annot", "file_cc_genes")]
-      # Test for reference concordance
-      rerun_read_gene_annotation = (orig_param$species == param$species & orig_param$annot_version == param$annot_version)
+      
       # Integrate parameter
       param = modifyList(x = param, val = orig_param)
       param = modifyList(x = param, val = basic_param_keep)
@@ -38,11 +37,6 @@ if (is.null(param$data)) {
       param = modifyList(x = param, val = orig_param_keep)
     }
     
-    # Rerun read_gene_annotation.R if not fitting to loaded object
-    if (!rerun_read_gene_annotation == TRUE) {
-      source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
-    }
-
     
     ### Set colors
     # Set sample colors based on orig.ident
