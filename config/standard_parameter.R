@@ -214,6 +214,17 @@ param$liana_methods = c("connectome", "logfc", "natmi", "sca", "cellphonedb")
 param$liana_agg_rank_threshold = 0.01
 
 
+### For dataset mapping
+# Pre-annotated cell types; column in reference dataset
+param$celltype = "annotation"   # at the moment required
+# Reduction to use 'umap' or 'tsne'; must exist in ref dataset
+param$reduction = 'umap'
+# Predicted score threshold
+param$predicted_score_threshold = 0.9
+# Minimum fraction of cell with respective cell identity 
+param$percent_predicted_cells_threshold = 0.1
+
+
 
 
 ### Other parameters

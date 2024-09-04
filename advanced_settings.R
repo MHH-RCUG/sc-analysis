@@ -78,7 +78,7 @@ param_advset$experimental_groups = NULL
 
 
 ### Dimensional reduction
-param_advset$pc_n = 8
+param_advset$pc_n = NULL
 # k nearest neighbors to find clusters
 # k nearest neighbors to construct the UMAP
 # Scanpy uses 15 for both by default
@@ -205,3 +205,12 @@ param_advset$liana_methods = c("logfc", "natmi", "cellphonedb")
 param_advset$liana_agg_rank_threshold = NULL
 
 
+### For dataset mapping
+# Pre-annotated cell types; column in reference dataset
+param_advset$celltype = NULL   # at the moment "annotation" required
+# Reduction to use 'umap' or 'tsne'; must exist in ref dataset (default: 'umap')
+param_advset$reduction = NULL
+# Predicted score threshold (default: 0.9)
+param_advset$predicted_score_threshold = NULL 
+# Minimum fraction of cell with respective cell identity (default: 0.1)
+param_advset$percent_predicted_cells_threshold = NULL
