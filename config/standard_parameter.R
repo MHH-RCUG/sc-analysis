@@ -206,6 +206,15 @@ param$col_bg = "#D3D3D3"
 param$pt_size = 0.5
 
 
+### ccc analysis
+# Available methods: "connectome", "logfc", "natmi", "sca", "cellphonedb", "cytotalk", "call_squidpy", "call_cellchat", "call_connectome", "call_sca", "call_italk", "call_natmi"  
+param$liana_methods = c("connectome", "logfc", "natmi", "sca", "cellphonedb")
+
+# Threshold for liana agg rank (default: 0.01)
+param$liana_agg_rank_threshold = 0.01
+
+
+
 
 ### Other parameters
 # Advanced parameter list

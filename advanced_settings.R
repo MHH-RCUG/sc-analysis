@@ -197,5 +197,11 @@ param_advset$col_bg = NULL
 param_advset$pt_size = NULL
 
 
+### ccc analysis
+# Available methods: "connectome", "logfc", "natmi", "sca", "cellphonedb", "cytotalk", "call_squidpy", "call_cellchat", "call_connectome", "call_sca", "call_italk", "call_natmi"  
+param_advset$liana_methods = c("logfc", "natmi", "cellphonedb")
+
+# Threshold for liana agg rank (default: 0.01)
+param_advset$liana_agg_rank_threshold = NULL
 
 

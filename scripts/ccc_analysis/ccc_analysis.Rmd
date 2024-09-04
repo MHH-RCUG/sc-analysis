@@ -18,12 +18,12 @@ css: "`r file.path(param$path_to_git, 'assets/style.css')`"
 ---
 
 ```{r r_options, file='../../config/configuration.R'}
-source(file.path(param$path_to_git,'config/configuration.R'))
+#source(file.path(param$path_to_git,'config/configuration.R'))
 message("Set R options")
 ```
 
 ```{r rmarkdown, file='../../config/rmarkdown_configuration.R'}
-source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'))
+#source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'))
 message("Set Rmarkdown options")
 ```
 
@@ -65,6 +65,7 @@ We load the dataset as S4 class Seurat objects.
 
 ```{r read_rds, file='./read_data/read_rds.R', warning=FALSE}
 #source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
+message("Load Seurat object from rds file")
 ```
 
 <br>
@@ -175,8 +176,6 @@ p
 ```{r, child='../export_data/standard_export.Rmd'}
 ```
 
-<br />
-<br />
 <br />
 
 ```{r, child='../export_data/appendix.Rmd'}

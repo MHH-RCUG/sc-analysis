@@ -13,7 +13,8 @@ param$project_id = "Testdata"
 ### Dataset
 # Either load existing object
 #param$data = NULL
-param$data = "/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis/output/Testdata/pre-processing/data/sc.rds"
+#param$data = "/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis/output/Testdata/pre-processing/data/sc.rds"
+param$data = "/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis/output/Testdata/cluster_analysis/data/sc.rds"
 
 # Or use test dataset included in ./modules/download_test_datasets/
 # Does only work for 10x data automatically at the moment
@@ -28,3 +29,10 @@ param$path_data = data.frame(name=c("Sample1", "Sample2"),
 # Reference
 param$species="human"
 
+
+
+
+### For ccc
+# Set sender and receiver cell types
+param$sender = c("Monocytes", "NK cells")
+param$receiver = c("NK cells", "CD4+ T-cells", "CD8+ T-cells", "B-cells")
