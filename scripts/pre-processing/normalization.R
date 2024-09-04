@@ -2,7 +2,8 @@
 
 ### (part1_normalization) and (part2_cc_scores)
 # Calculate cell cycle score if it should be regressed out
-if (param$cc_remove) {
+# Or if only one sample
+if (param$cc_remove | length(sc) == 1) {
   # Run NormalizeData prior to CellCycleScoring
   # This is required to score cell cycle (https://github.com/satijalab/seurat/issues/1679)
   # This learns cell cycle scores that can be added to the vars.to.regress parameter in LogNormalize or SCTransform
@@ -31,19 +32,6 @@ if (param$cc_remove) {
     param$vars_to_regress = unique(c(param$vars_to_regress, "CC.Difference"))
     param$latent_vars = unique(c(param$latent_vars, "CC.Difference"))
   }  
-}
-
-# Assign cell cycle score also already here if there is only one sample    
-if (length(sc) == 1) {
-  sc = purrr::map(list_names(sc), function(n) {
-    sc[[n]] = CCScoring(sc=sc[[n]], genes_s=genes_s[,2], genes_g2m=genes_g2m[,2], name=n)
-    if (any(is.na(sc[[n]][["S.Score"]])) | any(is.na(sc[[n]][["G2M.Score"]]))) {
-      param$cc_remove=FALSE
-      param$cc_remove_all=FALSE
-      param$cc_rescore_after_merge=FALSE
-    }
-    return(sc[[n]])
-  })
 }
 
 
