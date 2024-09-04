@@ -7,6 +7,7 @@ renv::settings$snapshot.type("all")
 renv::install("remotes")
 renv::install("tidyverse") # version 2.0.0; dbplyr version < "2.3.4" needed
 remotes::install_version("dbplyr", version='2.2.1')
+renv::install("patchwork") # version 1.2.0
 renv::install("openxlsx") # version 4.2.5.2 
 renv::install("bioc::biomaRt") # version 2.0.0 
 renv::install("Seurat") # version 5.0.2
@@ -42,6 +43,9 @@ renv::install("bioc::scran") # version 1.26.2
 renv::install("viridis") # version 0.6.5
 renv::install("pheatmap") # version 1.0.12
 
+# ccc analysis
+renv::install("saezlab/liana") # version 0.1.14
+
 # Further packages:
 # reticulate 1.35.0
 # knitr 1.45
@@ -51,6 +55,7 @@ renv::install("pheatmap") # version 1.0.12
 # httr 1.4.7
 # bslib 0.6.1
 # shiny 1.8.0
+# gridGraphics 0.5.1
 
 # Set virtualenv
 reticulate::virtualenv_create("/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis/env/basic/virtualenvs/r-reticulate")

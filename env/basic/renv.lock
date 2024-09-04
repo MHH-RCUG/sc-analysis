@@ -500,6 +500,53 @@
         "matrixStats"
       ]
     },
+    "OmnipathR": {
+      "Package": "OmnipathR",
+      "Version": "3.13.22",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "saezlab",
+      "RemoteRepo": "OmnipathR",
+      "RemoteRef": "master",
+      "RemoteSha": "b20fb0f089ccc3b5f286d56ebba4bfba881c91c3",
+      "Hash": "c8c535cd53faa8c1354f70df3f62436f",
+      "Requirements": [
+        "R.utils",
+        "RSQLite",
+        "XML",
+        "checkmate",
+        "crayon",
+        "curl",
+        "digest",
+        "dplyr",
+        "httr",
+        "igraph",
+        "jsonlite",
+        "later",
+        "logger",
+        "lubridate",
+        "magrittr",
+        "progress",
+        "purrr",
+        "rappdirs",
+        "readr",
+        "readxl",
+        "rlang",
+        "rmarkdown",
+        "rvest",
+        "stringi",
+        "stringr",
+        "tibble",
+        "tidyr",
+        "tidyselect",
+        "vctrs",
+        "withr",
+        "xml2",
+        "yaml",
+        "zip"
+      ]
+    },
     "R.methodsS3": {
       "Package": "R.methodsS3",
       "Version": "1.8.2",
@@ -971,15 +1018,34 @@
       "Hash": "543776ae6848fde2f48ff3816d0628bc",
       "Requirements": []
     },
+    "basilisk": {
+      "Package": "basilisk",
+      "Version": "1.17.2",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "LTLA",
+      "RemoteRepo": "basilisk",
+      "RemoteRef": "master",
+      "RemoteSha": "0a851fa47fb5d64fa5a20dcfc38b76c74cc76f4a",
+      "Hash": "8e8b7a9f2c5941412a7a816598cf6ead",
+      "Requirements": [
+        "basilisk.utils",
+        "dir.expiry",
+        "reticulate"
+      ]
+    },
     "basilisk.utils": {
       "Package": "basilisk.utils",
-      "Version": "1.10.0",
-      "Source": "Bioconductor",
-      "git_url": "https://git.bioconductor.org/packages/basilisk.utils",
-      "git_branch": "RELEASE_3_16",
-      "git_last_commit": "b4d6087",
-      "git_last_commit_date": "2022-11-01",
-      "Hash": "2ed075c38b5ce7072ea61acfffb7faba",
+      "Version": "1.17.2",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "LTLA",
+      "RemoteRepo": "basilisk.utils",
+      "RemoteRef": "master",
+      "RemoteSha": "efe957fea7a4abe49db6ac586372c093f8d1b047",
+      "Hash": "fed406c31d2295f5a7316e6c36e5dcfd",
       "Requirements": [
         "dir.expiry"
       ]
@@ -2390,6 +2456,42 @@
         "reticulate"
       ]
     },
+    "liana": {
+      "Package": "liana",
+      "Version": "0.1.14",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "saezlab",
+      "RemoteRepo": "liana",
+      "RemoteRef": "master",
+      "RemoteSha": "6cab46c54234f861ea176c3de77c4b8aa45ecb3d",
+      "Remotes": "sqjin/CellChat, saezlab/OmnipathR, saezlab/decoupleR,\n    LTLA/basilisk.utils, LTLA/basilisk",
+      "Hash": "71626bc80ea3435cc5eb1948f9ee3905",
+      "Requirements": [
+        "ComplexHeatmap",
+        "OmnipathR",
+        "RColorBrewer",
+        "SeuratObject",
+        "SingleCellExperiment",
+        "basilisk",
+        "basilisk.utils",
+        "dplyr",
+        "ggplot2",
+        "magrittr",
+        "purrr",
+        "readr",
+        "reticulate",
+        "rlang",
+        "scater",
+        "scran",
+        "scuttle",
+        "stringr",
+        "tibble",
+        "tidyr",
+        "tidyselect"
+      ]
+    },
     "lifecycle": {
       "Package": "lifecycle",
       "Version": "1.0.4",
@@ -2440,6 +2542,21 @@
       "Requirements": [
         "lattice"
       ]
+    },
+    "logger": {
+      "Package": "logger",
+      "Version": "0.3.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "RemoteType": "standard",
+      "RemotePkgRef": "logger",
+      "RemoteRef": "logger",
+      "RemoteRepos": "https://cloud.r-project.org",
+      "RemoteReposName": "CRAN",
+      "RemotePkgPlatform": "source",
+      "RemoteSha": "0.3.0",
+      "Hash": "c145edf05cc128e6ffcfa5d872c46329",
+      "Requirements": []
     },
     "lubridate": {
       "Package": "lubridate",
