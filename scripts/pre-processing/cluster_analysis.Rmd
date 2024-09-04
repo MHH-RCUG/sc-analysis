@@ -132,7 +132,7 @@ For this report, you chose the resolution value `r param$cluster_resolution` as 
 # Note that you can set `label = TRUE` or use the LabelClusters function to help label individual clusters
 cluster_cells = table(sc@active.ident)
 cluster_labels = paste0(levels(sc@active.ident)," (", cluster_cells[levels(sc@active.ident)],")")
-p_umap = Seurat::DimPlot(sc, reduction="umap", group.by="seurat_clusters") + 
+p_umap = Seurat::DimPlot(sc, reduction="umap", group.by="seurat_clusters", pt.size = param$pt_size) + 
   scale_color_manual(values=param$col_clusters, labels=cluster_labels) +
   AddStyle(title="Cells coloured by cluster identity", legend_position="", legend_title="", xlab = "UMAP 1", ylab = "UMAP 2")
 p_umap = LabelClusters(p_umap, id="seurat_clusters", box=TRUE, segment.color="black", fill="white", repel = TRUE)
@@ -140,7 +140,7 @@ p_umap = LabelClusters(p_umap, id="seurat_clusters", box=TRUE, segment.color="bl
 sample_cells = table(sc$orig.ident)
 sample_labels = paste0(levels(sc$orig.ident)," (", sample_cells[levels(sc$orig.ident)],")")
 # Note: This is a hack to colour by sample but label by Cluster
-p2 = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident") +
+p2 = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident", pt.size = param$pt_size) +
   scale_color_manual(values=param$col_samples, labels=sample_labels) +
   AddStyle(title="Cells coloured by sample of origin", legend_position="bottom", xlab = "UMAP 1", ylab = "UMAP 2")
 p2$data$seurat_clusters = sc[["seurat_clusters"]][rownames(p2$data), ]
