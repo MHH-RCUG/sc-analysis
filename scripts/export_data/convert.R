@@ -31,7 +31,7 @@ if (all(param$path_data$type == "10x")) {
 sc_v3 = scCustomize::Convert_Assay(seurat_object = sc, convert_to = "V3", assay = "RNA")
 
 # Convert Seurat v3 single cell object to anndata object
-adata = sceasy::convertFormat(sc_v3, from="seurat", to="anndata", outFile=NULL, assay=DefaultAssay(sc))
+adata = sceasy::convertFormat(sc_v3, from="seurat", to="anndata", outFile=NULL, assay=Seurat::DefaultAssay(sc_v3))
 # Write to h5ad file
 adata$write(file.path(param$path_out, "data", "sc_anndata.h5ad"), compression="gzip")
 
