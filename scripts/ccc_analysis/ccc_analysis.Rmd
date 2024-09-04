@@ -30,7 +30,7 @@ message("Set Rmarkdown options")
 ```{r load_packages, warning=FALSE, message=FALSE, results='hide'}
 
 # Load renv
-renv::load(file.path(param$path_to_git,"env/ccc"))
+renv::load(file.path(param$path_to_git,"env/basic"))
 
 # Required libraries
 library(liana)
@@ -63,7 +63,7 @@ We load the dataset as S4 class Seurat objects.
 <br>
 <br>
 
-```{r read_rds, file='./read_data/read_rds.R', warning=FALSE}
+```{r read_rds, file='../read_data/read_rds.R', warning=FALSE}
 #source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
 message("Load Seurat object from rds file")
 ```
@@ -99,7 +99,7 @@ knitr::kable(head(liana_rank_agg, 25), align="l", caption="LIANA magnitude_rank 
 ```
 
 ```{r fig_settings}
-heatmap_number_celltypes = length(unique(sc$annotation)) * 0.3 + 0.5
+heatmap_number_celltypes = max(5, length(unique(sc$annotation)) * 0.3 + 0.5)
 fig_number_celltypes = length(unique(sc$annotation)) * 3
 
 ```
@@ -107,16 +107,28 @@ fig_number_celltypes = length(unique(sc$annotation)) * 3
 ## Interaction frequencies
 We plot the frequencies of interactions for each pair of potentially communicating cell types.
 
-First, we filter interactions by aggregate_rank (<= `r param$liana_agg_rank_threshold`), as a indicator for the robustly, highly ranked interactions concordant between methods and visualize the number of the inferred interactions between sender and retriever cell types. Here we assume that the number of the interactions is informative of the occurring communication events. However, this is a rather strong assumption affected by the applied filter criteria. Thus, any conclusions need to be confirmed by supporting information such as biological prior knowledge (`r knitcitations::citet("https://www.biorxiv.org/content/10.1101/2021.05.21.445160v1.abstract")`).
+First, we filter interactions by aggregate_rank (<= `r param$liana_agg_rank_threshold`), as a indicator for the robustly, highly ranked interactions concordant between methods and visualize the number of the inferred interactions between sender and retriever cell types. Here we assume that the number of the interactions is informative of the occurring communication events. However, this is a rather strong assumption affected by the applied filter criteria. Thus, any conclusions need to be confirmed by supporting information such as biological prior knowledge (@dimitrov2021).
 
 ### Frequency Heatmap
 Heatmap displaying the interaction frequencies of all cell types.
-```{r liana_freq_figure, fig.height=heatmap_number_celltypes, warning=FALSE, message=FALSE}
+```{r liana_freq_figure, fig.height=heatmap_number_celltypes, warning=FALSE}
 
 # First, we filter interactions by aggregate_rank, as a indicator for the robustly, highly ranked interactions concordant between methods. 
 # These p-values are already corrected.
 liana_agg_filtered = dplyr::filter(liana_agg, aggregate_rank <= param$liana_agg_rank_threshold) 
 
+number_ccinteractions = length(rownames(unique(liana_agg_filtered[,1:2])))
+number_total_interactions = length(rownames(liana_agg_filtered))
+
+# Test for sufficient number of interactions
+if (number_ccinteractions*5 > number_total_interactions) {
+  message(paste0("The liana_agg_rank_threshold ", param$liana_agg_rank_threshold, " is too stringend. Increasing threshold automatically by factor 10."))
+  param$liana_agg_rank_threshold = param$liana_agg_rank_threshold * 10
+  # Rerun with lower filter threshold
+  liana_agg_filtered = dplyr::filter(liana_agg, aggregate_rank <= param$liana_agg_rank_threshold) 
+}
+
+# Plot frequency heatmap
 p = heat_freq(liana_agg_filtered, font_size = 10, pallette = c("white", "navy"))
 p
 ```

@@ -17,8 +17,8 @@ setwd(param$path_to_git)
 param$scriptname = "scripts/ccc_analysis/ccc_analysis.Rmd"
 
 # set environment
-renv::use_python(type = "virtualenv", name = file.path(param$path_to_git,"env/ccc/virtualenvs/r-reticulate"))
-renv::load(file.path(param$path_to_git,"env/ccc"))
+renv::use_python(type = "virtualenv", name = file.path(param$path_to_git,"env/basic/virtualenvs/r-reticulate"))
+renv::load(file.path(param$path_to_git,"env/basic"))
 
 # Set parameter
 source(file.path(param$path_to_git,"config/set_parameter.R"))
