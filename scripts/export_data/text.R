@@ -313,3 +313,7 @@ In addition to detecting marker genes, it might be informative to detect genes t
 </details>
 
 
+## ---- intro_cell_annotation --------
+Single cell transcriptomes can be difficult to annotate without extensive knowledge of the underlying biology. Given a reference dataset (of samples from single-cell or bulk RNA sequencing) with known labels, it is possible to assign labels to the cells from a test dataset based on similarity to that reference. Hence, the biological knowledge (defined marker genes and cluster identities) can be propagated from the reference dataset to the test dataset in an automated manner and aid in cluster identification. 
+
+
