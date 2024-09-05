@@ -177,19 +177,20 @@ TO DO
 The core modules as well as the modules for downstream analysis generate RMarkdown reports in html format with comprehensive visualisations, tables, and documentation describing the analysis steps and results.  
 By default, the output in the 'output' folder. Within this folder, the workflow creates a project folder with the project_id as name and for each executed module a subfolder carrying the names of the respective module.  
 The output varies depending on the module. However, most modules generate the following output data:  
-* RMarkdown report (html format) with:
+
+* RMarkdown report (html format) with: 
    * Results and descriptions
    * Parameter table
    * Software versions
    * Credits and References
-* 'data' folder with: 
+* data folder with: 
    * Seurat object
    * Anndata object  
    * Input files for 10x Genomics Loupe Browser
    * Count matrix files
    * Cell metadata file
    * Other output files (e.g. respective tables or plots) 
-* 'figures' folder with all plots in png, svg, and tiff format
+* figures folder with all plots in png, svg, and tiff format 
 
 
   
