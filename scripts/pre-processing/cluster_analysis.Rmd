@@ -127,6 +127,20 @@ param$col_clusters = Misc(sc, "colour_lists")[["seurat_clusters"]]
 ```
 For this report, you chose the resolution value `r param$cluster_resolution` as the final value for further analyses.  
 
+```{r cluster_analysis_fig_heights}
+# Figure height for umaps
+if (length(levels(sc$orig.ident))==1) {
+  height_per_row = 3
+} else if (length(levels(sc$orig.ident))==2) {
+  height_per_row = 4
+} else {
+  height_per_row = 2
+}
+nr_rows_3cols = ceiling(length(levels(sc$orig.ident))/3)
+fig_height_3plots = height_per_row * nr_rows_3cols
+
+```
+
 ### Coloured by cluster
 ```{r umap_by_cluster, fig.height=fig_standard2_height}
 # Note that you can set `label = TRUE` or use the LabelClusters function to help label individual clusters
@@ -151,7 +165,7 @@ p
 ```
 
 ### Coloured by cluster (per sample)
-```{r umap_by_cluster_separately, fig.height=fig_standard2_height}
+```{r umap_by_cluster_separately, fig.height=fig_height_3plots}
 # Plot all samples separately
 # Repel will be deactivated if there are more than six samples; otherwise the plot may crash
 p = Seurat::DimPlot(sc, reduction="umap", group.by="seurat_clusters", pt.size=param$pt_size, split.by = "orig.ident", ncol = 2) +
@@ -947,8 +961,6 @@ if (markers_found) {
 ```{r, child='../export_data/standard_export.Rmd'}
 ```
 
-<br>
-<br>
 <br>
 
 ```{r, child='../export_data/appendix.Rmd'}
