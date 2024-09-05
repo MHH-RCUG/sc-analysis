@@ -122,6 +122,10 @@ Core module to evaluate and analyse cell clusters, including cluster QC, identif
 Single cell transcriptomes can be difficult to annotate without extensive knowledge of the underlying biology. Hence, the biological knowledge (defined marker genes and cluster identities) can be propagated from a previously annotated dataset to the test dataset in an automated manner and aid in cluster identification. 
 This module maps the cluster annotations from a reference dataset onto the query dataset. Reference and query dataset both need to be provided as Seurat objects.
 
+### Module: cell_annotation_clustifyr
+This module performs cluster annotation via clustifyr with reference datasets from clustifyrdatahub or ucsc.
+
+
 ### Module: ccc_analysis
 Cell-cell communication (CCC) is a process by which cells react to stimuli during many biological processes. This module utilizes the LIANA tool to infer ligand-receptor interactions between cell types by running multiple CCC inference methods using a consensus resource and combines the results.
 
@@ -146,8 +150,8 @@ Module to download test datasets. Test datasets are automatically stored in the 
 * download_10x_pbmc_small_split2samples
 * download_10x_SmartSeq2_pbmc_GSE132044
 
-### Module: inspect_data (TO DO)
-Module executing diverse steps to read and inspect data for subsequent processing and analysis.
+### Module: inspect_rds (TO DO)
+Module to load and inspect generated object before further downstream analysis. Moreover, the script generates a lists of plots that can be displayed or saved in the desired size and resolution.
 
 
 
@@ -172,7 +176,7 @@ TO DO
 <a name="output"/>
 The core modules as well as the modules for downstream analysis generate RMarkdown reports in html format with comprehensive visualisations, tables, and documentation describing the analysis steps and results.  
 By default, the output in the 'output' folder. Within this folder, the workflow creates a project folder with the project_id as name and for each executed module a subfolder carrying the names of the respective module.  
-The output varies depending on the module. However, most modules generate the following output data:
+The output varies depending on the module. However, most modules generate the following output data:  
 * RMarkdown report (html format) with:
    * Results and descriptions
    * Parameter table
