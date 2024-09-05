@@ -1343,6 +1343,49 @@
       "Hash": "c5f8447373ec2a0f593c694024e5b7ee",
       "Requirements": []
     },
+    "clustifyr": {
+      "Package": "clustifyr",
+      "Version": "1.10.0",
+      "Source": "Bioconductor",
+      "git_url": "https://git.bioconductor.org/packages/clustifyr",
+      "git_branch": "RELEASE_3_16",
+      "git_last_commit": "768cfde",
+      "git_last_commit_date": "2022-11-01",
+      "Hash": "eab6128173948050d02aa15f291f3fa9",
+      "Requirements": [
+        "Matrix",
+        "S4Vectors",
+        "SingleCellExperiment",
+        "SummarizedExperiment",
+        "cowplot",
+        "dplyr",
+        "entropy",
+        "fgsea",
+        "ggplot2",
+        "httr",
+        "matrixStats",
+        "proxy",
+        "readr",
+        "rlang",
+        "scales",
+        "stringr",
+        "tibble",
+        "tidyr"
+      ]
+    },
+    "clustifyrdatahub": {
+      "Package": "clustifyrdatahub",
+      "Version": "1.8.0",
+      "Source": "Bioconductor",
+      "git_url": "https://git.bioconductor.org/packages/clustifyrdatahub",
+      "git_branch": "RELEASE_3_16",
+      "git_last_commit": "c7f3a06",
+      "git_last_commit_date": "2022-11-01",
+      "Hash": "1b2f731434cc1346498787c62ded5d69",
+      "Requirements": [
+        "ExperimentHub"
+      ]
+    },
     "clustree": {
       "Package": "clustree",
       "Version": "0.5.1",
@@ -1617,6 +1660,14 @@
         "rjson"
       ]
     },
+    "entropy": {
+      "Package": "entropy",
+      "Version": "1.3.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "99df3344e9a4efeef32ff01ed94ff225",
+      "Requirements": []
+    },
     "evaluate": {
       "Package": "evaluate",
       "Version": "0.23",
@@ -1660,6 +1711,34 @@
       "Repository": "CRAN",
       "Hash": "f7736a18de97dea803bde0a2daaafb27",
       "Requirements": []
+    },
+    "fastmatch": {
+      "Package": "fastmatch",
+      "Version": "1.1-4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "8c406b7284bbaef08e01c6687367f195",
+      "Requirements": []
+    },
+    "fgsea": {
+      "Package": "fgsea",
+      "Version": "1.24.0",
+      "Source": "Bioconductor",
+      "git_url": "https://git.bioconductor.org/packages/fgsea",
+      "git_branch": "RELEASE_3_16",
+      "git_last_commit": "ac74ccd",
+      "git_last_commit_date": "2022-11-01",
+      "Hash": "c682d67fea435759f50ff8dc6dcd6b8d",
+      "Requirements": [
+        "BH",
+        "BiocParallel",
+        "Matrix",
+        "Rcpp",
+        "cowplot",
+        "data.table",
+        "fastmatch",
+        "ggplot2"
+      ]
     },
     "filelock": {
       "Package": "filelock",
@@ -2948,6 +3027,14 @@
         "magrittr",
         "rlang"
       ]
+    },
+    "proxy": {
+      "Package": "proxy",
+      "Version": "0.4-27",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "e0ef355c12942cf7a6b91a6cfaea8b3e",
+      "Requirements": []
     },
     "ps": {
       "Package": "ps",

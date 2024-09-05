@@ -42,6 +42,8 @@ renv::install("bioc::SingleCellExperiment") # version 1.20.1
 renv::install("bioc::scran") # version 1.26.2
 renv::install("viridis") # version 0.6.5
 renv::install("pheatmap") # version 1.0.12
+renv::install("bioc::clustifyr") # version 1.10.0
+renv::install("bioc::clustifyrdatahub") # version 1.8.0
 
 # ccc analysis
 renv::install("saezlab/liana") # version 0.1.14
