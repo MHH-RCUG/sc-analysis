@@ -207,6 +207,10 @@ param$pt_size = 0.5
 
 
 ### ccc analysis
+# Set sender and receiver cell types
+param$sender = NULL
+param$receiver = NULL
+
 # Available methods: "connectome", "logfc", "natmi", "sca", "cellphonedb", "cytotalk", "call_squidpy", "call_cellchat", "call_connectome", "call_sca", "call_italk", "call_natmi"  
 param$liana_methods = c("connectome", "logfc", "natmi", "sca", "cellphonedb")
 
@@ -215,15 +219,28 @@ param$liana_agg_rank_threshold = 0.01
 
 
 ### For dataset mapping
+# Set reference object
+param$refdata = NULL
+
 # Pre-annotated cell types; column in reference dataset
 param$celltype = "annotation"   # at the moment required
+
 # Reduction to use 'umap' or 'tsne'; must exist in ref dataset
 param$reduction = 'umap'
+
 # Predicted score threshold
 param$predicted_score_threshold = 0.9
 # Minimum fraction of cell with respective cell identity 
 param$percent_predicted_cells_threshold = 0.1
 
+
+### For cell annoatation clustifyr
+# Name of clustifyrdatahub reference
+param$annotation_dbs_clustifyr = NULL
+# Url of reference dataset
+param$url_clustifyr = NULL
+# Name of annotation column in reference dataset
+param$cluster_col_clustifyr = NULL
 
 
 
