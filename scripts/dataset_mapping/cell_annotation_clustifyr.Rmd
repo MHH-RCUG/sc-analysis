@@ -1,0 +1,293 @@
+---
+title: "Cluster annotation with Clustifyr"
+author: "`r param$author`"
+date: "`r format(Sys.time(), '%B, %Y')`"
+geometry: "margin=2cm"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    code_folding: "hide"
+    highlight: "tango"
+    theme: "paper"
+bibliography: "`r file.path(param$path_out, 'references.bib')`"
+link-citations: yes
+csl: "`r file.path(param$path_to_git, 'assets/elsevier-harvard.csl')`"
+css: "`r file.path(param$path_to_git, 'assets/style.css')`"
+---
+
+```{r r_options, file='../../config/configuration.R'}
+#source(file.path(param$path_to_git,'config/configuration.R'))
+message("Set R options")
+```
+
+```{r rmarkdown, file='../../config/rmarkdown_configuration.R'}
+#source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'))
+message("Set Rmarkdown options")
+```
+
+```{r, include=FALSE, cache=FALSE}
+knitr::read_chunk(file.path(param$path_to_git,'scripts/export_data/text.R'))
+```
+
+```{r load_packages, warning=FALSE, message=FALSE, results='hide'}
+
+# Load renv
+renv::load(file.path(param$path_to_git,"env/basic"))
+
+# Required libraries
+library(Seurat)
+library(clustifyr)
+library(clustifyrdatahub)
+library(patchwork)
+library(magrittr)
+library(ggplot2)
+library(ggsci)
+
+# Load reference datasets
+
+if (!is.null(param$annotation_dbs_clustifyr)) {
+  # Reference from clustifyrdatahub for Clustifyr
+  # List https://rnabioco.github.io/clustifyrdata/articles/download_refs.html
+  # Function to paste reference name and download reference dataset
+  str_eval=function(x) {return(eval(parse(text=x)))}
+  ref = str_eval(param$annotation_dbs_clustifyr)
+  ref_name = gsub("[()]","",param$annotation_dbs_clustifyr)
+  RefDataset = TRUE
+} else if (!is.null(param$url_clustifyr)) {
+  # Reference pulled form http://cells.ucsc.edu/ for Clustifyr
+  Sys.setenv(VROOM_CONNECTION_SIZE = 131072*100)
+  ref = clustifyr::get_ucsc_reference(cb_url = param$url_clustifyr, cluster_col = param$cluster_col_clustifyr)
+  RefDataset = TRUE
+} else {
+  message("No reference dataset provided.")
+  RefDataset = FALSE
+}
+
+# Remove ENS IDs 
+if (all(startsWith(row.names(ref), "ENS"))) {
+  row.names(ref) = gsub(".*\\|", "", row.names(ref))
+}
+
+```
+
+# Introduction
+ 
+```{asis, ref.label="intro_cell_annotation"}
+```
+
+Here, cluster annotation for the samples of project `r param$project_id` was performed using Clustifyr. Reference dataset for cell-type assignment with Clustifyr can be obtained from clustifyrdatahub (https://rnabioco.github.io/clustifyrdata/articles/download_refs.html) or pulled form http://cells.ucsc.edu/. The reference dataset `r ifelse(!is.null(param$annotation_dbs_clustifyr), paste0(param$annotation_dbs_clustifyr, " obtained from clustifyrdatahub was used"), "")` `r ifelse(!is.null(param$url_clustifyr), paste0("was pulled from ", param$url_clustifyr), "")`.
+
+
+```{r read_rds, file='../read_data/read_rds.R', warning=FALSE}
+#source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
+message("Load Seurat object from rds file")
+```
+
+```{r cell_annotation_clustifyr_fig_heights}
+# Figure height for umaps
+if (length(levels(sc$orig.ident))==1) {
+  height_per_row = 3
+} else if (length(levels(sc$orig.ident))==2) {
+  height_per_row = 4
+} else {
+  height_per_row = 2
+}
+nr_rows_3cols = ceiling(length(levels(sc$orig.ident))/3)
+fig_height_3plots = height_per_row * nr_rows_3cols
+
+# Figure heights for dotplot
+fig_height_dp = max(4, 4 + 0.3 * length(levels(sc$orig.ident)))
+
+```
+
+# Annotation of clusters
+UMAPs display cells colored by Seurat clusters and cell types annotated by Clustifyr. Annotation was performed for each cluster as unit.
+```{r clustifyr, eval=isTRUE(RefDataset)}
+# Convert to v3; Does not work with seurat v5 at the moment
+sc_v3 = scCustomize::Convert_Assay(seurat_object = sc, convert_to = "V3", assay = "RNA")
+
+# Annotate clusters using Clustifyr with reference dataset
+sc_v3 = clustify(input = sc_v3, ref_mat = ref, cluster_col = "seurat_clusters", query_genes = VariableFeatures(sc_v3))
+  
+
+# Set to annotation metadata column
+sc_v3$annotation = sc_v3$type
+
+# Set colors for cell types based on annotation 
+message(paste0("Generate colors using color palette", param$col_palette_annotation))
+annotation_colours_out = suppressWarnings(SetAnnotationColours(sc_v3, param$col_palette_annotation)) 
+sc_v3 = annotation_colours_out[[1]]
+param$col_annotation = annotation_colours_out[[2]]
+
+
+# Print table with cell annotation
+annotated_clusters = table(sc_v3$annotation)
+knitr::kable(annotated_clusters, align="l", caption="Cell types assigned to cells") %>% 
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover")) %>% 
+  kableExtra::scroll_box(width="100%", height="300px")
+```
+
+<br> 
+<br>
+ 
+## Coloured by cell type 
+```{r clustifyr_clusters, fig.height=fig_standard3_height, eval=isTRUE(RefDataset)}
+
+# Visualization of Clustifyr annotation of clusters
+cluster_cells = table(sc@active.ident)
+cluster_labels = paste0(levels(sc@active.ident)," (", cluster_cells[levels(sc@active.ident)],")")
+p1 = Seurat::DimPlot(sc_v3, reduction="umap", group.by="seurat_clusters", pt.size=param$pt_size) + 
+  scale_color_manual(values=param$col_clusters, labels=cluster_labels) +
+  AddStyle(title="Clusters", xlab = "UMAP 1", ylab = "UMAP 2") +
+  theme(title = element_text(size = 10)) +
+  NoGrid() + 
+  NoLegend()
+p1 = LabelClusters(p1, id="seurat_clusters")
+
+p2 = Seurat::DimPlot(sc_v3, reduction="umap", group.by="annotation", pt.size=param$pt_size) + 
+  scale_color_manual(values=param$col_annotation) +
+  AddStyle(title="Cell types \n(annotation per cluster)", xlab = "UMAP 1", ylab = "UMAP 2", legend_position="right", legend_title="Cell types") +
+  theme(title = element_text(size = 10)) +
+  NoGrid()
+p = p1 + p2
+p
+
+```
+
+<br>
+<br> 
+
+## Coloured by cell type (per sample)
+```{r clustifyr_separately, fig.height=fig_height_3plots, eval=isTRUE(RefDataset)}
+# Visualization of Clustifyr annotation of cells separately per sample
+p = Seurat::DimPlot(sc_v3, reduction="umap", group.by="annotation", split.by = "orig.ident", pt.size=param$pt_size, ncol = 3) + 
+  scale_color_manual(values=param$col_annotation) +
+  AddStyle(title="Cell types \n(annotation per cell)", xlab = "UMAP 1", ylab = "UMAP 2", legend_position="right", legend_title="Cell types") +
+  theme(title = element_text(size = 10)) +
+  NoGrid()
+p
+```
+
+<br> 
+
+## Fraction of sample per cell type
+```{r samples_per_celltype, fig.height=6}
+# Set 
+cell_samples = levels(sc_v3$orig.ident)
+cell_celltype = unique(sc_v3$annotation)
+
+# Make count table
+tbl = dplyr::count(sc_v3[[c("orig.ident", "annotation")]], orig.ident, annotation) %>% tidyr::pivot_wider(names_from="annotation", values_from=n, values_fill=0) %>% as.data.frame()
+rownames(tbl) = paste0(tbl[,"orig.ident"])
+tbl[,"orig.ident"] = NULL
+
+tbl_bar = tbl[cell_samples, , drop=FALSE] %>% 
+  tibble::rownames_to_column(var="Sample") %>%
+  tidyr::pivot_longer(cols = tidyselect::all_of(cell_celltype), names_to="Celltype", values_to="Counts")
+tbl_bar$Counts = as.numeric(tbl_bar$Counts)
+tbl_bar$Celltype <- factor(tbl_bar$Celltype,levels = cell_celltype)
+tbl_bar$Sample <- factor(tbl_bar$Sample, levels = cell_samples)
+
+# Plot counts
+p1 = ggplot(tbl_bar, aes(x=Celltype, y=Counts, fill=Sample)) + 
+  geom_bar(stat="identity" ) +
+  AddStyle(title="",
+           fill=param$col_samples,
+           legend_title="Sample",
+           legend_position="bottom") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Make table with percentages
+tbl_perc = round(t(tbl) / colSums(tbl) * 100, 2) %>% t() %>% as.data.frame()
+
+tbl_bar_perc = tbl_perc[cell_samples, , drop=FALSE] %>% 
+  tibble::rownames_to_column(var="Sample") %>%
+  tidyr::pivot_longer(cols = tidyselect::all_of(cell_celltype), names_to="Celltype", values_to="Percentage")
+tbl_bar_perc$Percentage = as.numeric(tbl_bar_perc$Percentage)
+tbl_bar_perc$Celltype <- factor(tbl_bar_perc$Celltype,levels = cell_celltype)
+tbl_bar_perc$Sample <- factor(tbl_bar_perc$Sample, levels = cell_samples)
+
+# Plot percentages
+p2 = ggplot(tbl_bar_perc, aes(x=Celltype, y=Percentage, fill=Sample)) + 
+  geom_bar(stat="identity" ) +
+  AddStyle(title="",
+           fill=param$col_samples,
+           legend_title="",
+           legend_position="") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+p = p1 + p2 + patchwork::plot_layout(guides = "collect") & theme(legend.position = 'bottom')
+p
+```
+
+<br>
+<br>
+
+## Fraction of cell types per sample
+```{r celltype_per_sample, fig.height=6}
+# Plot counts
+p1 = ggplot(tbl_bar, aes(x=Sample, y=Counts, fill=Celltype)) + 
+  geom_bar(stat="identity" ) +
+  AddStyle(title="", xlab = "",
+           fill=param$col_annotation,
+           legend_title="",
+           legend_position="") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# Calculate percentages
+tbl_perc = round(t(tbl) / colSums(t(tbl)) * 100, 2) %>% t() %>% as.data.frame()
+tbl_perc = round(tbl / rowSums(tbl) * 100, 2) %>% as.data.frame()
+
+# Plot percentages
+tbl_bar_perc = tbl_perc[cell_samples, , drop=FALSE] %>% 
+  tibble::rownames_to_column(var="Sample") %>%
+  tidyr::pivot_longer(cols = tidyselect::all_of(cell_celltype), names_to="Cell_type", values_to="Percentage")
+tbl_bar_perc$Percentage = as.numeric(tbl_bar_perc$Percentage)
+tbl_bar_perc$Cell_type <- factor(tbl_bar_perc$Cell_type,levels = cell_celltype)
+tbl_bar_perc$Sample <- factor(tbl_bar_perc$Sample, levels = cell_samples)
+
+p2 = ggplot(tbl_bar_perc, aes(x=Sample, y=Percentage, fill=Cell_type)) + 
+  geom_bar(stat="identity" ) +
+  AddStyle(title="", xlab = "",
+           legend_position="right",
+           fill=param$col_annotation) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+p = p1 + p2 + patchwork::plot_layout(guides = "collect") 
+p
+```
+
+<br>
+
+```{r dotplot_celltypes_per_sample, fig.height=fig_height_dp}
+p = ggplot(data = tbl_bar_perc, aes(x = Cell_type, y = Sample)) +
+  geom_point(aes(color = Percentage, size = ifelse(Percentage==0, NA, Percentage))) +
+  labs(col="Percentage", size="") + 
+  scale_colour_gradient2(low="navy", mid="steelblue", high="darkgoldenrod1") +
+  #viridis::scale_color_viridis(option = "D") +
+  AddStyle(title="", ylab="", legend_position="bottom") + 
+  theme(axis.text.x = element_text(angle=90, hjust=1, vjust=.5)) + 
+  guides(size=guide_legend(order=1))
+
+p
+```
+
+<br>
+<br>
+
+```{r convert object, eval=isTRUE(RefDataset)}
+ sc = scCustomize::Convert_Assay(seurat_object = sc_v3, convert_to = "V5", assay = "RNA")
+```
+
+```{r, child='../export_data/standard_export.Rmd'}
+```
+
+<br>
+
+```{r, child='../export_data/appendix.Rmd'}
+```
+
+
+
