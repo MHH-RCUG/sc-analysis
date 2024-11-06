@@ -46,22 +46,31 @@ library(ggplot2)
 library(ggsci)
 
 # Load reference datasets
-
-if (!is.null(param$annotation_dbs_clustifyr)) {
+if (is.null(param$clustifyr_ref)) {
+  message("No clustifyr reference provided.")
+  RefDataset = FALSE
+} else if (grepl("ref_", param$clustifyr_ref)) {
   # Reference from clustifyrdatahub for Clustifyr
   # List https://rnabioco.github.io/clustifyrdata/articles/download_refs.html
   # Function to paste reference name and download reference dataset
   str_eval=function(x) {return(eval(parse(text=x)))}
-  ref = str_eval(param$annotation_dbs_clustifyr)
-  ref_name = gsub("[()]","",param$annotation_dbs_clustifyr)
+  ref = str_eval(param$clustifyr_ref)
+  ref_name = gsub("[()]","",param$clustifyr_ref)
   RefDataset = TRUE
-} else if (!is.null(param$url_clustifyr)) {
+  RefOrigin = "clustifyrdatahub"
+} else if (grepl("https?://", param$clustifyr_ref)) {
   # Reference pulled form http://cells.ucsc.edu/ for Clustifyr
   Sys.setenv(VROOM_CONNECTION_SIZE = 131072*100)
-  ref = clustifyr::get_ucsc_reference(cb_url = param$url_clustifyr, cluster_col = param$cluster_col_clustifyr)
+  ref = clustifyr::get_ucsc_reference(cb_url = param$clustifyr_ref, cluster_col = param$cluster_col_clustifyr)
   RefDataset = TRUE
+  RefOrigin = param$clustifyr_ref
+} else if (grepl("_clustifyr_reference.rds", param$clustifyr_ref)) {
+  ref = readRDS(param$clustifyr_ref)
+  ref_name =  gsub(".*/","", gsub("_clustifyr_reference.rds","", param$clustifyr_ref)) 
+  RefDataset = TRUE
+  RefOrigin = "http://cells.ucsc.edu/"
 } else {
-  message("No reference dataset provided.")
+  message("No clustifyr reference provided.")
   RefDataset = FALSE
 }
 
@@ -77,7 +86,7 @@ if (all(startsWith(row.names(ref), "ENS"))) {
 ```{asis, ref.label="intro_cell_annotation"}
 ```
 
-Here, cluster annotation for the samples of project `r param$project_id` was performed using Clustifyr. Reference dataset for cell-type assignment with Clustifyr can be obtained from clustifyrdatahub (https://rnabioco.github.io/clustifyrdata/articles/download_refs.html) or pulled form http://cells.ucsc.edu/. The reference dataset `r ifelse(!is.null(param$annotation_dbs_clustifyr), paste0(param$annotation_dbs_clustifyr, " obtained from clustifyrdatahub was used"), "")` `r ifelse(!is.null(param$url_clustifyr), paste0("was pulled from ", param$url_clustifyr), "")`.
+Here, cluster annotation for the samples of project `r param$project_id` was performed using Clustifyr. Reference dataset for cell-type assignment with Clustifyr can be obtained from clustifyrdatahub (https://rnabioco.github.io/clustifyrdata/articles/download_refs.html) or pulled form http://cells.ucsc.edu/. The reference `r ifelse(RefOrigin=="clustifyrdatahub", paste0(ref_name, " obtained from clustifyrdatahub was used."), "")` `r ifelse(RefOrigin==param$clustifyr_ref, paste0("was pulled from ", param$clustifyr_ref, "."), "")` `r ifelse(RefOrigin=="http://cells.ucsc.edu/", paste0(" was generated from the  dataset ", ref_name, " downloaded from ", RefOrigin, "."), "")`
 
 
 ```{r read_rds, file='../read_data/read_rds.R', warning=FALSE}
