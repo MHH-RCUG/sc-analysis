@@ -4,34 +4,21 @@ param=list()
 
 # Set paths
 param$path_to_git='/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis'
+param$path_to_basic_settings=file.path(param$path_to_git,"basic_settings.R")
+param$path_to_advanced_settings=file.path(param$path_to_git,"advanced_settings.R")
 setwd(param$path_to_git)
+param$scriptname = "scripts/dataset_mapping/dataset_mapping_seurat.Rmd"
 
 # Set environment
+renv::use_python(type = "virtualenv", name = file.path(param$path_to_git,"env/basic/virtualenvs/r-reticulate"))
 renv::load(file.path(param$path_to_git,"env/basic"))
 
-# Set R options
-source(file.path(param$path_to_git,'/config/configuration.R'))
+# Set parameter
+source(file.path(param$path_to_git,"config/set_parameter.R"))
 
 
 
-### Parameter
+### Run script
 ################################################################################
-
-########## Basic settings ########## 
-
-# Reference
-param$species="mouse"
-
-
-
-### Read gene annotation 
-################################################################################
-# Set advanced parameter
-source(file.path(param$path_to_git,"/advanced_settings.R"))
-
-# Record advanced parameter settings
-param = modifyList(x = param, val = param_advset)
-
-# Does also download a reference if not existing
 source(file.path(param$path_to_git,"scripts/read_data/read_gene_annotation.R"))
 

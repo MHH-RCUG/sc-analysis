@@ -2,24 +2,19 @@
 ################################################################################
 param=list()
 
-# set paths
+# Set paths
 param$path_to_git='/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis'
+param$path_to_basic_settings=file.path(param$path_to_git,"basic_settings.R")
+param$path_to_advanced_settings=file.path(param$path_to_git,"advanced_settings.R")
 setwd(param$path_to_git)
+param$scriptname = "scripts/dataset_mapping/dataset_mapping_seurat.Rmd"
 
-# set environment
+# Set environment
+renv::use_python(type = "virtualenv", name = file.path(param$path_to_git,"env/basic/virtualenvs/r-reticulate"))
 renv::load(file.path(param$path_to_git,"env/basic"))
-#source(file.path(param$path_to_git,'/config/configuration.R'))
 
-
-
-### Parameter
-################################################################################
-
-########## Basic settings ########## 
-
-# Dataset
-# One of the datasets included in ./modules/download_test_datasets/
-param$download_test_datasets="download_10x_pbmc_small_split2samples"
+# Set parameter
+source(file.path(param$path_to_git,"config/set_parameter.R"))
 
 
 
