@@ -35,14 +35,14 @@ param$receiver = NULL
 # Set reference object
 param$refdata = NULL
 
-### For cell annoatation clustifyr
-param$annotation_dbs_clustifyr = NULL
-#param$annotation_dbs_clustifyr = "ref_hema_microarray()"
-param$url_clustifyr = "http://cells.ucsc.edu/?ds=covid19-influenza-response"
-#param$url_clustifyr = NULL
-param$cluster_col_clustifyr = "Celltype"
-#param$cluster_col_clustifyr = NULL
+### For cell annotation clustifyr
+# Set clustifyr reference e.g. "http://cells.ucsc.edu/?ds=covid19-influenza-response", "ref_hema_microarray()", or
+# file.path(param$path_to_git,"/references/fetal-immune-pfi_clustifyr_reference.rds")
+param$clustifyr_ref = NULL
+# Name of annotation column in reference dataset e.g. "cell_type"
+param$cluster_col_clustifyr = NULL
 
-
+### For generation of clustifyr reference
+param$ref_data_name = NULL
 
 

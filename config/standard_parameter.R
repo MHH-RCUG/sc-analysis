@@ -234,13 +234,14 @@ param$predicted_score_threshold = 0.9
 param$percent_predicted_cells_threshold = 0.1
 
 
-### For cell annoatation clustifyr
-# Name of clustifyrdatahub reference
-param$annotation_dbs_clustifyr = NULL
-# Url of reference dataset
-param$url_clustifyr = NULL
+### For cell annotation clustifyr
+# Set clustifyr reference
+param$clustifyr_ref = NULL
 # Name of annotation column in reference dataset
 param$cluster_col_clustifyr = NULL
+
+# Clustifyr reference path
+param$ref_data_path = file.path(param$path_to_git,"references", param$ref_data_name)
 
 
 

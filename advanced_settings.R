@@ -171,6 +171,7 @@ param_advset$enrichr_dbs = NULL
 # Cell type annotation database
 param_advset$annotation_dbs = NULL
 
+
 ### Set colors
 # See https://r-charts.com/color-palettes/ and https://nanx.me/ggsci/articles/ggsci.html for palette characteristics
 # Colour palette used for samples
@@ -214,3 +215,10 @@ param_advset$reduction = NULL
 param_advset$predicted_score_threshold = NULL 
 # Minimum fraction of cell with respective cell identity (default: 0.1)
 param_advset$percent_predicted_cells_threshold = NULL
+
+
+### For generation of clustifyr reference
+# Clustifyr reference path
+param_advset$ref_data_path = NULL
+
+
