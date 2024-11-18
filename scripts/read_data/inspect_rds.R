@@ -71,5 +71,8 @@ for (n in seq(qc_feature)) {
   }
 }
 
+### Save plot p_list as rds
+# Can be loaded with p_list <- readRDS("p_list.rds")
+saveRDS(p_list, file.path(param$path_out,"p_list.rds"))
 
 
