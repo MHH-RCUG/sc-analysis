@@ -1,7 +1,6 @@
 ### Test dataset download
 
 if (!is.null(param$download_test_datasets)) {
-  param[["test"]] = "Works"
   # Download test dataset 
   param$path_test_dataset=paste0(param$path_to_git, "/scripts/download_test_datasets/", param$download_test_datasets, ".R")
   if (file.exists(param$path_test_dataset)) {
