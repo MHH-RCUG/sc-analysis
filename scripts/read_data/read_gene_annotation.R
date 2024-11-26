@@ -48,7 +48,7 @@ param$file_cc_genes = ifelse(is.null(param$file_cc_genes), file.path(param$path_
 if (!file.exists(param$file_annot) | !file.exists(param$file_cc_genes)) {
   param$file_annot = file.path(param$path_reference, param$reference)
   param$file_cc_genes = file.path(param$path_reference, "cell_cycle_markers.xlsx")
-  source(file.path(param$path_to_git, "modules/download_references/download_references.R"))
+  source(file.path(param$path_to_git, "scripts/download_references/download_references.R"))
 }
 
 
