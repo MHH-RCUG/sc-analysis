@@ -3,37 +3,41 @@
 # Needs to be set
 
 
-
 ### Project specification
 # Set project name
 param$project_id = "Testdata"
 
 
-
 ### Dataset
-# Either load existing object
-param$data = "/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis/output/Testdata/cluster_analysis/data/sc.rds"
-
-# Or use test dataset included in ./modules/download_test_datasets/
-# Does only work for 10x data automatically at the moment
-param$download_test_datasets=NULL
-
-# Or set data path
-param$path_data = NULL
+# A) Either load existing object
+    # Set path to rds object
+    param$data = NULL
+# B) Or use test dataset included in ./modules/download_test_datasets/
+    # Set name
+    # Does only work for 10x data automatically at the moment
+    param$download_test_datasets=NULL
+# C) Or load count data
+    # Data frame of sample names, type, and path to folder with count matrix
+    # E.g. param$path_data = data.frame(name=c("sample1","sample2"), 
+    #                                   type=c("10x","10x"), 
+    #                                   path=c("/filtered_feature_bc_matrix", "/filtered_feature_bc_matrix")
+    param$path_data = NULL
   
 # Reference
 param$species="human"
 
 
-
 ### For ccc
 # Set sender and receiver cell types
+# Set as vector e.g. param$sender = c("Tcells", "Monocytes")
 param$sender = NULL
 param$receiver = NULL
 
+
 ### For dataset mapping
-# Set reference object
+# Set path to reference rds object
 param$refdata = NULL
+
 
 ### For cell annotation clustifyr
 # Set clustifyr reference e.g. "http://cells.ucsc.edu/?ds=covid19-influenza-response", "ref_hema_microarray()", or
@@ -42,7 +46,10 @@ param$clustifyr_ref = NULL
 # Name of annotation column in reference dataset e.g. "cell_type"
 param$cluster_col_clustifyr = NULL
 
-### For generation of clustifyr reference
-param$ref_data_name = NULL
 
+### For generation of clustifyr reference
+# Name of the reference output in the reference folder
+param$ref_data_name = NULL
+# Folder with a 'exprMatrix.tsv.gz' and 'meta.tsv' file
+param$ref_data_path = NULL 
 

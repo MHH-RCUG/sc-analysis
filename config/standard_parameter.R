@@ -240,8 +240,7 @@ param$clustifyr_ref = NULL
 # Name of annotation column in reference dataset
 param$cluster_col_clustifyr = NULL
 
-# Clustifyr reference path
-param$ref_data_path = file.path(param$path_to_git,"references", param$ref_data_name)
+
 
 
 
