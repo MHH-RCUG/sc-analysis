@@ -41,14 +41,15 @@ parameter_lists = list(
   ),
   "reference download" = list(
     "species" = list(label = "Set species", type = "choice", choices = c("human", "mouse")),
-    "annot_version" = list(label = "Set Ensembl version", type = "numeric", min = 0, value = 98)
+    "annot_version" = list(label = "Set Ensembl version", type = "numeric", min = 0, max = 1000, value = 98)
   ),
   "test dataset download" = list(
     "download_test_datasets" = list(label = "Select testdataset", type = "choice", choices = c("download_10x_SmartSeq2_pbmc_GSE132044", "download_10x_pbmc_small_split2samples",
                                     "download_10x_pbmc_hto_GSE108313", "download_10x_pbmc_5k_protein", "download_10x_pbmc_1k_healthyDonor_v3Chemistry"))
   ),  
   "generate clustifyr reference" = list(
-    "ref_data_name" = list(label = "Set name of clustifyr reference", type = "text", value = NULL)
+    "ref_data_name" = list(label = "Set name for the new clustifyr reference", type = "text", value = NULL),
+    "ref_data_path" = list(label = "Set path to the folder with a 'exprMatrix.tsv.gz' and 'meta.tsv' from which clustifyr reference is generated", type = "text", value = NULL)
   )
   # Examples
   #"c" = list(
@@ -147,7 +148,7 @@ server <- function(input, output, session) {
                              "dataset mapping" = "scripts/dataset_mapping/dataset_mapping_seurat.Rmd", 
                              "ccc analysis" = "scripts/ccc_analysis/ccc_analysis.Rmd", 
                              "inspect rds" = "scripts/read_data/inspect_rds.R", 
-                             "reference download" = "scripts/download_references/", 
+                             "reference download" = "scripts/read_data/read_gene_annotation.R", 
                              "test dataset download" = "scripts/download_test_datasets/test_dataset_download.R", 
                              "generate clustifyr reference" = "scripts/download_references/")  
     
@@ -333,10 +334,16 @@ server <- function(input, output, session) {
     ### Return notification of completion
     # Create message content
     if (analysis_type %in% var_proj_id) {
-      notification = sprintf("<span style='font-size: 20px; color: darkblue;'><b><br><br>%s completed!<br></b></span>
-                            <span style='font-size: 15px; color: darkblue;'>Output folder:<br>%s</span>", input$analysis_type, param$path_out)
+      notification = sprintf("<br><br>
+                            <span style='font-size: 20px; color: darkblue;'><b>%s completed!</b></span> <br>
+                            <span style='font-size: 15px; color: darkblue;'>Output folder: <br>   %s </span> <br><br>
+                            <span style='font-size: 20px; color: darkblue;'><b>You can close the app now.</b></span> <br>", 
+                             input$analysis_type, param$path_out)
     } else {
-      notification = sprintf("<span style='font-size: 20px; color: darkblue;'><b><br><br>%s completed!<br></b></span>", input$analysis_type)
+      notification = sprintf("<br><br>
+                            <span style='font-size: 20px; color: darkblue;'><b>%s completed! <br><br>
+                             You can close the app now.</b></span> <br>", 
+                             input$analysis_type)
     }
     # Display the message 
     output$output_message = renderUI({
