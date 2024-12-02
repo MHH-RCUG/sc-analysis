@@ -21,7 +21,10 @@ param$project_id = "Testdata"
     # E.g. param$path_data = data.frame(name=c("sample1","sample2"), 
     #                                   type=c("10x","10x"), 
     #                                   path=c("/filtered_feature_bc_matrix", "/filtered_feature_bc_matrix")
-    param$path_data = NULL
+    param$path_data = data.frame(name=c("sample1"), 
+                                type=c("10x"), 
+                                path=c("/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis/data/counts/sample1"))
+                                 
   
 # Reference
 param$species="human"
