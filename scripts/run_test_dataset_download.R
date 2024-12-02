@@ -13,8 +13,8 @@ source("config/start_settings.R")
 param$scriptname = "scripts/dataset_mapping/dataset_mapping_seurat.Rmd"
 
 # Set environment
-renv::use_python(type = "virtualenv", name = file.path(param$path_to_git,"env/basic/virtualenvs/r-reticulate"))
-renv::load(file.path(param$path_to_git,"env/basic"))
+#renv::use_python(type = "virtualenv", name = file.path(param$path_to_git,"env/basic/virtualenvs/r-reticulate"))
+#renv::load(file.path(param$path_to_git,"env/basic"))
 
 # Set parameter
 source(file.path(param$path_to_git,"config/set_parameter.R"))
