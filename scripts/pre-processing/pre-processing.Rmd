@@ -18,12 +18,12 @@ css: "`r file.path(param$path_to_git, 'assets/style.css')`"
 ---
 
 ```{r r_options, file='../../config/configuration.R'}
-#source(file.path(param$path_to_git,'config/configuration.R'))
+#source(file.path(param$path_to_git,'config/configuration.R'), local = knitr::knit_global())
 message("Set R options")
 ```
 
 ```{r rmarkdown, file='../../config/rmarkdown_configuration.R'}
-#source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'))
+#source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'), local = knitr::knit_global())
 message("Set Rmarkdown options")
 ```
 
@@ -56,7 +56,7 @@ library(ggraph)
 Gene annotation including Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names, are loaded from a pre-prepared reference file or Ensembl. 
 
 ```{r read_gene_annotation, file='../read_data/read_gene_annotation.R'}
-#source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
+#source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'), local = knitr::knit_global())
 message("Read gene annotation")
 ```
 
@@ -67,7 +67,7 @@ message("Read gene annotation")
 Here, for the project `r param$project_id`, the following data are analysed:  
 
 ```{r read_rds, eval=!is.null(param$data), file='../read_data/read_rds.R', warning=FALSE}
-#source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
+#source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'), local = knitr::knit_global())
 message("Load Seurat object from rds file")
 ```
 
@@ -80,7 +80,7 @@ sc[[n]] = sc_original
 
 # Rerun read_gene_annotation.R if choosen annotation set is not fitting to loaded object
 if (!orig_param$species == param$species | !orig_param$annot_version == param$annot_version) {
-  source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
+  source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'), local = knitr::knit_global())
 }
 ```
 
@@ -93,7 +93,7 @@ if (file.exists(param$path_test_dataset)) {
   # Create output directories
   if (!file.exists("data")) dir.create("data", recursive=TRUE, showWarnings=FALSE)
   setwd(file.path(param$path_to_git,"data"))
-  source(param$path_test_dataset)
+  source(param$path_test_dataset, local = knitr::knit_global())
   param$path_data = data.frame(name=list.dirs(path = file.path(param$path_to_git,"data", "counts"),
                                               full.names = FALSE, recursive = FALSE), 
                                 type=c("10x"),
@@ -148,7 +148,7 @@ sc
 ```
 
 ```{r calculate_qc_metadata, file='./calculate_qc_metadata.R', warning=FALSE}
-#source(file.path(param$path_to_git,'scripts/pre-processing/calculate_qc_metadata.R'))
+#source(file.path(param$path_to_git,'scripts/pre-processing/calculate_qc_metadata.R'), local = knitr::knit_global())
 message("Calculate and add QC metadata")
 ```
 
@@ -459,7 +459,7 @@ In the following sections, we subsequently run a series of Seurat functions for 
 # Normalize data the original way
 #   This is required to score cell cycle (https://github.com/satijalab/seurat/issues/1679)
 if (!("data" %in% sc[[param$project_id]][["RNA"]][])) {
-  source(file.path(param$path_to_git,'scripts/pre-processing/normalization.R'))
+  source(file.path(param$path_to_git,'scripts/pre-processing/normalization.R'), local = knitr::knit_global())
 }
 ```
 
@@ -489,7 +489,7 @@ if (length(sc) == 1) {
   sc = sc[[1]]
   message("Your dataset contains 1 sample only. No merging/integrating required.")
 } else {
-  source(file.path(param$path_to_git,'scripts/pre-processing/combine_samples.R'))
+  source(file.path(param$path_to_git,'scripts/pre-processing/combine_samples.R'), local = knitr::knit_global())
 }
 
 
@@ -744,7 +744,7 @@ p
 ```
 
 ```{r gene_annotation_export, file='../export_data/export_annotations.R', warning=FALSE, results="hide"}
-#source(file.path(param$path_to_git,'scripts/export_data/export_annotations.R'))
+#source(file.path(param$path_to_git,'scripts/export_data/export_annotations.R'), local = knitr::knit_global())
 ```
 
 <br>

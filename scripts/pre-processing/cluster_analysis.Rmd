@@ -18,12 +18,12 @@ css: "`r file.path(param$path_to_git, 'assets/style.css')`"
 ---
 
 ```{r r_options, file='../../config/configuration.R'}
-#source(file.path(param$path_to_git,'config/configuration.R'))
+#source(file.path(param$path_to_git,'config/configuration.R'), local = knitr::knit_global())
 message("Set R options")
 ```
 
 ```{r rmarkdown, file='../../config/rmarkdown_configuration.R'}
-#source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'))
+#source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'), local = knitr::knit_global())
 message("Set Rmarkdown options")
 ```
 
@@ -55,7 +55,7 @@ library(enrichR)
 Gene annotation including Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names, are loaded from a pre-prepared reference file or Ensembl. 
 
 ```{r read_gene_annotation, file='../read_data/read_gene_annotation.R'}
-#source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
+#source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'), local = knitr::knit_global())
 message("Read gene annotation")
 ```
 
@@ -66,7 +66,7 @@ message("Read gene annotation")
 Here, for the project `r param$project_id`, the following data are analysed:  
 
 ```{r read_rds, file='../read_data/read_rds.R', warning=FALSE}
-#source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
+#source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'), local = knitr::knit_global())
 message("Load Seurat object from rds file")
 ```
 
@@ -96,7 +96,7 @@ message(paste0("Chosen normalisation method and normlized values detecte in prov
 
 # Rerun read_gene_annotation.R if choosen annotation set is not fitting to loaded object
 if (!orig_param$species == param$species | !orig_param$annot_version == param$annot_version) {
-  source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
+  source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'), local = knitr::knit_global())
 }
 ```
 

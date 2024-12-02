@@ -18,12 +18,12 @@ css: "`r file.path(param$path_to_git, 'assets/style.css')`"
 ---
 
 ```{r r_options, file='../../config/configuration.R'}
-#source(file.path(param$path_to_git,'config/configuration.R'))
+#source(file.path(param$path_to_git,'config/configuration.R'), local = knitr::knit_global())
 message("Set R options")
 ```
 
 ```{r rmarkdown, file='../../config/rmarkdown_configuration.R'}
-#source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'))
+#source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'), local = knitr::knit_global())
 message("Set Rmarkdown options")
 ```
 
@@ -53,7 +53,7 @@ The reference and the query datasets have to be available as S4 class Seurat obj
 Be aware, that the output is highly impacted by the quality and contend of the reference dataset!
 
 ```{r read_rds, file='../read_data/read_rds.R', warning=FALSE}
-#source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
+#source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'), local = knitr::knit_global())
 message("Load Seurat object from rds file")
 ```
 

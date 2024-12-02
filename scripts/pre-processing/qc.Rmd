@@ -18,12 +18,12 @@ css: "`r file.path(param$path_to_git, 'assets/style.css')`"
 ---
 
 ```{r r_options, file='../../config/configuration.R'}
-#source(file.path(param$path_to_git,'config/configuration.R'))
+#source(file.path(param$path_to_git,'config/configuration.R'), local = knitr::knit_global())
 message("Set R options")
 ```
 
 ```{r rmarkdown, file='../../config/rmarkdown_configuration.R'}
-#source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'))
+#source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'), local = knitr::knit_global())
 message("Set Rmarkdown options")
 ```
 
@@ -58,7 +58,7 @@ param$integrate_samples[["method"]]="merge"
 Gene annotation including Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names, are loaded from a pre-prepared reference file or Ensembl. 
 
 ```{r read_gene_annotation, file='../read_data/read_gene_annotation.R'}
-#source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'))
+#source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'), local = knitr::knit_global())
 message("Read gene annotation")
 ```
 
@@ -69,7 +69,7 @@ message("Read gene annotation")
 Here, for the project `r param$project_id`, the following data are analysed:  
 
 ```{r read_rds, eval=!is.null(param$data), file='../read_data/read_rds.R', warning=FALSE}
-#source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'))
+#source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'), local = knitr::knit_global())
 message("Load Seurat object from rds file")
 ```
 
@@ -90,7 +90,7 @@ if (file.exists(param$path_test_dataset)) {
   # Create output directories
   if (!file.exists("data")) dir.create("data", recursive=TRUE, showWarnings=FALSE)
   setwd(file.path(param$path_to_git,"data"))
-  source(param$path_test_dataset)
+  source(param$path_test_dataset, local = knitr::knit_global())
   param$path_data = data.frame(name=list.dirs(path = file.path(param$path_to_git,"data", "counts"),
                                               full.names = FALSE, recursive = FALSE), 
                                 type=c("10x"),
@@ -145,7 +145,7 @@ sc
 ```
 
 ```{r calculate_qc_metadata, file='./calculate_qc_metadata.R', warning=FALSE}
-#source(file.path(param$path_to_git,'scripts/pre-processing/calculate_qc_metadata.R'))
+#source(file.path(param$path_to_git,'scripts/pre-processing/calculate_qc_metadata.R'), local = knitr::knit_global())
 message("Calculate and add QC metadata")
 ```
 
@@ -299,7 +299,7 @@ if (!is.null(param$downsample_cells_n) | param$downsample_cells_equally) {
   # Adjust combined metadata accordingly
   sc_cell_metadata = sc_cell_metadata[unlist(purrr::map(sc, Cells)), ]
   
-  message(paste0("Your data has been down-sampled to ", param$downsample_cells_n, " cells." ))
+  message(paste0("Your data has been down-sampled to max. ", param$downsample_cells_n, " cells." ))
   print(sc)
 }
 
@@ -348,14 +348,14 @@ p
 # Normalize data the original way
 #   This is required to score cell cycle (https://github.com/satijalab/seurat/issues/1679)
 if (!("data" %in% sc[[param$project_id]][["RNA"]][])) {
-  source(file.path(param$path_to_git,'scripts/pre-processing/normalization.R'))
+  source(file.path(param$path_to_git,'scripts/pre-processing/normalization.R'), local = knitr::knit_global())
 }
 
 # For testing, perform normalization also for the other method
 if (param$norm=="RNA") {
   # Change to perform SCTransform
   param$norm="SCT"
-  source(file.path(param$path_to_git,'scripts/pre-processing/normalization.R'))
+  source(file.path(param$path_to_git,'scripts/pre-processing/normalization.R'), local = knitr::knit_global())
   # Change back to originally selected standard log normalization
   param$norm="RNA"
   for (i in seq(sc)) {
@@ -368,7 +368,7 @@ if (param$norm=="RNA") {
     DefaultAssay(sc[[i]]) = "RNA"
   }
   param$norm="RNA"
-  source(file.path(param$path_to_git,'scripts/pre-processing/normalization.R'))
+  source(file.path(param$path_to_git,'scripts/pre-processing/normalization.R'), local = knitr::knit_global())
   # Change back to originally selected SCTransform
   param$norm="SCT"
   for (i in seq(sc)) {
@@ -422,9 +422,11 @@ If multiple data sets are processed, we merge the datasets now.
 if (length(sc) == 1) {
   # Default assay is set automatically
   sc = sc[[1]]
+  Combined_data = NULL
   message("Your dataset contains 1 sample only. No merging/integrating required.")
 } else {
-  source(file.path(param$path_to_git,'scripts/pre-processing/combine_samples.R'))
+  source(file.path(param$path_to_git,'scripts/pre-processing/combine_samples.R'), local = knitr::knit_global())
+  Combined_data = TRUE
   message("In this workflow, sample combination is always performed via dataset merging as merged object is required for streamlined integration.")
 }
 
@@ -639,11 +641,11 @@ To explore the results of data merging and different integration methods, here i
 
 The following plots offer a low dimension representation of your data combined via the different methods. 
 
-```{r streamlined_integrative_analysis, file='./streamlined_integrative_analysis.R', warning=FALSE, message=FALSE}
-#source(file.path(param$path_to_git,'scripts/pre-processing/streamlined_integrative_analysis.R'))
+```{r streamlined_integrative_analysis, eval=!is.null(Combined_data), file='./streamlined_integrative_analysis.R', warning=FALSE, message=FALSE}
+#source(file.path(param$path_to_git,'scripts/pre-processing/streamlined_integrative_analysis.R'), local = knitr::knit_global())
 ```
 
-```{r dim_reductions}
+```{r dim_reductions, eval=!is.null(Combined_data)}
 ### Score plots
 # PCA score plots colored by sample
 p1 = Seurat::DimPlot(sc, reduction="pca", group.by = "orig.ident", cols=param$col_samples, pt.size = param$pt_size, dims = c(1,2)) + 
@@ -694,7 +696,7 @@ p_list[[3]] = (p_list[[3]] | p9) +
 ```
 
 #### Merged
-```{r dim_reductions_merged, fig.height=fig_patchwork8_height}
+```{r dim_reductions_merged, eval=!is.null(Combined_data), fig.height=fig_patchwork8_height}
 p_list[[1]]
 ```
 
@@ -702,7 +704,7 @@ p_list[[1]]
 <br>  
 
 #### CCA integrated
-```{r dim_reductions_cca_integrated, fig.height=fig_patchwork8_height}
+```{r dim_reductions_cca_integrated, eval=!is.null(Combined_data), fig.height=fig_patchwork8_height}
 p_list[[2]]
 ```
 
@@ -710,7 +712,7 @@ p_list[[2]]
 <br>  
 
 #### RPCA integrated
-```{r dim_reductions_rpca_integrated, fig.height=fig_patchwork8_height}
+```{r dim_reductions_rpca_integrated, eval=!is.null(Combined_data), fig.height=fig_patchwork8_height}
 p_list[[3]]
 ```
 
