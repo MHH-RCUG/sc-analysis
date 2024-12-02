@@ -37,6 +37,15 @@ if (param$cc_remove | length(sc) == 1) {
 
 
 ### (part3_normalization)
+# extract min number of cells
+# Only needed for RunPCA as min npcs
+colnumber = ncol(sc[[1]])
+if (length(sc)>1) {
+  for (i in length(sc)) {
+    colnumber = min(colnumber, ncol(sc[[i]]))
+  }
+}
+
 if (param$norm == "RNA") { 
   # For Log Normalize data
   # if not normalized already above for CellCycleScoring
@@ -54,7 +63,7 @@ if (param$norm == "RNA") {
                     vars.to.regress=param$vars_to_regress, 
                     verbose=FALSE)
     # Run PCA
-    sc = purrr::map(sc, Seurat::RunPCA, verbose=FALSE, npcs=min(50, ncol(sc)))
+    sc = purrr::map(sc, Seurat::RunPCA, verbose=FALSE, npcs=min(50, colnumber))
   }
   
 } else if (param$norm == "SCT") {
@@ -83,7 +92,7 @@ if (param$norm == "RNA") {
     # For integration 
     # vignette: https://satijalab.org/seurat/articles/integration_introduction.html
     if (param$integrate_samples[["method"]]=="integrate" | (length(sc) == 1)) {
-      sc = purrr::map(sc, Seurat::RunPCA, assay="SCT", verbose=FALSE, npcs=min(50, ncol(sc[[n]])))
+      sc = purrr::map(sc, Seurat::RunPCA, assay="SCT", verbose=FALSE, npcs=min(50, colnumber))
     }
 }
 
