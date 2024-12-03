@@ -592,16 +592,29 @@ p
 
 <br>  
 
-## Expression of apoptosis related genes 
-Here the expression of some apoptosis related genes is plotted to get, apart from the mitochondrial gene expression ratio, another indication of cell viability. However, the expression level of such genes strongly depends on the state during the process of apoptosis, i.e. low expression is not necessarily affirmation of high cell viability. 
-```{r apoptosis, fig.height=fig_patchwork8_height, warning=FALSE}
+## Expression of apoptosis and stress related genes 
+Here the expression of some apoptosis and stress related genes is plotted to get, apart from the mitochondrial gene expression ratio, another indication of cell viability. However, the expression level of such genes strongly depends on the state during the process of apoptosis, i.e. low expression is not necessarily affirmation of high cell viability. 
 
+```{r fig_height_apoptosis}
 # Feature plots of target genes
 if (param$species=="human") {
-  apo_genes = c("BCL2", "BIRC5", "CASP3", "TP53")
+  apo_genes_list = c("BCL2", "BIRC5", "CASP3", "TP53", "MT-CYB", "MT-CO1", "MT-CO2", "HIF2A", "HSPA1A", "HSPD1", "NFKB1", "MALAT1")
 } else {
-  apo_genes = c("Bcl2", "Birc5", "Casp3", "Tp53")
+  apo_genes_list = c("Bcl2", "Birc5", "Casp3", "Tp53", "mt-cyb", "mt-co1", "mt-co2", "Hif2a", "Hspa1a", "Hspd1", "Nfkb1", "Malat1")
 }
+
+apo_genes = NULL
+for (i in apo_genes_list) {
+  apo_gene = rownames(sc) %>% grep(pattern = paste0("^", i, "$"), value = TRUE)
+  apo_genes = c(apo_genes, apo_gene)
+}
+
+fig_apo_height = ceiling(length(apo_genes)/4) * 5
+
+```
+
+
+```{r apoptosis, fig.height=fig_apo_height, warning=FALSE}
 
 p1 = suppressMessages(Seurat::FeaturePlot(sc, features=apo_genes, cols=c(param$col_bg, param$col), pt.size = param$pt_size, combine = FALSE))
 p1 = AddStyleMultiFeaturePlot(p1, title = 'UMAP projection of gene expression', ncol = 4)
