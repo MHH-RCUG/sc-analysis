@@ -3,7 +3,7 @@
 # Only set unequal 'NULL' if you want to change any settings. 
 
 ### Output directory
-param$path_out = NULL
+param_advset$path_out = NULL
 
 
 ### Dataset settings
@@ -57,7 +57,7 @@ param_advset$vars_to_regress = NULL
 # "merge" (default): Concatenate data e.g. when samples were multiplexed on the same chip.
 # "integrate": Anchors are computed for all pairs of datasets. This will give all datasets the same weight during dataset integration but can be computationally intensive
 # "streamlined_integrate": Use streamlined integration workflow in v5 (faster), i. e. perform correction in low-dimensional space (IntegrateLayers function) rather than on gene expression levels 
-# The steps of the integration workflow are baasically the same for "integrate" and "streamlined_integrate" (https://github.com/satijalab/seurat/issues/8653)
+# The steps of the integration workflow are basically the same for "integrate" and "streamlined_integrate" (https://github.com/satijalab/seurat/issues/8653)
 # Additional options for the "integrate" method:
 #   - integration_function: "CCAIntegration" or "RPCAIntegration"
 #   - dimensions: Number of dimensions to consider for integration
@@ -201,7 +201,6 @@ param_advset$pt_size = NULL
 ### ccc analysis
 # Available methods: "connectome", "logfc", "natmi", "sca", "cellphonedb", "cytotalk", "call_squidpy", "call_cellchat", "call_connectome", "call_sca", "call_italk", "call_natmi"  
 param_advset$liana_methods = c("logfc", "natmi", "cellphonedb")
-
 # Threshold for liana agg rank (default: 0.01)
 param_advset$liana_agg_rank_threshold = NULL
 
@@ -216,9 +215,5 @@ param_advset$predicted_score_threshold = NULL
 # Minimum fraction of cell with respective cell identity (default: 0.1)
 param_advset$percent_predicted_cells_threshold = NULL
 
-
-### For generation of clustifyr reference
-# Clustifyr reference path
-param_advset$ref_data_path = NULL
 
 
