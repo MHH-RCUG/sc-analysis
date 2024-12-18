@@ -167,11 +167,9 @@ param$deg_contrasts = NULL
 # Enrichr site ("Enrichr", "FlyEnrichr", "WormEnrichr", "YeastEnrichr", "FishEnrichr")
 param$enrichr_site = "Enrichr"
 # Enrichr libraries
-param$enrichr_dbs = NULL
-
 # Default set in read_gene_annotation.R
 # Here only parameter introduction that can be changed in advanced_settings
-param$enrichr_dbs=NULL
+param$enrichr_dbs = NULL
 
 # P-value threshold for functional enrichment tests
 param$enrichr_padj = 0.05
