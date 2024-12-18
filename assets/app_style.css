@@ -1,0 +1,122 @@
+/* Css for modifications of Shiny App theme */
+/* App uses as basic theme Bootswatch Cerulean https://bootswatch.com/cerulean/. */
+
+/* Style of text elements */
+
+/* Change features of title text in titlePanel() */
+h2, .h2 {
+  font-size: 36px;
+  font-weight: bold;
+  margin: 20px;
+}
+
+/* Define the instruction message style */
+.instruction {
+  font-size: 16px;
+  color: #033c73;
+  font-weight: bold;
+}
+
+.instruction-info {
+  font-size: 16px;
+  color: #033c73;
+}
+
+.instruction-warning {
+  font-size: 16px;
+  color: #c71c22;
+}
+
+/* Define the notification message style */
+.notification-message {
+  font-size: 16px;
+  color: #033c73;
+  font-weight: bold;
+}
+
+.notification-path {
+  font-size: 15px;
+  color: #033c73;
+}
+
+/* Change features of all label */
+.form-group label {
+  color: #495057;
+}
+
+
+
+/* Style of Input types (all) */
+
+/* Change features of selectInput()  */
+/* front filed of selectInput() */
+.selectize-input {
+    color: #868e96;
+}
+
+/* dropdown items */
+.selectize-dropdown {
+	color: #868e96;
+}
+
+/* dropdown items when hovered */
+.selectize-dropdown .option:hover {
+	color: #495057;
+	background-color: #e9ecef;
+	border: 1.5px solid #2fa4e7;
+}
+
+
+/* Change features of textInput()  */
+input[type=text] {
+	color: #868e96;
+}
+
+
+/* Change features of numericInput() */
+input[type=number] {
+	color: #868e96;
+}
+
+
+
+/* Style of buttons (all) */
+
+/* Define format of buttons (all) */
+.btn {
+	padding: 15px 30px; /* Increase the padding (top-bottom, left-right) */
+	margin: 20px; /* Add space around the button (outside the border) */
+}
+
+
+
+/* Modify features of analysis_type selection in sidebarPanel specifically */
+
+/* Define style of label; Defined as own class='analysis-label'  */
+.analysis-label {
+  font-size: 16px;
+  font-weight: bold;
+  color: #033c73
+}
+
+/* front filed of selectInput() */
+#analysis_type + .selectize-control .selectize-input {
+  font-size: 16px;
+  font-weight: bold;
+  color: #033c73;
+}
+
+/* dropdown items */
+#analysis_type + .selectize-control .selectize-dropdown {
+	color: #033c73;
+}
+
+/* dropdown items when hovered */
+#analysis_type + .selectize-control .selectize-dropdown .option:hover {
+	color: #033c73;
+	background-color: #e9ecef;
+	border: 1.5px solid #2fa4e7;
+}
+
+
+

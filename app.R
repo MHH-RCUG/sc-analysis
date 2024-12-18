@@ -27,7 +27,8 @@ parameter_lists = list(
     "cluster_col_clustifyr" = list(label = "Name of annotation column in reference dataset e.g. 'cell_type'", type = "text", value = NULL)
   ),
   "dataset mapping" = list(
-    "refdata" = list(label = "Set path to reference rds object", type = "text", value = NULL)
+    "refdata" = list(label = "Set path to reference rds object", type = "text", value = NULL),
+    "reduction" = list(label = "Reduction to use; must exist in ref dataset", type = "choice", choices = c("umap", "tsne", "others (see advanced settings)"))
   ),
   "ccc analysis" = list(
     "sender" = list(label = "Set sender cell types", type = "text", value = NULL),
@@ -49,22 +50,98 @@ parameter_lists = list(
   )
   # Examples
   #"c" = list(
-  #  "param1" = list(label = "Set Parameter 1 for Option 2", type = "numeric", min = 1, max = 100, value = 20),
-  #  "param2" = list(label = "Set Parameter 2 for Option 2", type = "text", value = "more text"),
-  #  "param3" = list(label = "Set Parameter 3 for Option 2", type = "slider", min = 10, max = 100, value = 40)
+  #  "param1" = list(label = "Set Parameter 1", type = "numeric", min = 1, max = 100, value = 20 or NULL),
+  #  "param2" = list(label = "Set Parameter 2", type = "text", value = "text or NULL"),
+  #  "param3" = list(label = "Set Parameter 3", type = "slider", min = 10, max = 100, value = 40),
+  #  "param4" = list(label = "Set Parameter 4", type = "choice", choices = c("choice A", "choice B")),
+  #  "param5" = list(label = "Set Parameter 5", type = "checkbox", choices = c("choice A", "choice B"), selected = NULL),
+  #  "param6" = list(label = "Set Parameter 6 (comma separated)", type = "numeric_vector", value = "0.5, 0.7")
   #)
 )
+
+
+# Define a lists of advanced parameters that have to be set for the respective analysis 
+parameter_advset_lists = list(
+  "qc" = list(
+    "norm" = list(label = "Which normalization should be used for analysis? Normal log = 'RNA', SCTransform = 'SCT'", type = "choice", choices = c("RNA", "SCT")),
+    "downsample_cells_n" = list(label = "Downsample data to at most n cells per sample AFTER filtering (mainly for tests)", type = "numeric", min = 50, max = 100000, value = NULL),
+    "downsample_cells_equally" = list(label = "Downsample all samples equally according to the smallest sample", type = "choice", choices = c(FALSE, TRUE)),
+    "samples_min_cells" = list(label = "Drop samples with too few cells", type = "numeric", min = 0, max = 1000, value = 10),
+    "file_annot" = list(label = "Proviede file for gene annotation", type = "text", value = NULL),
+    "file_cc_genes" = list(label = "Proviede file for cell cycle gene annotation", type = "text", value = NULL)
+  ),
+  "pre-processing" = list(
+    "norm" = list(label = "Which normalization should be used for analysis? Normal log = 'RNA', SCTransform = 'SCT'", type = "choice", choices = c("RNA", "SCT")),
+    "downsample_cells_n" = list(label = "Downsample data to at most n cells per sample AFTER filtering (mainly for tests)", type = "numeric", min = 50, max = 100000, value = NULL),
+    "downsample_cells_equally" = list(label = "Downsample all samples equally according to the smallest sample", type = "choice", choices = c(FALSE, TRUE)),
+    "nFeature_RNA" = list(label = "Filter cells by nFeature (lower and upper limit comma separated)", type = "numeric_vector", value = "20, NA"),
+    "nCount_RNA" = list(label = "Filter cells by nCount (lower and upper limit comma separated)", type = "numeric_vector", value = "200, NA"),
+    "percent_mt" = list(label = "Filter cells by percent_mt (lower and upper limit comma separated)", type = "numeric_vector", value = "0, 20"),
+    "min_counts" = list(label = "Filter features by min_counts", type = "numeric", min = 0, max = 50, value = 1),
+    "min_cells" = list(label = "Filter features by min_cells", type = "numeric", min = 0, max = 100, value = 5),
+    "samples_min_cells" = list(label = "Drop samples with too few cells", type = "numeric", min = 0, max = 1000, value = 10),
+    "cc_remove" = list(label = "Remove cell cycle effects", type = "choice", choices = c(FALSE, TRUE)),
+    "cc_remove_all" = list(label = "Remove all cell cycle effects (not only the difference between proliferating cells); very stringent", type = "choice", choices = c(FALSE, TRUE)),
+    "cc_rescore_after_merge" = list(label = "Re-score cell cycle effects after samples have been merged/integrated", type = "choice", choices = c(TRUE, FALSE)),
+    "vars_to_regress" = list(label = "Additional (unwanted) variables that will be regressed out", type = "checkbox", choices = c("nCount_RNA", "percent_mt", "percent_ribo"), selected = NULL),
+    "integrate_samples_method" = list(label = "How to combine multiple datasets", type = "choice", choices = c("merge", "integrate")),
+    "integrate_samples_integration_function" = list(label = "ONLY for 'integrate' define integration_functions", type = "choice", choices = c("RPCAIntegration", "CCAIntegration")),
+    "experimental_groups" = list(label = "Similarity between samples", type = "choice", choices = c("heterogene", "homogene")),
+    "file_annot" = list(label = "Proviede file for gene annotation", type = "text", value = NULL),
+    "file_cc_genes" = list(label = "Proviede file for cell cycle gene annotation", type = "text", value = NULL)
+  ),
+  "cluster analysis" = list(
+    "pc_n" = list(label = "Number of principle components to use", type = "numeric", min = 1, max = 100, value = 20),
+    "cluster_resolution" = list(label = "Cluster resolution to use for analysis", type = "numeric", min = 0.1, max = 1.6, value = 0.6),
+    "cluster_resolution_test" = list(label = "Cluster resolutions to compute; multiple values possible (comma separated)", type = "numeric_vector", value = "0.5, 0.7, 0.8"),
+    "file_annot" = list(label = "Proviede file for gene annotation", type = "text", value = NULL),
+    "file_cc_genes" = list(label = "Proviede file for cell cycle gene annotation", type = "text", value = NULL),
+    "marker_padj" = list(label = "Adjusted p value threshold for marker gene identification", type = "numeric", min = 0, max = 1, value = 0.05),
+    "marker_log2FC" = list(label = "Fold change threshold for marker gene identification", type = "numeric", min = 0, max = 100, value = log2(2)),
+    "marker_pct" = list(label = "Minimum percentage of cells with respective gene expression for definition as marker gene", type = "numeric", min = 0, max = 1, value = 0.25),
+    "enrichr_dbs" = list(label = "Enrichr libraries. Not more than 5!", type = "checkbox", choices = c("GO_Biological_Process_2023", "WikiPathway_2023_Human",  "WikiPathways_2019_Mouse", "Azimuth_2023", "CellMarker_2024"), selected = NULL),
+    "enrichr_padj" = list(label = "P-value threshold for functional enrichment tests", type = "numeric", min = 0, max = 1, value = 0.05),
+    "annotation_dbs" = list(label = "Cell type annotation database (see https://bioconductor.statistik.tu-dortmund.de/packages/3.10/bioc/vignettes/SingleR/inst/doc/SingleR.html#6_reference_options)", type = "choice", choices = c("BlueprintEncodeData()", "HumanPrimaryCellAtlasData()", "DatabaseImmuneCellExpressionData()", "NovershternHematopoieticData()", "MonacoImmuneData()", "ImmGenData()", "MouseRNAseqData()"), selected = NULL)
+  ),
+  "dataset mapping" = list(
+    "celltype" = list(label = "Pre-annotated cell types; column in reference dataset", type = "text", value = "annotation"),
+    "reduction" = list(label = "Reduction to use; must exist in ref dataset", type = "text", value = "umap"),
+    "predicted_score_threshold" = list(label = "Predicted score threshold", type = "numeric", min = 0, max = 1, value = 0.9),
+    "percent_predicted_cells_threshold" = list(label = "Minimum fraction of cell with respective cell identity", type = "numeric", min = 0, max = 1, value = 0.1)
+  ),
+  "ccc analysis" = list(
+    "liana_methods" = list(label = "Select methods. Not more than 3!", type = "checkbox", choices = c("connectome", "logfc", "natmi", "sca", "cellphonedb", "cytotalk", "call_squidpy", "call_cellchat", "call_connectome", "call_sca", "call_italk", "call_natmi"), selected = NULL),
+    "liana_agg_rank_threshold" = list(label = "Threshold for liana agg rank", type = "numeric", min = 0, max = 1, value = 0.01)
+  )
+)
+
+
+parameter_obj_advset_lists = list(
+  "path_out" = list(label = "Output directory", type = "text", value = NULL),
+  "col" = list(label = "Feature Plot colors - Highlights", type = "text", value = "#0086b3"),
+  "col_bg" = list(label = "Feature Plot colors - Background", type = "text", value = "#D3D3D3"),
+  "col_palette_samples" = list(label = "Colour palette used for samples", type = "choice", choices = c("ggsci::pal_igv", "ggsci::pal_ucscgb", "ggsci::springfield_simpsons")),
+  "col_palette_clusters" = list(label = "Colour palette used for cluster", type = "choice", choices = c("ggsci::pal_igv", "ggsci::pal_ucscgb", "ggsci::springfield_simpsons")),
+  "col_palette_annotation" = list(label = "Colour palette used for annotated cell types", type = "choice", choices = c("ggsci::pal_ucscgb", "ggsci::pal_igv", "ggsci::springfield_simpsons")),
+  "pt_size" = list(label = "Dot size for umaps/tsne", type = "numeric", min = 0.1, max = 1, value = 0.5)
+)
+
 
 # Grouping of some analysis types
 var_proj_id = c("qc", "pre-processing", "cluster analysis", "cell annotation clustify", "dataset mapping", "ccc analysis", "inspect rds" )
 rds_type = c("cell annotation clustify", "dataset mapping", "ccc analysis", "inspect rds" )
 var_data_type = c("qc", "pre-processing")
+adv_obj_settings = c(var_proj_id)
+adv_settings = c(var_proj_id)
 
 
 
 ### Define UI for sc-analysis type selection and start
 ################################################################################
 ui <- fluidPage(
+  theme = bslib::bs_theme(version = 5, preset = "cerulean"),
+  includeCSS(file.path(param$path_to_git,"assets/app_style.css")),
+  
 
     # App title
     titlePanel("sc-analysis"),
@@ -73,12 +150,15 @@ ui <- fluidPage(
     sidebarLayout(
       sidebarPanel(
         # Dropdown for selecting the analysis
+        tagList(
+          tags$label("Choose analysis", class = "analysis-label"),
         selectInput("analysis_type", 
-                    label = "Choose analysis", 
+                    label = "", 
                     choices = c("qc", "pre-processing", "cluster analysis", 
                                 "cell annotation clustify", "dataset mapping", "ccc analysis", 
                                 "inspect rds", "reference download", "test dataset download", 
                                 "generate clustifyr reference"))
+        ),
       ),
 
         # Conditional inputs based on selected parameter
@@ -99,8 +179,15 @@ ui <- fluidPage(
           # Dynamic UI for parameter selection
           uiOutput("parameter_input"),  
           
+          # Dynamically render the action button based on the selected parameter
+          uiOutput("advanced_button_ui"),
+          
+          # Dynamic UI for parameter selection
+          uiOutput("parameter_advset_input"),
+          uiOutput("parameter_obj_advset_input"),
+          
           # Run button
-          actionButton("run_script", "Run analysis"), 
+          actionButton("run_script", "Run analysis", class="btn btn-info"), 
           
           # Completion notification
           uiOutput("output_message")
@@ -118,9 +205,9 @@ server <- function(input, output, session) {
   ##### Prepare general message and reactiveVal
   
   # Instruction message 
-  instruction = paste("<b><span style='font-size: 15px;'>Set parameters and click the 'Run analysis' button. <br>
-                       <span style='color: red;'>Wait until analysis is completed!!! <br></span>
-                       The app will give you notification of completion.<br><br><br> </span></b>")
+  instruction = paste("<span class='instruction'>A modular workflow for sc data analysis </span><br>
+                      <span class='instruction-info'>Chose analysis, set parameters, and click the 'Run analysis' button. The basic parameters have to be defined. Using 'Advanced Parameter Settings' further parameter values can be specified diverging from standard settings. After completion the app will give you notification. </span><br>
+                      <span class='instruction-warning'>Wait until analysis is completed!!! </span><br><br><br>")
   output$instruction = renderUI({
     HTML(instruction)
   })
@@ -128,7 +215,10 @@ server <- function(input, output, session) {
   # Create reactive value to store parameter
   assigned_scriptname = reactiveVal(NULL)
   assigned_parameter = reactiveVal(NULL)
+  assigned_parameter_advset = reactiveVal(NULL)
   
+  # Reactive value to store the number of button clicks; set to 0 at the beginning
+  click_counter = reactiveVal(0)
   
   
   ##### Observe analysis selection and act
@@ -213,13 +303,13 @@ server <- function(input, output, session) {
             # Return the list of input fields
             do.call(tagList, sample_inputs)
             })
-          } else {output$samples_ui=NULL}
+          } else {output$samples_ui = NULL}
         })
       })
     } else {
       output$data_input = NULL
-      output$data_input2=NULL
-      output$samples_ui=NULL
+      output$data_input2 = NULL
+      output$samples_ui = NULL
     }
     
     
@@ -240,6 +330,8 @@ server <- function(input, output, session) {
           sliderInput(parameter_name, parameter_info$label, min = parameter_info$min, max = parameter_info$max, value = parameter_info$value)
         } else if (parameter_info$type == "choice") {
           selectInput(parameter_name, parameter_info$label, choices = parameter_info$choices)
+        } else if (parameter_info$type == "checkbox") {
+          checkboxGroupInput(parameter_name, parameter_info$label, choices = parameter_info$choices, selected = parameter_info$selected)
         } 
       })
     
@@ -247,8 +339,96 @@ server <- function(input, output, session) {
       do.call(tagList, ui_elements)
     })
     
+    # Dynamically show action button for advanced parameter setting
+    output$advanced_button_ui <- renderUI({
+      if (input$analysis_type %in% adv_settings) {
+        actionButton("adv_setting", "Advanced Parameter Settings", class="btn btn-secondary")
+      } else {
+        NULL  # Do not render anything if the condition is not met
+      }
+    })
+    
+    # Remove UI for advanced parameter setting if analysis type is changed
+    output$parameter_advset_input = NULL 
+    output$parameter_obj_advset_input = NULL
+    
   }) 
   
+  
+  ### By pressing 'Advanced settings' button return UI with further parameter choices
+  observeEvent(input$adv_setting, {
+    
+    # Increment the click counter
+    click_counter(click_counter() + 1)
+    
+    # First click shows advanced parameter setting
+    if (click_counter() == 1) {
+      # Dynamically render specific parameter input UI based on selected analysis
+      output$parameter_advset_input = renderUI({
+        analysis_type = tolower(input$analysis_type)
+        parameter_advset = parameter_advset_lists[[analysis_type]]
+        
+        # Create a list of UI elements with the respective parameters
+        ui_advset_elements = lapply(names(parameter_advset), function(parameter_advset_name) {
+          parameter_advset_info = parameter_advset[[parameter_advset_name]]
+          
+          if (parameter_advset_info$type == "numeric") {
+            numericInput(parameter_advset_name, parameter_advset_info$label, value = parameter_advset_info$value, min = parameter_advset_info$min, max = parameter_advset_info$max)
+          } else if (parameter_advset_info$type == "text") {
+            textInput(parameter_advset_name, parameter_advset_info$label, value = parameter_advset_info$value)
+          } else if (parameter_advset_info$type == "slider") {
+            sliderInput(parameter_advset_name, parameter_advset_info$label, min = parameter_advset_info$min, max = parameter_advset_info$max, value = parameter_advset_info$value)
+          } else if (parameter_advset_info$type == "choice") {
+            selectInput(parameter_advset_name, parameter_advset_info$label, choices = parameter_advset_info$choices)
+          } else if (parameter_advset_info$type == "checkbox") {
+            checkboxGroupInput(parameter_advset_name, parameter_advset_info$label, choices = parameter_advset_info$choices, selected = parameter_advset_info$selected)
+          } else if (parameter_advset_info$type == "numeric_vector") {
+            textInput(parameter_advset_name, parameter_advset_info$label, value = parameter_advset_info$value)
+          }
+        })
+        
+        # Return the dynamic UI
+        do.call(tagList, ui_advset_elements)
+      })
+      
+      # Render object related specific parameter input UI 
+      if (input$analysis_type %in% adv_obj_settings) {
+        output$parameter_obj_advset_input = renderUI({
+          parameter_obj_advset = parameter_obj_advset_lists
+          
+          # Create a list of UI elements with the respective parameters
+          ui_obj_advset_elements = lapply(names(parameter_obj_advset), function(parameter_obj_advset_name) {
+            parameter_obj_advset_info = parameter_obj_advset[[parameter_obj_advset_name]]
+            
+            if (parameter_obj_advset_info$type == "numeric") {
+              numericInput(parameter_obj_advset_name, parameter_obj_advset_info$label, value = parameter_obj_advset_info$value, min = parameter_obj_advset_info$min, max = parameter_obj_advset_info$max)
+            } else if (parameter_obj_advset_info$type == "text") {
+              textInput(parameter_obj_advset_name, parameter_obj_advset_info$label, value = parameter_obj_advset_info$value)
+            } else if (parameter_obj_advset_info$type == "slider") {
+              sliderInput(parameter_obj_advset_name, parameter_obj_advset_info$label, min = parameter_obj_advset_info$min, max = parameter_obj_advset_info$max, value = parameter_obj_advset_info$value)
+            } else if (parameter_obj_advset_info$type == "choice") {
+              selectInput(parameter_obj_advset_name, parameter_obj_advset_info$label, choices = parameter_obj_advset_info$choices)
+            } else if (parameter_obj_advset_info$type == "checkbox") {
+              checkboxGroupInput(parameter_obj_advset_name, parameter_obj_advset_info$label, choices = parameter_obj_advset_info$choices, selected = parameter_obj_advset_info$selected)
+            } else if (parameter_obj_advset_info$type == "numeric_vector") {
+              textInput(parameter_obj_advset_name, parameter_obj_advset_info$label, value = parameter_obj_advset_info$value)
+            }
+          })
+          # Return the dynamic UI
+          do.call(tagList, ui_obj_advset_elements)
+        })
+      } else {output$parameter_obj_advset_input = NULL}
+      
+    } else if (click_counter() == 2) {
+      # Second click removes UI with advanced parameter setting
+      output$parameter_advset_input = NULL 
+      output$parameter_obj_advset_input = NULL 
+      
+      # Reset the counter after the second click
+      click_counter(0)
+    }
+    
+  }) 
   
   
   ### By pressing 'Run analysis' button assign parameter and run the selected script
@@ -259,6 +439,8 @@ server <- function(input, output, session) {
     ### Set all parameter
     # First, store standard param list loaded from start_settings.R and standard_parameter.R 
     assigned_parameter(param)
+    # Store advset param list; is an empty list from standard_parameter.R
+    assigned_parameter_advset(param_advset)
     
     # Add scriptname, alias the script path, to param list
     param[["scriptname"]] = assigned_scriptname()
@@ -299,10 +481,42 @@ server <- function(input, output, session) {
       param[["download_test_datasets"]] = input$download_test_datasets}
     
     # Add dynamically set parameter to param list
-    parameter <- parameter_lists[[analysis_type]]
+    parameter = parameter_lists[[analysis_type]]
     for (parameter_name in names(parameter)) {
-      param[[parameter_name]]=input[[parameter_name]]
+      if (parameter[[parameter_name]]$type == "text") {
+        param[[parameter_name]] = unlist(strsplit(input[[parameter_name]], ","))
+      } else {
+        param[[parameter_name]] = input[[parameter_name]]
+      }
     }
+    
+    
+    
+    # Add dynamically set advanced parameter to param_advset list
+    parameter_advset = parameter_advset_lists[[analysis_type]]
+    for (parameter_advset_name in names(parameter_advset)) {
+      if (is.null(input[[parameter_advset_name]]) | is.na(input[[parameter_advset_name]])) {
+        param_advset[[parameter_advset_name]] = NULL
+      } else {
+        if (parameter_advset[[parameter_advset_name]]$type == "text") {
+          param_advset[[parameter_advset_name]] = unlist(strsplit(input[[parameter_advset_name]], ","))
+        } else if (parameter_advset[[parameter_advset_name]]$type == "numeric_vector") {
+          param_advset[[parameter_advset_name]] = as.numeric(unlist(strsplit(input[[parameter_advset_name]], ",")))
+        } else {
+          param_advset[[parameter_advset_name]] = input[[parameter_advset_name]]
+        }
+      }
+    }
+    
+    # Combine or transform advanced parameters to a list element where needed
+    if (analysis_type == "pre-processing" && !is.null(param_advset)) {
+      param_advset[["cell_filter"]] = list(nFeature_RNA=param_advset[["nFeature_RNA"]], nCount_RNA=param_advset[["nCount_RNA"]], percent_mt=param_advset[["percent_mt"]] )
+      param_advset[["feature_filter"]] = list(min_counts=param_advset[["min_counts"]], min_cells=param_advset[["min_cells"]] )
+      param_advset$integrate_samples[["method"]]=param_advset[["integrate_samples_method"]]
+      param_advset$integrate_samples[["integration_function"]]=param_advset[["integrate_samples_integration_function"]]
+    }
+    
+    
     
     # Add output path to param list
     if (grepl(".Rmd", param$scriptname)) {
@@ -310,6 +524,9 @@ server <- function(input, output, session) {
     } else {
       param[["path_out"]] = file.path(param$path_to_git, "output", param$project_id)
     }
+    
+    # Overwrite standard parameter with set advanced parameters
+    param = modifyList(x = param, val = param_advset)
     
     # Set param list as a variable in the global environment to be accessible to R scripts called via source
     assign("param", param, envir = .GlobalEnv)
@@ -330,21 +547,30 @@ server <- function(input, output, session) {
     ### Return notification of completion
     # Create message content
     if (analysis_type %in% var_proj_id) {
-      notification = sprintf("<br><br>
-                            <span style='font-size: 20px; color: darkblue;'><b>%s completed!</b></span> <br>
-                            <span style='font-size: 15px; color: darkblue;'>Output folder: <br>   %s </span> <br><br>
-                            <span style='font-size: 20px; color: darkblue;'><b>You can close the app now.</b></span> <br>", 
+      notification = sprintf("<br><br><br>
+                            <span class='notification-message'>'%s' completed!</span> <br>
+                            <span class='notification-path'>Output folder: <br>   %s</span> <br><br>
+                            <span class='notification-message'>You can close the app now.</span> <br><br><br>", 
                              input$analysis_type, param$path_out)
     } else {
-      notification = sprintf("<br><br>
-                            <span style='font-size: 20px; color: darkblue;'><b>%s completed! <br><br>
-                             You can close the app now.</b></span> <br>", 
+      notification = sprintf("<br><br><br>
+                            <span class='notification-message'>'%s' completed! <br><br>
+                             You can close the app now.</span> <br><br><br>", 
                              input$analysis_type)
     }
+    
     # Display the message 
     output$output_message = renderUI({
       HTML(notification)
     })
+    
+    # TEST
+    #output$output_message <- renderText({
+      #teststring = stringr::str_flatten_comma(param$cell_filter$nFeature_RNA)
+      #teststring2 = stringr::str_flatten_comma(param$cell_filter$nCount_RNA)
+      #testvector = unlist(strsplit(param$receiver, ","))
+      #paste("Variables:", param$downsample_cells_equally, param$cell_filter$nFeature_RNA[1], param$cell_filter$nFeature_RNA[2])
+    #})
   
   })
 }
