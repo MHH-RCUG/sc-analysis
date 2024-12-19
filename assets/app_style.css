@@ -14,17 +14,14 @@ h2, .h2 {
 .instruction {
   font-size: 16px;
   color: #033c73;
-  font-weight: bold;
+  text-align: justify;
 }
 
-.instruction-info {
-  font-size: 16px;
+/* Define the style for the analysis description  */
+.description {
+  font-size: 12px;
   color: #033c73;
-}
-
-.instruction-warning {
-  font-size: 16px;
-  color: #c71c22;
+  text-align: justify;
 }
 
 /* Define the notification message style */

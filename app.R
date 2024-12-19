@@ -159,6 +159,10 @@ ui <- fluidPage(
                                 "inspect rds", "reference download", "test dataset download", 
                                 "generate clustifyr reference"))
         ),
+        
+        # Descriptive text
+        uiOutput("description"),
+        
       ),
 
         # Conditional inputs based on selected parameter
@@ -205,9 +209,11 @@ server <- function(input, output, session) {
   ##### Prepare general message and reactiveVal
   
   # Instruction message 
-  instruction = paste("<span class='instruction'>A modular workflow for sc data analysis </span><br>
-                      <span class='instruction-info'>Chose analysis, set parameters, and click the 'Run analysis' button. The basic parameters have to be defined. Using 'Advanced Parameter Settings' further parameter values can be specified diverging from standard settings. After completion the app will give you notification. </span><br>
-                      <span class='instruction-warning'>Wait until analysis is completed!!! </span><br><br><br>")
+  instruction = paste("<p class='instruction'>
+                      <span style='font-weight: bold;'>A modular workflow for sc data analysis </span> <br>
+                      Chose analysis, set parameters, and click the 'Run analysis' button. The basic parameters have to be defined. Using 'Advanced Parameter Settings' further parameter values can be specified diverging from standard settings. After completion the app will give you notification. <br>
+                      <span style='color: #c71c22;'>Wait until analysis is completed!!! </span> 
+                      <br><br><br> </p> ")
   output$instruction = renderUI({
     HTML(instruction)
   })
@@ -236,11 +242,31 @@ server <- function(input, output, session) {
                              "inspect rds" = "scripts/read_data/inspect_rds.R", 
                              "reference download" = "scripts/read_data/read_gene_annotation.R", 
                              "test dataset download" = "scripts/download_test_datasets/test_dataset_download.R", 
-                             "generate clustifyr reference" = "scripts/download_references/")  
+                             "generate clustifyr reference" = "scripts/download_references/generate_clustifyr_reference.R")  
     
     # Store script path in reactive value
     assigned_scriptname(assigned_value)
     
+    
+    ### Assign a text to the respective analysis type (reactive value)
+    # Define switches (descriptive text to analysis type)
+    assigned_description = switch(input$analysis_type,
+                            "pre-processing" = "Core module to perform filtering, normalization, scaling, and sample combination as well as dimensional reduction and clustering. The output contains visualisations to determine quality of filtered data and suitablility of chosen normalisation, and scaling, sample combination method as well as clustering tree and UMAP plots to determine appropriate cluster resolution.",
+                            "qc" = "Core module to estimate cell quality and filter parameter, and - on downsampled data - investigate covariants, evaluate batch effects, and define normalisation, scaling, and sample combination strategy as well as number of principle components to use.",
+                            "cluster analysis" = "Core module to evaluate and analyse cell clusters, including cluster QC, identification of marker genes, and cell type annotation.", 
+                            "cell annotation clustify" = "This module performs cluster annotation via clustifyr with reference datasets from clustifyrdatahub or ucsc.", 
+                            "dataset mapping" = "Single cell transcriptomes can be difficult to annotate without extensive knowledge of the underlying biology. Hence, the biological knowledge (defined marker genes and cluster identities) can be propagated from a previously annotated dataset to the test dataset in an automated manner and aid in cluster identification.
+This module maps the cluster annotations from a reference dataset onto the query dataset. Reference and query dataset both need to be provided as Seurat objects.", 
+                            "ccc analysis" = "Cell-cell communication (CCC) is a process by which cells react to stimuli during many biological processes. This module utilizes the LIANA tool to infer ligand-receptor interactions between cell types by running multiple CCC inference methods using a consensus resource and combines the results.", 
+                            "inspect rds" = "Module to load and inspect generated object before further downstream analysis. Moreover, the script generates a lists of plots that can be displayed or saved in the desired size and resolution.", 
+                            "reference download" = "Module to download reference genome from ENSMBL via BioMart data mining tool.", 
+                            "test dataset download" = "Module to download test datasets. Test datasets are automatically stored in the appropriate format within the data folder.", 
+                            "generate clustifyr reference" = "Module to generate clustifyr reference from a chosen dataset that has to be downloaded beforehand from ucsc.")  
+    
+    output$description = renderUI({
+      description = sprintf("<p class='description'><br>%s <br> </p>", assigned_description)
+      HTML(description)
+    })
     
     
     ### Render specific UIs for respective parameter settings
@@ -547,15 +573,15 @@ server <- function(input, output, session) {
     ### Return notification of completion
     # Create message content
     if (analysis_type %in% var_proj_id) {
-      notification = sprintf("<br><br><br>
-                            <span class='notification-message'>'%s' completed!</span> <br>
-                            <span class='notification-path'>Output folder: <br>   %s</span> <br><br>
-                            <span class='notification-message'>You can close the app now.</span> <br><br><br>", 
+      notification = sprintf("<p class='notification-message'> <br>
+                            '%s' completed! <br> </p>
+                            <p class='notification-path'>Output folder: <br>   %s </p> 
+                            <p class='notification-message'>You can close the app now. <br><br><br> </p>", 
                              input$analysis_type, param$path_out)
     } else {
-      notification = sprintf("<br><br><br>
-                            <span class='notification-message'>'%s' completed! <br><br>
-                             You can close the app now.</span> <br><br><br>", 
+      notification = sprintf("<p class='notification-message'> <br>
+                            '%s' completed! <br><br>
+                            You can close the app now. <br><br><br> </p>", 
                              input$analysis_type)
     }
     
