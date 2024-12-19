@@ -150,8 +150,11 @@ Module to download test datasets. Test datasets are automatically stored in the 
 * download_10x_pbmc_small_split2samples
 * download_10x_SmartSeq2_pbmc_GSE132044
 
-### Module: inspect_rds (TO DO)
+### Module: inspect_rds
 Module to load and inspect generated object before further downstream analysis. Moreover, the script generates a lists of plots that can be displayed or saved in the desired size and resolution.
+
+### Module: inspect_rds
+Module to generate clustifyr reference from a chosen dataset that has to be downloaded beforehand from ucsc.
 
 
 
