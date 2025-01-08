@@ -29,7 +29,7 @@
 
 **sc-analysis** is a bioinformatics analysis workflow for single-cell RNA-seq analysis. The workflow is based on Seurat and the scrnaseq workflow (status May 4, 2022; Code on Zenodo: https://zenodo.org/record/7849063) created from Dresden-concept Genome Center URL "https://genomecenter.tu-dresden.de". In addition, the workflow utilizes diverse R packages for data processing, visualization, and downstream analysis.   
 
-The workflow is composed of modules. While some modules execute core sc-RNA seq data processing steps, others modules are optional providing basic, supporting functionalities or allowing further specific downstream analyses, such as dataset mapping or trajectory analysis. For more information regarding the scope of each module, refer to the module descriptions below.  
+The workflow is composed of modules. While some modules execute core sc-RNA seq data processing steps, others modules are optional providing basic, supporting functionalities or allowing further specific downstream analyses, such as dataset mapping or trajectory analysis. Each module can be run from command line or R(Studio) using the respective 'run_'-scripts, but an R Shiny Web Apps is also available to provide a more user-friendly interface. For more information regarding the scope of each module, refer to the module descriptions below.  
    
 The workflow is appicable to single cell and nuclei RNAseq data pre-processed via 10x Genomics or SmartSeq-2 or for other data that are represented by a simple table with transcript counts per gene and cell. Similarly, a Seurat object can be loaded to inspect the stored scRNA seq data and perform downstream analysis.  
 
@@ -153,7 +153,7 @@ Module to download test datasets. Test datasets are automatically stored in the 
 ### Module: inspect_rds
 Module to load and inspect generated object before further downstream analysis. Moreover, the script generates a lists of plots that can be displayed or saved in the desired size and resolution.
 
-### Module: inspect_rds
+### Module: generate_clustifyr_reference
 Module to generate clustifyr reference from a chosen dataset that has to be downloaded beforehand from ucsc.
 
 
@@ -166,14 +166,33 @@ Module to generate clustifyr reference from a chosen dataset that has to be down
 # Quick start
 <a name="quick_start"/>
 
+Each module can be run from command line or R(Studio) using the respective 'run_'-scripts, but an R Shiny Web Apps is also available to provide a more user-friendly interface.
+  
+## Run sc-analysis workflow from command line or R(Studio)
+TO DO
+
+The repository provides download scripts for several useful test dataset that you can use to get to know the functionality of the workflow. 
 
 The workflow is inialised for test dataset '10x_pbmc_small_split2samples'.  
+To run the workflow for another than the initial dataset, you need to select the respective data in the 'basic_settings.R'. 
+  
+## Run sc-analysis workflow via R Shiny Web Apps
+TO DO
 
-The repository provides several other useful test dataset that you can use to get to know the functionality of the workflow. To run the workflow for another than the initial dataset, you need to select the respective data in the 'basic_settings.R'. 
 
+  
 # Usage
 <a name="usage"/>
 TO DO
+  
+## Data input
+TO DO
+  
+## Parameter settings
+TO DO
+  
+
+
 
 # Output
 <a name="output"/>
