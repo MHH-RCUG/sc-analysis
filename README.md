@@ -31,7 +31,7 @@
 
 The workflow is composed of modules. While some modules execute core sc-RNA seq data processing steps, others modules are optional providing basic, supporting functionalities or allowing further specific downstream analyses, such as dataset mapping or trajectory analysis. Each module can be run from command line or R(Studio) using the respective 'run_'-scripts, but an R Shiny Web App is also available to provide a more user-friendly interface. For more information regarding the scope of each module, refer to the module descriptions below.  
   
-![sc-analysis Workflow](assets/sc-analysis_Workflow.jpg)  
+![sc-analysis Workflow](./assets/sc-analysis_Workflow.jpg)  
    
 The workflow is appicable to single cell and nuclei RNAseq data pre-processed via 10x Genomics or SmartSeq-2 or for other data that are represented by a simple table with transcript counts per gene and cell. Similarly, a Seurat object can be loaded to inspect the stored scRNA seq data and perform downstream analysis.  
 
