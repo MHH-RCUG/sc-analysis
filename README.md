@@ -29,7 +29,9 @@
 
 **sc-analysis** is a bioinformatics analysis workflow for single-cell RNA-seq analysis. The workflow is based on Seurat and the scrnaseq workflow (status May 4, 2022; Code on Zenodo: https://zenodo.org/record/7849063) created from Dresden-concept Genome Center URL "https://genomecenter.tu-dresden.de". In addition, the workflow utilizes diverse R packages for data processing, visualization, and downstream analysis.   
 
-The workflow is composed of modules. While some modules execute core sc-RNA seq data processing steps, others modules are optional providing basic, supporting functionalities or allowing further specific downstream analyses, such as dataset mapping or trajectory analysis. Each module can be run from command line or R(Studio) using the respective 'run_'-scripts, but an R Shiny Web Apps is also available to provide a more user-friendly interface. For more information regarding the scope of each module, refer to the module descriptions below.  
+The workflow is composed of modules. While some modules execute core sc-RNA seq data processing steps, others modules are optional providing basic, supporting functionalities or allowing further specific downstream analyses, such as dataset mapping or trajectory analysis. Each module can be run from command line or R(Studio) using the respective 'run_'-scripts, but an R Shiny Web App is also available to provide a more user-friendly interface. For more information regarding the scope of each module, refer to the module descriptions below.  
+  
+![sc-analysis Workflow](assets/sc-analysis_Workflow.jpg)  
    
 The workflow is appicable to single cell and nuclei RNAseq data pre-processed via 10x Genomics or SmartSeq-2 or for other data that are represented by a simple table with transcript counts per gene and cell. Similarly, a Seurat object can be loaded to inspect the stored scRNA seq data and perform downstream analysis.  
 
@@ -46,12 +48,12 @@ Example reports for the test dataset '10x_pbmc_small_split2samples' can be found
 <a name="workflow_summary"/>
 
 The workflow comprises different modules that can be run sequentially or independently as long as the required data input and object structure is provided. The modules are categorized into 'Pre-processing core modules', 'Downstream analysis', and 'Supporting functionalities' modules.  
-
+  
 ## Pre-processing core modules
 Core modules perform substantial scRNA seq data pre-processing steps, allowing quality estimationn and guided desicion making for algorithm selection and parameter setting in an iterative process. Hence, although the modules can be run independent of each other, a subsequent conduction of the core modules is recommended to acertain appropriate quality assesment and pre-processing performance.
 
 ### Module: qc
-Core module to estimate cell quality and filter parameter, and - on downsampled data - investigate covariants, evaluate batch effects, and define normalisation, scaling, and sample combination strategy as well as number of principle components to use.
+Core module to estimate cell quality and filter parameter, and - on downsampled data - investigate covariants, evaluate batch effects, and define normalisation, scaling, and sample combination strategy as well as number of principle components to use. This module is for quality assessment only, it does not output processed data! 
 * Read data
    * Read gene annotation
    * Read scRNA-seq data
@@ -71,7 +73,7 @@ Core module to estimate cell quality and filter parameter, and - on downsampled 
 * Determinig dimensionality of the dataset
   
 ### Module: pre-processing
-Core module to perform filtering, normalization, scaling, and sample combination as well as dimensional reduction and clustering. The output contains visualisations to determine quality of filtered data and suitablility of chosen normalisation, and scaling, sample combination method as well as clustering tree and UMAP plots to determine appropriate cluster resolution.
+Core module to perform filtering, normalization, scaling, and sample combination as well as dimensional reduction and clustering. The output contains visualisations to determine quality of filtered data and suitablility of chosen normalisation, and scaling, sample combination method as well as clustering tree and UMAP plots to determine appropriate cluster resolution. The pre-processing module generates a rds object that can be loaded as input into the cluster_analysis. 
 * Read data
    * Read gene annotation
    * Read scRNA-seq data
@@ -89,7 +91,7 @@ Core module to perform filtering, normalization, scaling, and sample combination
 
 
 ### Module: cluster_analysis
-Core module to evaluate and analyse cell clusters, including cluster QC, identification of marker genes, and cell type annotation. 
+Core module to evaluate and analyse cell clusters, including cluster QC, identification of marker genes, and cell type annotation. The cluster_analysis module generates a rds object on which further downstream analysis can be performed. 
 * Read data
    * Read gene annotation
    * Read scRNA-seq data
@@ -156,29 +158,46 @@ Module to load and inspect generated object before further downstream analysis. 
 ### Module: generate_clustifyr_reference
 Module to generate clustifyr reference from a chosen dataset that has to be downloaded beforehand from ucsc.
 
+### Module: hto_demultiplexing (TO INCLUDE)
 
+### Module: soupx (TO INCLUDE)
 
 
 
 # Installation
 <a name="installation"/>
+
+TO DO
+Set config
   
 # Quick start
 <a name="quick_start"/>
 
-Each module can be run from command line or R(Studio) using the respective 'run_'-scripts, but an R Shiny Web Apps is also available to provide a more user-friendly interface.
+Each module can be run from command line or R(Studio) using the respective 'run_'-scripts, but an R Shiny Web App is also available to provide a more user-friendly interface.
+
+The repository provides download scripts for several useful test dataset that you can use to get to know the functionality of the workflow. To test the workflow using a test dataset, start with the qc and/or pre-processing analysis first, followed by the cluster-analysis module. This will generate the needed Seurat object on which further downstream analysis can be performed (see workflow diagram above).  
+The workflow is inialised for test dataset '10x_pbmc_small_split2samples'. To run the workflow for another than the initial dataset, you need to select the respective data in the 'basic_settings.R' or via R Shiny Web App. 
+
   
 ## Run sc-analysis workflow from command line or R(Studio)
-TO DO
-
-The repository provides download scripts for several useful test dataset that you can use to get to know the functionality of the workflow. 
-
-The workflow is inialised for test dataset '10x_pbmc_small_split2samples'.  
-To run the workflow for another than the initial dataset, you need to select the respective data in the 'basic_settings.R'. 
+1) Set parameter values in basic_settings.R (required) and advanced_settings.R (optional if diverging from standard settings). Both setting scripts need to be located in the main /sc-analysis directory.  
   
-## Run sc-analysis workflow via R Shiny Web Apps
-TO DO
-
+2) Respective 'run_'-scripts are located within the /sc-analysis/scripts sub-directory.  
+   a) In RStudio:  
+      - Set working directory to /sc-analysis  
+	  - Open respective 'run_'-scripts    
+	  - Source respective script `source ./scripts/<run_script_name.R>`   
+   b) Command line:  
+      - Move into /sc-analysis directory 
+	  - Run respective script `Rscript --vanilla ./scripts/<run_script_name.R>`
+  
+## Run sc-analysis workflow via R Shiny Web App
+1) Open app.R in RStudio.
+2) Run App.
+3) Select analysis type.
+4) Set parameter values, including advanced parameter settings if diverging from standard settings.
+5) Click the Run analysis button and wait until analysis is completed. 
+  
 
   
 # Usage
@@ -187,10 +206,19 @@ TO DO
   
 ## Data input
 TO DO
+### count matrix  
+### test dataset 
+### rds object 
   
 ## Parameter settings
 TO DO
   
+A set of standard parameter settings is automatically loaded.  
+
+### Basic parameter settings 
+basic_settings.R (required)  
+### Advanced parameter settings  
+advanced_settings.R (optional if diverging from standard settings)  
 
 
 
@@ -214,7 +242,6 @@ The output varies depending on the module. However, most modules generate the fo
    * Other output files (e.g. respective tables or plots) 
 * figures folder with all plots in png, svg, and tiff format 
 
-
   
 # Documentation 
 <a name="documentation"/>
@@ -226,12 +253,15 @@ Comprehensive documentation can be found in the `docs/` directory:
 [Installation](docs/...)   
 [Running the workflow](docs/...)   
 
+The folder also contains some handout-scripts for subsequent data investigation and visualiation in RStudio on local computers with less computational power. These scripts are specifically useful and designed to generate plot for publications tailored to the user's preferences, such as color scheme or size. 
+
+
   
 # Credits
 <a name="credits"/>
 
 The workflow is based on the scrnaseq workflow (status May 4, 2022; Code on Zenodo: https://zenodo.org/record/7849063) developed by [Katrin Sameith](https://github.com/ktrns) and [Andreas Petzold](https://github.com/andpet0101) at the [Dresden-concept Genome Center (Dresden, Germany)](https://genomecenter.tu-dresden.de/about-us).
-The workflow is based on the [Seurat](https://satijalab.org/seurat/) package and the vignettes were used as templates. 
+The workflow is based on the [Seurat](https://satijalab.org/seurat/) package and the vignettes were used as templates. Further packages and vignettes utilized for generating downstream analysis modules include [Liana](https://saezlab.github.io/liana/articles/liana_tutorial.html), [Clustifyr](https://rnabioco.github.io/clustifyr/articles/clustifyR.html), [clustree](https://cran.r-project.org/web/packages/clustree/vignettes/clustree.html), and [SingleR](https://www.bioconductor.org/packages/devel/bioc/vignettes/SingleR/inst/doc/SingleR.html). 
 Many thanks to all who have contributed.
 
   
