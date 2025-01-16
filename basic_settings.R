@@ -56,3 +56,8 @@ param$ref_data_name = NULL
 # Folder with a 'exprMatrix.tsv.gz' and 'meta.tsv' file
 param$ref_data_path = NULL 
 
+
+### For 
+# path to samples. Output from cellranger counts. Top level cellranger output directory containing the "filtered_gene_bc_matrices" and "raw_gene_bc_matrices" folders.
+# Set as vector for multiple samples.
+param$cellranger_samples = NULL

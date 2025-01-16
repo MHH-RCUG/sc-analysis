@@ -160,7 +160,8 @@ Module to generate clustifyr reference from a chosen dataset that has to be down
 
 ### Module: hto_demultiplexing (TO INCLUDE)
 
-### Module: soupx (TO INCLUDE)
+### Module: contamination_removal
+Estimation and removal of ambient mRNA contamination in droplet based single cell RNA-seq data (here specifically 10x Genomics cellranger output) utilizing SoupX R package. 
 
 
 
@@ -261,7 +262,7 @@ The folder also contains some handout-scripts for subsequent data investigation 
 <a name="credits"/>
 
 The workflow is based on the scrnaseq workflow (status May 4, 2022; Code on Zenodo: https://zenodo.org/record/7849063) developed by [Katrin Sameith](https://github.com/ktrns) and [Andreas Petzold](https://github.com/andpet0101) at the [Dresden-concept Genome Center (Dresden, Germany)](https://genomecenter.tu-dresden.de/about-us).
-The workflow is based on the [Seurat](https://satijalab.org/seurat/) package and the vignettes were used as templates. Further packages and vignettes utilized for generating downstream analysis modules include [Liana](https://saezlab.github.io/liana/articles/liana_tutorial.html), [Clustifyr](https://rnabioco.github.io/clustifyr/articles/clustifyR.html), [clustree](https://cran.r-project.org/web/packages/clustree/vignettes/clustree.html), and [SingleR](https://www.bioconductor.org/packages/devel/bioc/vignettes/SingleR/inst/doc/SingleR.html). 
+The workflow is based on the [Seurat](https://satijalab.org/seurat/) package and the vignettes were used as templates. Further packages and vignettes utilized for generating downstream analysis modules include [Liana](https://saezlab.github.io/liana/articles/liana_tutorial.html), [Clustifyr](https://rnabioco.github.io/clustifyr/articles/clustifyR.html), [clustree](https://cran.r-project.org/web/packages/clustree/vignettes/clustree.html), [SingleR](https://www.bioconductor.org/packages/devel/bioc/vignettes/SingleR/inst/doc/SingleR.html), and [SoupX](https://cran.r-project.org/web/packages/SoupX/vignettes/pbmcTutorial.html). 
 Many thanks to all who have contributed.
 
   

@@ -910,6 +910,18 @@
         "beachmat"
       ]
     },
+    "SoupX": {
+      "Package": "SoupX",
+      "Version": "1.6.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "6fc80c34fe3ded25ba2d9e2b53e8da4f",
+      "Requirements": [
+        "Matrix",
+        "Seurat",
+        "ggplot2"
+      ]
+    },
     "SummarizedExperiment": {
       "Package": "SummarizedExperiment",
       "Version": "1.28.0",
@@ -3575,6 +3587,16 @@
         "sourcetools",
         "withr",
         "xtable"
+      ]
+    },
+    "shinythemes": {
+      "Package": "shinythemes",
+      "Version": "1.2.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "30f0ebc41feba25691073626ff5e2cf4",
+      "Requirements": [
+        "shiny"
       ]
     },
     "sitmo": {
