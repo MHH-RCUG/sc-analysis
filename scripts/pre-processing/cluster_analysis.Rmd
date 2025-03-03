@@ -156,7 +156,8 @@ sample_labels = paste0(levels(sc$orig.ident)," (", sample_cells[levels(sc$orig.i
 # Note: This is a hack to colour by sample but label by Cluster
 p2 = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident", pt.size = param$pt_size) +
   scale_color_manual(values=param$col_samples, labels=sample_labels) +
-  AddStyle(title="Cells coloured by sample of origin", legend_position="bottom", xlab = "UMAP 1", ylab = "UMAP 2")
+  AddStyle(title="Cells coloured by sample of origin", legend_position="bottom", xlab = "UMAP 1", ylab = "UMAP 2") + 
+  guides(colour = guide_legend(override.aes = list(size=3), ncol = 3))
 p2$data$seurat_clusters = sc[["seurat_clusters"]][rownames(p2$data), ]
 p2 = LabelClusters(p2, id="seurat_clusters", box=TRUE, segment.color="black", fill="white", repel = TRUE)
 
@@ -170,7 +171,8 @@ p
 # Repel will be deactivated if there are more than six samples; otherwise the plot may crash
 p = Seurat::DimPlot(sc, reduction="umap", group.by="seurat_clusters", pt.size=param$pt_size, split.by = "orig.ident", ncol = 2) +
   scale_color_manual(values=param$col_clusters, labels=cluster_labels) +
-  AddStyle(title="Cells coloured by cluster identity", legend_position="bottom", legend_title="Clusters", xlab = "UMAP 1", ylab = "UMAP 2")
+  AddStyle(title="Cells coloured by cluster identity", legend_position="bottom", legend_title="", xlab = "UMAP 1", ylab = "UMAP 2") +
+  guides(colour = guide_legend(override.aes = list(size=3), ncol = 10))
 p = LabelClusters(p, id="seurat_clusters", box=TRUE, segment.color="black", fill="white", repel = TRUE)
 p
 ```
@@ -210,7 +212,7 @@ if ("percent_ercc" %in% colnames(sc[[]])) {
 
 for (n in seq(qc_feature)) {
   p1 = suppressMessages(Seurat::FeaturePlot(sc, features=qc_feature[n]) + 
-                          AddStyle(title="Feature plot") + 
+                          AddStyle(title="Feature plot", xlab = "UMAP 1", ylab = "UMAP 2") + 
                           scale_colour_gradient(low="lightgrey", high=param$col))
 
    if (qc_feature[n]==paste0("nCount_", param$assay_raw) | qc_feature[n]==paste0("nFeature_", param$assay_raw)) {
@@ -383,8 +385,9 @@ p1 = ggplot(tbl_bar, aes(x=Cluster, y=Percentage, fill=Sample)) +
   geom_bar(stat="identity" ) +
   AddStyle(title="Sample identity per clusters",
            fill=param$col_samples,
-           legend_title="Sample",
-           legend_position="bottom")
+           legend_title="",
+           legend_position="bottom") +
+  guides(color = guide_legend(ncol = 4))
 
 p = p1 | p_umap
 p
@@ -517,15 +520,20 @@ In contrast, the silhouette plot can aid in assessing cluster assignment.
 ```
 
 ```{r silhouette_plot, fig.height=fig_patchwork6_height, fig.width=15}
+# Subsample to at most 50000 cells to avoid error
+subsample_size = min(50000, ncol(sc))
+subsample_cells = sample(1:ncol(sc), subsample_size)
+sc_subsample = sc[, subsample_cells]
+
 # Extracting distance matrix
-distance_matrix = dist(Embeddings(sc[['pca']])[, 1:param$pc_n])
-clusters = sc@meta.data$seurat_clusters
+distance_matrix = dist(Embeddings(sc_subsample[['pca']])[, 1:param$pc_n])
+clusters = sc_subsample@meta.data$seurat_clusters
 silhouette = cluster::silhouette(as.numeric(clusters), dist = distance_matrix)
-sc@meta.data$silhouette_score = silhouette[,3]
-mean_silhouette_score = mean(sc@meta.data$silhouette_score)
+sc_subsample@meta.data$silhouette_score = silhouette[,3]
+mean_silhouette_score = mean(sc_subsample@meta.data$silhouette_score)
 
 # Generate table
-silhouette_tbl = sc@meta.data %>%
+silhouette_tbl = sc_subsample@meta.data %>%
   dplyr::mutate(barcode = rownames(.)) %>%
   dplyr::arrange(seurat_clusters,-silhouette_score) %>%
   dplyr::mutate(barcode = factor(barcode, levels = barcode))
@@ -547,6 +555,9 @@ p = ggplot(silhouette_tbl) +
     panel.grid.minor = element_blank()
   )
 p
+
+# Delete the object from your R environment and free up the associated memory
+rm(sc_subsample)
 ```
 
 <br>
@@ -658,6 +669,8 @@ if (markers_found) {
   markers_top_6 = DegsUpDisplayTop(markers_filt$up, n=6)
   markers_top_10 = DegsUpDisplayTop(markers_filt$up, n=10)
   
+  max_cluster_per_plot = 14
+  
   # Add labels
   markers_top$labels = paste0(markers_top$cluster, ": ", markers_top$gene)
 
@@ -687,14 +700,35 @@ if (markers_found) {
   #   The plot has 4 columns and 2 rows per cluster, hence the layout works nicely if we find 
   #     at least 6 markers per cluster
   height_per_row = 1.5
-  nr_rows_3cols = ceiling(nrow(markers_top_6)/3)
-  fig_height_3cols = height_per_row * nr_rows_3cols
+  
+  if (length(levels(sc$seurat_clusters))>max_cluster_per_plot) {
+    
+    sec_part_tabset = TRUE
+    
+    nr_rows_3cols = (max_cluster_per_plot*6)/3
+    fig_height_3cols = height_per_row * nr_rows_3cols
+    nr_rows_3cols_part2 = ceiling((nrow(markers_top_6)-(max_cluster_per_plot*6))/3)
+    fig_height_3cols_part2 = height_per_row * nr_rows_3cols_part2
+  } else {
+    nr_rows_3cols = ceiling(nrow(markers_top_6)/3)
+    fig_height_3cols = height_per_row * nr_rows_3cols
+  }
+  
   
   # Dotplots: each row contains 2 plots
   # The height of dotplots is dependent on the number of clusters
-  height_per_row_variable = max(3, 0.3 * length(levels(sc$seurat_clusters)))
-  nr_rows_dp_2cols = ceiling(length(levels(sc$seurat_clusters))/2)
-  fig_height_dp_2cols = height_per_row_variable * nr_rows_dp_2cols %>% min(100)
+  height_per_row_variable = max(3, 2 + 0.2 * length(levels(sc$seurat_clusters)))
+    
+  if (length(levels(sc$seurat_clusters))>max_cluster_per_plot) {
+    nr_rows_dp_2cols = (max_cluster_per_plot/2)
+    fig_height_dp_2cols = height_per_row_variable * nr_rows_dp_2cols %>% min(100)
+    nr_rows_dp_2cols_part2 = ceiling((length(levels(sc$seurat_clusters))-max_cluster_per_plot)/2)
+    fig_height_dp_2cols_part2 = height_per_row_variable * nr_rows_dp_2cols_part2 %>% min(100)
+  } else {
+    nr_rows_dp_2cols = ceiling(length(levels(sc$seurat_clusters))/2)
+    fig_height_dp_2cols = height_per_row_variable * nr_rows_dp_2cols %>% min(100)
+  }
+  
   
 } else {
   fig_height_5cols = nr_rows_3cols = fig_height_dp_2cols = 7 
@@ -728,17 +762,37 @@ if (markers_found) {
 ```{r markers_plot_violin_raw, eval=markers_found, fig.height=fig_height_3cols}
 if (markers_found) {
   # Plot violin plots per marker gene, and combine it all at the end
-  # This layout works out nicely if there are 4 marker genes per cluster
   p_list = list()
+
   for(i in 1:nrow(markers_top_6)) { 
     p_list[[i]] = Seurat::VlnPlot(sc, features=markers_top_6$gene[i], assay=param$norm, pt.size=0, cols=param$col_clusters) + 
       AddStyle(title=markers_top_6$labels[i], xlab="") + 
       theme(axis.text.x = element_text(angle=45, hjust=1, vjust=1)) 
   }
-  p = patchwork::wrap_plots(p_list, ncol=3) + 
+  
+  # Generate a subset of plot_list to print results of only max_cluster_per_plot
+  # Necessary to avoid grDevices error due to too large plot size
+  p_list_selected = list()
+  if (length(levels(sc$seurat_clusters))>max_cluster_per_plot) {
+    p_list_selected = p_list[c(1:(max_cluster_per_plot*6))]
+    p_list_selected_part2 = p_list[c((max_cluster_per_plot*6+1):length(p_list))]
+  } else {
+    p_list_selected = p_list
+  }
+  
+  p = patchwork::wrap_plots(p_list_selected, ncol=3) + 
     patchwork::plot_annotation(title="Violin plot of for normalised gene expression data, top marker genes per cluster") & theme(legend.position="none")
   p
 }
+```
+
+`r ifelse(sec_part_tabset,"### Violin plots (normalised) part 2", "")` 
+```{r markers_plot_violin_raw_part2, eval=sec_part_tabset, fig.height=fig_height_3cols_part2}
+if (sec_part_tabset) {
+  p = patchwork::wrap_plots(p_list_selected_part2, ncol=3) + 
+    patchwork::plot_annotation(title="Violin plot of for normalised gene expression data, top marker genes per cluster") & theme(legend.position="none")
+  p
+} 
 ```
 
 ### Dot plot (scaled)
@@ -757,14 +811,33 @@ if (markers_found) {
     p = suppressMessages(Seurat::DotPlot(sc, features=genes) + 
                            scale_colour_gradient2(low="navy", mid="steelblue", high="darkgoldenrod1") +
                            AddStyle(title=paste0("Top marker genes in cluster ", cl), ylab="Cluster", xlab = "", legend_position="top") + 
-                           theme(axis.text.x = element_text(angle=90, hjust=1, vjust=.5)) + 
-                           guides(size=guide_legend(order=1)))
+                           theme(axis.text.x = element_text(angle=90, hjust=1, vjust=.5),
+                                 legend.text = element_text(size = 8)) + 
+                           guides(size=guide_legend(order=1, nrow = 1), colour = guide_colourbar(order = 2)))
     return(p)
   })
   
-  p = patchwork::wrap_plots(p_list, ncol=2) + patchwork::plot_annotation("Dotplot with top 10 up-regulated marker genes (scaled)")
+  # Generate a subset of plot_list to print results of only max_cluster_per_plot
+  # Necessary to avoid grDevices error due to too large plot size
+  p_list_selected = list()
+  if (length(levels(sc$seurat_clusters))>max_cluster_per_plot) {
+    p_list_selected = p_list[c(1:max_cluster_per_plot)]
+    p_list_selected_part2 = p_list[c((max_cluster_per_plot+1):length(p_list))]
+  } else {
+    p_list_selected = p_list
+  }
+  
+  p = patchwork::wrap_plots(p_list_selected, ncol=2) + patchwork::plot_annotation("Dotplot with top 10 up-regulated marker genes (scaled)")
   p
 }
+```
+
+`r ifelse(sec_part_tabset,"### Dot plot (scaled) part 2", "")`  
+```{r markers_plot_dot_scaled_part2, eval=sec_part_tabset, fig.height=fig_height_dp_2cols_part2}
+if (sec_part_tabset) {
+  p = patchwork::wrap_plots(p_list_selected_part2, ncol=2) + patchwork::plot_annotation("Dotplot with top 10 up-regulated marker genes (scaled)")
+  p
+} 
 ```
 
 <br> 
@@ -774,18 +847,26 @@ if (markers_found) {
 If the dataset contains multiple samples, we visualize the expression of marker genes that are up-regulated in a cluster separately for each sample.  
 
 ```{r markers_plot_dotplotpercl_height}
-#fig_height_degs_per_cl = max(5, 
-#                             max(2, 0.3 * (sc$orig.ident %>% unique() %>% length())) * length(levels(sc$seurat_clusters)) * 1) # We multiply by 2, as the legend requires quite some space
+# Dotplots: each row contains 2 plots
+# The height of dotplots is dependent on the number of clusters
+height_per_row_variable = max(3, 2 + 0.2 * (sc$orig.ident %>% unique() %>% length()))
 
-height_per_row_variable = max(3, 0.3 * (sc$orig.ident %>% unique() %>% length()))
-nr_rows_dp_2cols = ceiling(length(levels(sc$seurat_clusters))/2)
-fig_height_degs_per_cl = height_per_row_variable * nr_rows_dp_2cols %>% min(100)
+if (length(levels(sc$seurat_clusters))>max_cluster_per_plot) {
+  nr_rows_dp_2cols = (max_cluster_per_plot/2)
+  fig_height_degs_per_cl = height_per_row_variable * nr_rows_dp_2cols %>% min(100)
+  nr_rows_dp_2cols_part2 = ceiling((length(levels(sc$seurat_clusters))-max_cluster_per_plot)/2)
+  fig_height_degs_per_cl_part2 = height_per_row_variable * nr_rows_dp_2cols_part2 %>% min(100)
+} else {
+  nr_rows_dp_2cols = ceiling(length(levels(sc$seurat_clusters))/2)
+  fig_height_degs_per_cl = height_per_row_variable * nr_rows_dp_2cols %>% min(100)
+}
 
 ```
 
+First, we plot normalized expression with no further scaling. This plot helps to get an impression of the total expression of a gene.  
+Second, we plot scaled expression as explained above. This plot allows us to judge whether the expression of a gene is increased in one sample as compared to the other samples. However, for small sample numbers, this plot might be misleading as differences can appear inflated.  
+  
 ### Non-scaled dotplots
-First, we plot normalized expression with no further scaling. This plot helps to get an impression of the total expression of a gene. 
-
 ```{r markers_plot_dotplotpercl_unscaled, fig.height=fig_height_degs_per_cl, eval=markers_found}
 if (markers_found) {
   n_genes_max_dotplot = 25
@@ -794,23 +875,41 @@ if (markers_found) {
     markers_filt_up_cl_top = markers_filt$up %>% 
       dplyr::filter(cluster==cl) %>% 
       dplyr::top_n(n=n_genes_max_dotplot, wt=p_val_adj_score) %>% 
-      dplyr::pull(gene)
+      dplyr::pull(gene) %>%
+      head(n_genes_max_dotplot)
     if (length(markers_filt_up_cl_top) > 0) {
       p_list[[cl]] = DotPlotUpdated(sc, features=markers_filt_up_cl_top, idents=cl, group.by="orig.ident", scale=FALSE, cols=c("navy", "steelblue", "darkgoldenrod1")) +
         AddStyle(title=paste0("Cluster ", cl), ylab="", xlab = "", legend_position="top") + 
-        theme(axis.text.x=element_text(angle=90, hjust=1, vjust=.5)) + 
-        guides(size=guide_legend(order=1))
+        theme(axis.text.x=element_text(angle=90, hjust=1, vjust=.5),
+              legend.text = element_text(size = 8)) + 
+        guides(size=guide_legend(order=1, nrow = 1), colour = guide_colourbar(order = 2))
     }
   }
   
-  p = patchwork::wrap_plots(p_list, ncol=2) + patchwork::plot_annotation("Dotplot per cluster with top 25 up-regulated marker genes (not scaled)") 
+  # Generate a subset of plot_list to print results of only max_cluster_per_plot
+  # Necessary to avoid grDevices error due to too large plot size
+  p_list_selected = list()
+  if (length(levels(sc$seurat_clusters))>max_cluster_per_plot) {
+    p_list_selected = p_list[c(1:max_cluster_per_plot)]
+    p_list_selected_part2 = p_list[c((max_cluster_per_plot+1):length(p_list))]
+  } else {
+    p_list_selected = p_list
+  }
+  
+  p = patchwork::wrap_plots(p_list_selected, ncol=2) + patchwork::plot_annotation("Dotplot per cluster with top 25 up-regulated marker genes (not scaled)") 
   p
 }
 ```
 
-### Scaled dotplots
-Second, we plot scaled expression as explained above. This plot allows us to judge whether the expression of a gene is increased in one sample as compared to the other samples. However, for small sample numbers, this plot might be misleading as differences can appear inflated.  
+`r ifelse(sec_part_tabset,"### Non-scaled dotplots part 2", "")`  
+```{r markers_plot_dotplotpercl_unscaled_part2, eval=sec_part_tabset, fig.height=fig_height_degs_per_cl_part2}
+if (sec_part_tabset) {
+  p = patchwork::wrap_plots(p_list_selected_part2, ncol=2) + patchwork::plot_annotation("Dotplot per cluster with top 25 up-regulated marker genes (not scaled)") 
+  p
+} 
+```
 
+### Scaled dotplots
 ```{r markers_plot_dotplotpercl_scaled, fig.height=fig_height_degs_per_cl, eval=markers_found, warning=FALSE}
 if (markers_found) {
   p_list = list()
@@ -825,14 +924,35 @@ if (markers_found) {
         scale_colour_gradient2(low="navy", mid="steelblue", high="darkgoldenrod1") + 
         #viridis::scale_color_viridis(option = "D") +
         AddStyle(title=paste0("Cluster ", cl), ylab="", xlab = "", legend_position="top") + 
-        theme(axis.text.x=element_text(angle=90, hjust=1, vjust=.5)) + 
-        guides(size=guide_legend(order=1)))
+        theme(axis.text.x=element_text(angle=90, hjust=1, vjust=.5),
+              legend.text = element_text(size = 8)) + 
+        guides(size=guide_legend(order=1, nrow = 1), colour = guide_colourbar(order = 2)))
     }
   }
-  p = patchwork::wrap_plots(p_list, ncol=2) + patchwork::plot_annotation("Dotplot per cluster with top 25 up-regulated marker genes (scaled)") 
+  
+  # Generate a subset of plot_list to print results of only max_cluster_per_plot
+  # Necessary to avoid grDevices error due to too large plot size
+  p_list_selected = list()
+  if (length(levels(sc$seurat_clusters))>max_cluster_per_plot) {
+    p_list_selected = p_list[c(1:max_cluster_per_plot)]
+    p_list_selected_part2 = p_list[c((max_cluster_per_plot+1):length(p_list))]
+  } else {
+    p_list_selected = p_list
+  }
+  
+  p = patchwork::wrap_plots(p_list_selected, ncol=2) + patchwork::plot_annotation("Dotplot per cluster with top 25 up-regulated marker genes (scaled)") 
   p
 }
 ```
+
+`r ifelse(sec_part_tabset,"### Scaled dotplots part 2", "")` 
+```{r markers_plot_dotplotpercl_scaled_part2, eval=sec_part_tabset, fig.height=fig_height_degs_per_cl_part2}
+if (sec_part_tabset) {
+  p = patchwork::wrap_plots(p_list_selected_part2, ncol=2) + patchwork::plot_annotation("Dotplot per cluster with top 25 up-regulated marker genes (scaled)") 
+  p
+} 
+```
+
 
 <br>
 
