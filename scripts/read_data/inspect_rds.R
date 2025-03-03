@@ -1,10 +1,6 @@
 ### Inspect rds object
 ################################################################################
 
-### Create output directories
-if (!file.exists(param$path_out)) dir.create(param$path_out, recursive=TRUE, showWarnings=FALSE)
-
-
 ### Required libraries
 library(Seurat) # main
 library(ggplot2) # plots
@@ -42,37 +38,62 @@ if ("parameters" %in% names(sc@misc)) {
 } else {
   message("No predefined parameters")
 }
+
+# Set layout
+if (length(levels(sc$orig.ident))<=4) {
+  samples_ncol = ceiling(length(levels(sc$orig.ident)))
+} else if (length(levels(sc$orig.ident))<=8) {
+  samples_ncol = ceiling(length(levels(sc$orig.ident))/2)
+} else if (length(levels(sc$orig.ident))<=12) {
+  samples_ncol = ceiling(length(levels(sc$orig.ident))/3)
+} else {
+  samples_ncol = ceiling(length(levels(sc$orig.ident))/4)
+}
+
   
 
 ### Generate multiple plots 
 p_list = list()
 p_list[["clusters"]] = Seurat::DimPlot(sc, reduction="umap", group.by="seurat_clusters", pt.size = param$pt_size) + 
-  scale_color_manual(values=param$col_clusters) 
-p_list[["clusters_separately"]] = Seurat::DimPlot(sc, reduction="umap", group.by="seurat_clusters", split.by = "orig.ident", pt.size = param$pt_size, ncol = 3) + 
-  scale_color_manual(values=param$col_clusters) 
+  AddStyle(title="Clusters", xlab = "UMAP 1", ylab = "UMAP 2") +
+  scale_color_manual(values=param$col_clusters) + 
+  guides(colour = guide_legend(override.aes = list(size=3), nrow = 8))
+p_list[["clusters_separately"]] = Seurat::DimPlot(sc, reduction="umap", group.by="seurat_clusters", split.by = "orig.ident", pt.size = param$pt_size, ncol = samples_ncol) + 
+  AddStyle(title="Clusters per sample", xlab = "UMAP 1", ylab = "UMAP 2") +
+  scale_color_manual(values=param$col_clusters) + 
+  guides(colour = guide_legend(override.aes = list(size=3), nrow = 8))
 p_list[["sample"]] = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident", pt.size = param$pt_size) + 
-  scale_color_manual(values=param$col_samples) 
-p_list[["sample_separately"]] = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident", split.by = "orig.ident", pt.size = param$pt_size, ncol = 3) + 
-  scale_color_manual(values=param$col_samples) 
+  AddStyle(title="Samples", xlab = "UMAP 1", ylab = "UMAP 2") +
+  scale_color_manual(values=param$col_samples) + 
+  guides(colour = guide_legend(override.aes = list(size=3), nrow = 8))
+p_list[["sample_separately"]] = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident", split.by = "orig.ident", pt.size = param$pt_size, ncol = samples_ncol) + 
+  AddStyle(title="Samples separately", xlab = "UMAP 1", ylab = "UMAP 2") +
+  scale_color_manual(values=param$col_samples) + 
+  guides(colour = guide_legend(override.aes = list(size=3), nrow = 8))
 p_list[["cluster_annotation"]] = Seurat::DimPlot(sc, reduction="umap", group.by="annotation", pt.size = param$pt_size) + 
-  scale_color_manual(values=param$col_annotation) 
-p_list[["cluster_annotation_separately"]] = Seurat::DimPlot(sc, reduction="umap", group.by="annotation", split.by = "orig.ident", pt.size = param$pt_size, ncol = 3) + 
-  scale_color_manual(values=param$col_annotation) 
-p_list[["cell_annotation"]] = Seurat::DimPlot(sc, reduction="umap", group.by="SingleR.labels", pt.size=param$pt_size) 
-p_list[["cell_annotation_separately"]] = Seurat::DimPlot(sc, reduction="umap", group.by="SingleR.labels", split.by = "orig.ident", pt.size=param$pt_size, ncol = 3) 
+  AddStyle(title="Cluster annotation", xlab = "UMAP 1", ylab = "UMAP 2") +
+  scale_color_manual(values=param$col_annotation) + 
+  guides(colour = guide_legend(override.aes = list(size=3), nrow = 8)) 
+p_list[["cluster_annotation_separately"]] = Seurat::DimPlot(sc, reduction="umap", group.by="annotation", split.by = "orig.ident", pt.size = param$pt_size, ncol = samples_ncol) + 
+  AddStyle(title="Cluster annotation per sample", xlab = "UMAP 1", ylab = "UMAP 2") +
+  scale_color_manual(values=param$col_annotation) + 
+  guides(colour = guide_legend(override.aes = list(size=3), nrow = 8)) 
+p_list[["cell_annotation"]] = Seurat::DimPlot(sc, reduction="umap", group.by="SingleR.labels", pt.size=param$pt_size) +
+  AddStyle(title="Cell annotation", xlab = "UMAP 1", ylab = "UMAP 2") + 
+  guides(colour = guide_legend(override.aes = list(size=3), nrow = 8)) 
+p_list[["cell_annotation_separately"]] = Seurat::DimPlot(sc, reduction="umap", group.by="SingleR.labels", split.by = "orig.ident", pt.size=param$pt_size, ncol = samples_ncol) +
+  AddStyle(title="Cell annotation per sample", xlab = "UMAP 1", ylab = "UMAP 2") + 
+  guides(colour = guide_legend(override.aes = list(size=3), nrow = 8)) 
 
 qc_feature = c(paste0("nCount_", param$assay_raw), paste0("nFeature_", param$assay_raw), "percent_mt", "percent_ribo")
 for (n in seq(qc_feature)) {
   name = qc_feature[n]
   p_list[[name]] = suppressMessages(Seurat::FeaturePlot(sc, features=qc_feature[n]) + 
-                          scale_colour_gradient(low="lightgrey", high=param$col))
+                                      AddStyle(title=name, xlab = "UMAP 1", ylab = "UMAP 2") + 
+                                      scale_colour_gradient(low=param$col_bg, high=param$col)) 
   if (qc_feature[n]==paste0("nCount_", param$assay_raw) | qc_feature[n]==paste0("nFeature_", param$assay_raw)) {
-    p_list[[name]] = suppressMessages(p_list[[n]] + scale_colour_gradient(low="lightgrey", high=param$col, trans="log10"))
+    p_list[[name]] = suppressMessages(p_list[[name]] + scale_colour_gradient(low=param$col_bg, high=param$col, trans="log10"))
   }
 }
-
-### Save plot p_list as rds
-# Can be loaded with p_list <- readRDS("p_list.rds")
-saveRDS(p_list, file.path(param$path_out,"p_list.rds"))
 
 
