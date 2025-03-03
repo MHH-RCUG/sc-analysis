@@ -1,4 +1,0 @@
-Die sind zunächst einfach nur zum schnellen Ansehen einiger Plots geeignet.   
-Es funktioniert so.  
-- inspect_rds.R solltest du nicht anfassen oder verändern.
-- run_inspect_rds.R ist die Datei mit der du arbeitest. Darin musst du die Pfade param$data, param$path_out und param$scriptpath (wo du inspect_rds.R liegt) angeben. Dann kannst du die Zeilen bis zu der ‚Investigate plots‘ Sektion laufen lassen. Im Hintergrund wird das Objekte geladen und einige vorgegebene Plots erzeugt. Die kannst die Plots sind visuell noch kein Highlight und du kannst sie auch nicht verändern. Allerdings kannst du sie dir in der ‚Investigate plots‘ Sektion ansehen oder auch in der passenden Größe speichern (um ggf. die Legenden besser sehen zu können). Ansonsten steht die Anleitung in dem Skript selber. 

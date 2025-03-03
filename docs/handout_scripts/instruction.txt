@@ -1,0 +1,9 @@
+Prerequisite:
+1) sc.rds object: Output of the sc_analysis workflow
+2) The following packages need to be installed: Seurat, ggplot2, magrittr
+3) Folder with additional_visualization.R script and next to it the R folder with supporting scripts. Folder hierarchy needs to be kept. 
+
+Generate the plots:
+1) Open additional_visualization.R and adjust the path definitions for ‘DataPath’, ‘OutputPath’, and ‘ScriptPath’.
+2) Run the lines 1-17 of the script to set paths and source all needed settings. The rds object will be loaded as ‘sc’ automatically.
+3) Afterwards you can use the provided functions to generate and save plots according to your preferences.
