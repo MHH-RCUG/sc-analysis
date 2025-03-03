@@ -207,9 +207,19 @@ TO DO
   
 ## Data input
 TO DO
-### count matrix  
+### Count matrix  
 ### test dataset 
 ### rds object 
+
+### Test dataset
+
+### Gene annotation reference
+For some modules, gene annotation including Ensembl IDs, gene symbols, Entrez Ids, and Seurat gene names have to be loaded. By setting species (a basic parameter) and annot_version (advanced parameter), the references_download module automatically generates the required gene annotation file and the file with cell cycle genes needed for CellCycleScoring within the 'reference' folder.  
+Default is Ensembl release 98 which corresponds to 2020-A reference package of 10x Genomics Cell Ranger Ensembl release 110 which corresponds to 2024-A reference package of 10x Genomics Cell Ranger.
+ATTENTION: Translation cc genes between human and mouse does not work for version >105 (https://github.com/grimbough/biomaRt/issues/66). However, cylce gene annotation file generated using version 105 can be used instead. 
+  
+Alternatively, gene annotation file (advanced parameter 'file_annot') and cell cylce gene annotation file (advanced parameter 'file_cc_genes') can be loaded from a pre-prepared reference file.  
+
   
 ## Parameter settings
 TO DO
@@ -218,9 +228,19 @@ A set of standard parameter settings is automatically loaded.
 
 ### Basic parameter settings 
 basic_settings.R (required)  
+<details>
+<summary>List of all basic parameters</summary>
+
+TO DO
+</details>
+
 ### Advanced parameter settings  
 advanced_settings.R (optional if diverging from standard settings)  
+<details>
+<summary>List of all advanced parameters</summary>
 
+TO DO
+</details>
 
 
 # Output
