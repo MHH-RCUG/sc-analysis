@@ -39,5 +39,5 @@ source(file.path(param$path_to_git,"config/set_parameter.R"))
 
 ### Run script
 ################################################################################
-source(file.path(param$path_to_git,"scripts/download_references/generate_clustifyr_reference.R"))
+source(file.path(param$path_to_git,"scripts/download_references/generate_reference.R"))
 

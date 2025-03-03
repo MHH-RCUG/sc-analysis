@@ -21,9 +21,7 @@ param$project_id = "Testdata"
     # E.g. param$path_data = data.frame(name=c("sample1","sample2"), 
     #                                   type=c("10x","10x"), 
     #                                   path=c("/filtered_feature_bc_matrix", "/filtered_feature_bc_matrix")
-    param$path_data = data.frame(name=c("sample1"), 
-                                type=c("10x"), 
-                                path=c("/mnt/ngsnfs/single_cell_dev/scRNAseq_processing/sc_analysis/data/counts/sample1"))
+    param$path_data = NULL
                                  
   
 # Reference
@@ -43,21 +41,38 @@ param$refdata = NULL
 
 
 ### For cell annotation clustifyr
-# Set clustifyr reference e.g. "http://cells.ucsc.edu/?ds=covid19-influenza-response", "ref_hema_microarray()", or
-# file.path(param$path_to_git,"/references/fetal-immune-pfi_clustifyr_reference.rds")
+# Set clustifyr reference e.g. "http://cells.ucsc.edu/?ds=covid19-influenza-response", "ref_hema_microarray()" 
+# from https://bioconductor.org/packages/release/data/experiment/vignettes/clustifyrdatahub/inst/doc/clustifyrdatahub.html,
+# or file.path(param$path_to_git,"/references/fetal-immune-pfi_clustifyr_reference.rds")
 param$clustifyr_ref = NULL
-# Name of annotation column in reference dataset e.g. "cell_type"
+# Name of annotation column in reference dataset e.g. "cell_type" for ucsc pulled datasets
 param$cluster_col_clustifyr = NULL
 
 
-### For generation of clustifyr reference
-# Name of the reference output in the reference folder
+### For generation of reference
+# Dataset origin: "ucsc", "sc_expr_atlas", or "seurat_object"
+param$ref_data_orig = NULL
+# Name of reference 
+# Downloaded from UCSC https://cells.ucsc.edu or Single Cell Expression Atlas https://www.ebi.ac.uk/gxa/sc/experiments/
+# For Single Cell Expression Atlas, name should correspond to the dataset names/identifier e.g. E-MTAB-8077
+# Name will be given to reference output file
 param$ref_data_name = NULL
-# Folder with a 'exprMatrix.tsv.gz' and 'meta.tsv' file
+# Folder containing downloaded datasets files
+# For Single Cell Expression Atlas: 
+#   - '<param$ref_data_name>-quantification-raw-files' with 
+#       - '<param$ref_data_name>.aggregated_filtered_counts.mtx'
+#       - '<param$ref_data_name>.aggregated_filtered_counts.mtx_cols'
+#       - '<param$ref_data_name>.aggregated_filtered_counts.mtx_rows'
+#   - 'ExpDesign-<param$ref_data_name>.tsv'
+# For UCSC:
+#   - 'exprMatrix.tsv.gz'
+#   - 'meta.tsv' file
 param$ref_data_path = NULL 
+# Name of annotation column in reference dataset e.g. "cell_type" for ucsc pulled datasets
+param$cluster_col_clustifyr = NULL
 
 
-### For 
+### For contamination_removal
 # path to samples. Output from cellranger counts. Top level cellranger output directory containing the "filtered_gene_bc_matrices" and "raw_gene_bc_matrices" folders.
 # Set as vector for multiple samples.
 param$cellranger_samples = NULL

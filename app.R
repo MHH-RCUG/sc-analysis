@@ -44,9 +44,11 @@ parameter_lists = list(
     "download_test_datasets" = list(label = "Select testdataset", type = "choice", choices = c("download_10x_SmartSeq2_pbmc_GSE132044", "download_10x_pbmc_small_split2samples",
                                     "download_10x_pbmc_hto_GSE108313", "download_10x_pbmc_5k_protein", "download_10x_pbmc_1k_healthyDonor_v3Chemistry"))
   ),  
-  "generate clustifyr reference" = list(
-    "ref_data_name" = list(label = "Set name for the new clustifyr reference", type = "text", value = NULL),
-    "ref_data_path" = list(label = "Set path to the folder with a 'exprMatrix.tsv.gz' and 'meta.tsv' from which clustifyr reference is generated", type = "text", value = NULL)
+  "generate reference" = list(
+    "ref_data_orig" = list(label = "Select testdataset", type = "choice", choices = c("ucsc", "sc_expr_atlas", "seurat_object")),
+    "ref_data_name" = list(label = "Set name of reference. For Single Cell Expression Atlas, name should correspond to the dataset names/identifier e.g. E-MTAB-8077", type = "text", value = NULL),
+    "ref_data_path" = list(label = "Set path to the folder with downloaded datasets files. For Single Cell Expression Atlas, '<param$ref_data_name>-quantification-raw-files' folder and 'ExpDesign-<param$ref_data_name>.tsv'. For UCSC, a 'exprMatrix.tsv.gz' and 'meta.tsv' file", type = "text", value = NULL),
+    "cluster_col_clustifyr" = list(label = "Name of annotation column in reference dataset e.g. 'cell_type'", type = "text", value = NULL)
   )
   # Examples
   #"c" = list(
@@ -128,7 +130,7 @@ parameter_obj_advset_lists = list(
 
 
 # Grouping of some analysis types
-var_proj_id = c("qc", "pre-processing", "cluster analysis", "cell annotation clustify", "dataset mapping", "ccc analysis", "inspect rds" )
+var_proj_id = c("qc", "pre-processing", "cluster analysis", "cell annotation clustify", "dataset mapping", "ccc analysis" )
 rds_type = c("cell annotation clustify", "dataset mapping", "ccc analysis", "inspect rds" )
 var_data_type = c("qc", "pre-processing")
 adv_obj_settings = c(var_proj_id)
@@ -157,7 +159,7 @@ ui <- fluidPage(
                     choices = c("qc", "pre-processing", "cluster analysis", 
                                 "cell annotation clustify", "dataset mapping", "ccc analysis", 
                                 "inspect rds", "reference download", "test dataset download", 
-                                "generate clustifyr reference"))
+                                "generate reference"))
         ),
         
         # Descriptive text
@@ -242,7 +244,7 @@ server <- function(input, output, session) {
                              "inspect rds" = "scripts/read_data/inspect_rds.R", 
                              "reference download" = "scripts/read_data/read_gene_annotation.R", 
                              "test dataset download" = "scripts/download_test_datasets/test_dataset_download.R", 
-                             "generate clustifyr reference" = "scripts/download_references/generate_clustifyr_reference.R")  
+                             "generate reference" = "scripts/download_references/generate_reference.R")  
     
     # Store script path in reactive value
     assigned_scriptname(assigned_value)
@@ -261,7 +263,7 @@ This module maps the cluster annotations from a reference dataset onto the query
                             "inspect rds" = "Module to load and inspect generated object before further downstream analysis. Moreover, the script generates a lists of plots that can be displayed or saved in the desired size and resolution.", 
                             "reference download" = "Module to download reference genome from ENSMBL via BioMart data mining tool.", 
                             "test dataset download" = "Module to download test datasets. Test datasets are automatically stored in the appropriate format within the data folder.", 
-                            "generate clustifyr reference" = "Module to generate clustifyr reference from a chosen dataset that has to be downloaded beforehand from ucsc.")  
+                            "generate reference" = "Module to generate reference from a chosen dataset that has to be downloaded beforehand from ucsc.")  
     
     output$description = renderUI({
       description = sprintf("<p class='description'><br>%s <br> </p>", assigned_description)
