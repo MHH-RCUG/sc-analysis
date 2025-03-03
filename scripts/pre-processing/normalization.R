@@ -41,7 +41,7 @@ if (param$cc_remove | length(sc) == 1) {
 # Only needed for RunPCA as min npcs
 colnumber = ncol(sc[[1]])
 if (length(sc)>1) {
-  for (i in length(sc)) {
+  for (i in seq(length(sc))) {
     colnumber = min(colnumber, ncol(sc[[i]]))
   }
 }
