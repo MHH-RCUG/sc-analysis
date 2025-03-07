@@ -231,6 +231,8 @@ basic_settings.R (required)
 <details>
 <summary>List of all basic parameters</summary>
 
+**sender:** Set sender cell types
+
 TO DO
 </details>
 
