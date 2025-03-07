@@ -231,6 +231,12 @@ basic_settings.R (required)
 <details>
 <summary>List of all basic parameters</summary>
 
+**project_id:** Set project name  
+**species:** Set species e.g. "human" or "mouse"  
+**data:** Set path to rds object (NULL if download_test_datasets or path_data selected)  
+**download_test_datasets:** Set name of test dataset included in './modules/download_test_datasets/' e.g. "download_10x_pbmc_small_split2samples" (NULL if data or path_data selected)  
+**path_data:** Data frame of sample names, type, and path to folder with count matrix (NULL if download_test_datasets or data selected)  
+  
 TO DO
 </details>
 
