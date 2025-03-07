@@ -236,6 +236,8 @@ basic_settings.R (required)
 **data:** Set path to rds object (NULL if download_test_datasets or path_data selected)  
 **download_test_datasets:** Set name of test dataset included in './modules/download_test_datasets/' e.g. "download_10x_pbmc_small_split2samples" (NULL if data or path_data selected)  
 **path_data:** Data frame of sample names, type, and path to folder with count matrix (NULL if download_test_datasets or data selected)  
+**sender:** Set sender cell types for CCC analysis
+**receiver**: Set receiver cell types for CCC analysis
   
 TO DO
 </details>
