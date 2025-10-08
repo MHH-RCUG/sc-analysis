@@ -4,6 +4,11 @@
 ### Set rmarkdown parameter
 param$author = Sys.info()[["user"]]
 
+if ("scriptname" %in% names(param[])) {
+  param$scriptname = param$scriptname
+} else {
+  param$scriptname = NULL
+}
 
 
 ### Dataset settings
