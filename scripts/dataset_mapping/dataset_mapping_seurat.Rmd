@@ -187,16 +187,17 @@ knitr::kable(annot_cells, align="l", caption="Number and percentage of annotated
 ```
 
 ```{r fig_settings}
-fig_annot_celltypes = ceiling(length(pred_celltypes)/3) * 4
+fig_annot_celltypes = ceiling(length(row.names(pred_celltypes))/4) * 2.5
 ```
 
 Visualization of the prediction score of annotated cell types in the query dataset.
 
 ```{r plot_prediction_scores_refumap, fig.height=fig_annot_celltypes, warning=FALSE, message=FALSE}
 # plot cell type prediction scores
-DefaultAssay(sc) <- 'prediction.score.celltype'
+DefaultAssay(sc) = 'prediction.score.celltype'
+plot_feature = gsub("_", "-", celltype_filter)
 
-p <- FeaturePlot(sc,  reduction = "ref.umap", features = celltype_filter, ncol = 3,
+p <- FeaturePlot(sc,  reduction = "ref.umap", features = plot_feature, ncol = 4, 
                   cols = c(param$col_bg, param$col))
 p
 ```
@@ -204,7 +205,7 @@ p
 
 ```{r plot_prediction_scores_original, fig.height=fig_annot_celltypes, warning=FALSE, message=FALSE}
 # plot cell type prediction scores
-p <- FeaturePlot(sc, reduction = param$reduction, features = celltype_filter, ncol = 3,
+p <- FeaturePlot(sc, reduction = param$reduction, features = plot_feature, ncol = 4,
                   cols = c(param$col_bg, param$col))
 p
 
