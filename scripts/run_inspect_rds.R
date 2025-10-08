@@ -13,6 +13,8 @@ source("config/start_settings.R")
 # Set environment
 #renv::load(file.path(param$path_to_git,"env/basic"))
 
+# Set parameter
+source(file.path(param$path_to_git,"config/set_parameter.R"))
 
 
 ### Run inspect_rds.R

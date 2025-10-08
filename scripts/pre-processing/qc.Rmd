@@ -390,7 +390,8 @@ We select and plot the top 3,000 variable genes. If the composition of the sampl
 ```
 
 ```{r plot_variable_features_heights}
-fig_height_vf = 5 * ceiling(length(names(sc))/2)
+#fig_height_vf = 5 * ceiling(length(names(sc))/2)
+fig_height_vf = 2.5 * ceiling(length(names(sc))/4)
 ```
 
 ```{r plot_variable_features, warning=FALSE, fig.height=fig_height_vf}

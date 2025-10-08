@@ -692,7 +692,7 @@ if (markers_found) {
 
   # Feature plots and violin plots: each row contains 3 plots
   #   The plot has 5 columns and 1 rows per cluster, hence the layout works nicely if we find 
-  height_per_row = 2.5
+  height_per_row = 2
   nr_rows_5cols = ceiling(nrow(markers_top)/5)
   fig_height_5cols = height_per_row * nr_rows_5cols
   
@@ -744,10 +744,10 @@ if (markers_found) {
   for (i in 1:nrow(markers_top)) { 
     p_list[[i]] = Seurat::FeaturePlot(sc, features=markers_top$gene[i], 
                                       cols=c("lightgrey", param$col_clusters[markers_top$cluster[i]]),  
-                                      combine=TRUE, label=TRUE) + 
+                                      combine=TRUE, label=FALSE) + 
       AddStyle(title=markers_top$labels[i], 
                xlab="", ylab="", 
-               legend_position="bottom")
+               legend_position="")
   }
   
   # Combine all plots
@@ -786,7 +786,6 @@ if (markers_found) {
 }
 ```
 
-`r ifelse(sec_part_tabset,"### Violin plots (normalised) part 2", "")` 
 ```{r markers_plot_violin_raw_part2, eval=sec_part_tabset, fig.height=fig_height_3cols_part2}
 if (sec_part_tabset) {
   p = patchwork::wrap_plots(p_list_selected_part2, ncol=3) + 
@@ -832,7 +831,6 @@ if (markers_found) {
 }
 ```
 
-`r ifelse(sec_part_tabset,"### Dot plot (scaled) part 2", "")`  
 ```{r markers_plot_dot_scaled_part2, eval=sec_part_tabset, fig.height=fig_height_dp_2cols_part2}
 if (sec_part_tabset) {
   p = patchwork::wrap_plots(p_list_selected_part2, ncol=2) + patchwork::plot_annotation("Dotplot with top 10 up-regulated marker genes (scaled)")

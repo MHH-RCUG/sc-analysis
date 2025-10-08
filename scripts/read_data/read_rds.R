@@ -28,28 +28,33 @@ if (is.null(param$data)) {
       
       # Keep some parameter settings from object and project defined
       orig_param_keep = orig_param[c("annot_version", "species")]
-      basic_param_keep = param[c("path_to_git", "scriptname", "author", "project_id", "data", "path_out", 
-                                 "cluster_col_clustifyr")]
+      basic_param = param
+      #basic_param_keep = param[c("path_to_git", "scriptname", "author", "project_id", "data", "path_out", 
+      #                           "cluster_col_clustifyr", "idents_col", "sender", "receiver")]
       No_refdata = ifelse(is.null(param$refdata), TRUE, FALSE)
       No_file_annot = ifelse(is.null(param$file_annot), TRUE, FALSE)
       No_file_cc_genes = ifelse(is.null(param$file_cc_genes), TRUE, FALSE)
       No_annotation_dbs_clustifyr = ifelse(is.null(param$annotation_dbs_clustifyr), TRUE, FALSE)
       No_url_clustifyr = ifelse(is.null(param$url_clustifyr), TRUE, FALSE)
+      No_idents_col = ifelse(is.null(param$idents_col), TRUE, FALSE)
       No_sender = ifelse(is.null(param$sender), TRUE, FALSE)
       No_receiver = ifelse(is.null(param$receiver), TRUE, FALSE)
 
       # Integrate parameter
       param = modifyList(x = param, val = orig_param)
-      param = modifyList(x = param, val = basic_param_keep, keep.null = TRUE)
-      param = modifyList(x = param, val = param_advset)
+      param = modifyList(x = param, val = basic_param, keep.null = TRUE)
+      param = modifyList(x = param, val = param_advset, keep.null = TRUE)
       param = modifyList(x = param, val = orig_param_keep)
       if(isTRUE(No_refdata)) {param$refdata = NULL}
       if(isTRUE(No_file_annot)) {param$file_annot = NULL}
       if(isTRUE(No_file_cc_genes)) {param$file_cc_genes = NULL}
       if(isTRUE(No_annotation_dbs_clustifyr)) {param$annotation_dbs_clustifyr = NULL}
       if(isTRUE(No_url_clustifyr)) {param$url_clustifyr = NULL}
+      if(isTRUE(No_idents_col)) {param$idents_col = NULL}
       if(isTRUE(No_sender)) {param$sender = NULL}
       if(isTRUE(No_receiver)) {param$receiver = NULL}
+    } else {
+      orig_param = NULL
     }
     
     

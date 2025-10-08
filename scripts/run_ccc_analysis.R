@@ -33,3 +33,4 @@ source(file.path(param$path_to_git,"config/set_parameter.R"))
 ### Run markdown
 ################################################################################
 rmarkdown::render(file.path(param$path_to_git,param$scriptname), param = param, output_file = file.path(param$path_out, paste0(param$project_id,"_", gsub("Rmd", "html", basename(param$scriptname)))))
+

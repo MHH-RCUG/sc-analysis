@@ -73,14 +73,20 @@ message("Load Seurat object from rds file")
 
 ```{r restructure_object, eval=!is.null(param$data), warning=FALSE}
 # Transfer object into a list
-sc_original = sc
-sc = list()
-n = param$project_id
-sc[[n]] = sc_original
+#sc_original = sc
+#sc = list()
+#n = param$project_id
+#sc[[n]] = sc_original
+
+sc = SplitObject(sc, split.by = "orig.ident")
 
 # Rerun read_gene_annotation.R if choosen annotation set is not fitting to loaded object
-if (!orig_param$species == param$species | !orig_param$annot_version == param$annot_version) {
+if (is.null(orig_param)) {
   source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'), local = knitr::knit_global())
+} else {
+  if (!orig_param$species == param$species | !orig_param$annot_version == param$annot_version) {
+  source(file.path(param$path_to_git,'scripts/read_data/read_gene_annotation.R'), local = knitr::knit_global())
+  }
 }
 ```
 
@@ -610,10 +616,10 @@ cluster_resolutions = sort(unique(c(param$cluster_resolution, param$cluster_reso
 
 
 # Construct phylogenetic tree relating the "average" cell from each sample
-if (length(levels(sc$orig.ident)) > 1) {
-  sc = BuildClusterTree(sc, features=rownames(sc), verbose=FALSE)
-  Seurat::Misc(sc, "trees") = list(orig.ident = Seurat::Tool(sc, "BuildClusterTree"))
-}
+#if (length(levels(sc$orig.ident)) > 1) {
+#  sc = BuildClusterTree(sc, features=rownames(sc), verbose=FALSE)
+#  Seurat::Misc(sc, "trees") = list(orig.ident = Seurat::Tool(sc, "BuildClusterTree"))
+#}
 
 # The number of clusters can be optimized by tuning "resolution" -> based on feedback from the client whether or not clusters make sense
 # Choose the number of PCs to use for clustering
