@@ -44,6 +44,17 @@ if (is.null(param$data)) {
 if ("parameters" %in% names(sc@misc)) {
   # Retrieve previous parameter settings
   orig_param = sc@misc$parameters
+  if ("colour_lists" %in% names(sc@misc)) {
+    if ("orig.ident" %in% names(sc@misc$colour_lists)) {
+      orig_param$col_samples = sc@misc$colour_lists$orig.ident
+    }
+    if ("seurat_clusters" %in% names(sc@misc$colour_lists)) {
+      orig_param$col_clusters = sc@misc$colour_lists$seurat_clusters
+    }
+    if ("annotation" %in% names(sc@misc$colour_lists)) {
+      orig_param$col_annotation = sc@misc$colour_lists$annotation
+    }
+  }
   
   # Keep some parameter settings from object and project defined
   basic_param_keep = param[c("data", "path_out")]

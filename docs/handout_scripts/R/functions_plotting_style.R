@@ -68,7 +68,7 @@ AddStyleMultiVln = function(p, title=NULL, ncol=length(p)) {
 #'@param samplecolors Color of samples.
 #'@param celltypecolors Color of cell type annotation. 
 #'@return List with plots.
-ADStandardPlots = function(sc, param, ncol=NULL, plottheme=theme_light(), clustercolors=NULL, samplecolors=NULL, celltypecolors=NULL) {
+ADStandardPlots = function(sc, param, ncol=NULL, plottheme=theme_light(), clustercolors=NULL, samplecolors=NULL, celltypecolors=NULL, ...) {
  
   if (is.null(clustercolors)) clustercolors=param$col_clusters
   if (is.null(samplecolors)) samplecolors=param$col_samples
@@ -87,45 +87,61 @@ ADStandardPlots = function(sc, param, ncol=NULL, plottheme=theme_light(), cluste
   
   
   p_list = list()
-  p_list[["clusters"]] = Seurat::DimPlot(sc, reduction="umap", group.by="seurat_clusters", pt.size = param$pt_size) + 
-    AddStyle(title="Clusters", xlab = "UMAP 1", ylab = "UMAP 2") +
-    scale_color_manual(values=clustercolors) + 
-    guides(colour = guide_legend(override.aes = list(size=3), nrow = 8))  +
-    plottheme
-  p_list[["clusters_separately"]] = Seurat::DimPlot(sc, reduction="umap", group.by="seurat_clusters", split.by = "orig.ident", pt.size = param$pt_size, ncol = ncol) + 
-    AddStyle(title="Clusters per sample", xlab = "UMAP 1", ylab = "UMAP 2") +
-    scale_color_manual(values=clustercolors) + 
-    guides(colour = guide_legend(override.aes = list(size=3), nrow = 8)) +
-    plottheme
-  p_list[["sample"]] = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident", pt.size = param$pt_size) + 
-    AddStyle(title="Samples", xlab = "UMAP 1", ylab = "UMAP 2") +
-    scale_color_manual(values=samplecolors) + 
-    guides(colour = guide_legend(override.aes = list(size=3), nrow = 8)) +
-    plottheme
-  p_list[["sample_separately"]] = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident", split.by = "orig.ident", pt.size = param$pt_size, ncol = ncol) + 
-    AddStyle(title="Samples separately", xlab = "UMAP 1", ylab = "UMAP 2") +
-    scale_color_manual(values=samplecolors) + 
-    guides(colour = guide_legend(override.aes = list(size=3), nrow = 8)) +
-    plottheme
-  p_list[["cluster_annotation"]] = Seurat::DimPlot(sc, reduction="umap", group.by="annotation", pt.size = param$pt_size) + 
-    AddStyle(title="Cluster annotation", xlab = "UMAP 1", ylab = "UMAP 2") +
-    scale_color_manual(values=celltypecolors) +
-    plottheme
-  p_list[["cluster_annotation_separately"]] = Seurat::DimPlot(sc, reduction="umap", group.by="annotation", split.by = "orig.ident", pt.size = param$pt_size, ncol = ncol) + 
-    AddStyle(title="Cluster annotation per sample", xlab = "UMAP 1", ylab = "UMAP 2") +
-    scale_color_manual(values=celltypecolors) + 
-    guides(colour = guide_legend(override.aes = list(size=3), nrow = 8)) +
-    plottheme
-  p_list[["cell_annotation"]] = Seurat::DimPlot(sc, reduction="umap", group.by="SingleR.labels", pt.size=param$pt_size) +
-    AddStyle(title="Cell annotation", xlab = "UMAP 1", ylab = "UMAP 2") + 
-    guides(colour = guide_legend(override.aes = list(size=3), nrow = 8)) +
-    plottheme
-  p_list[["cell_annotation_separately"]] = Seurat::DimPlot(sc, reduction="umap", group.by="SingleR.labels", split.by = "orig.ident", pt.size=param$pt_size, ncol = ncol) +
-    AddStyle(title="Cell annotation per sample", xlab = "UMAP 1", ylab = "UMAP 2") + 
-    guides(colour = guide_legend(override.aes = list(size=3), nrow = 8)) +
-    plottheme
+  if ("seurat_clusters" %in% colnames(sc@meta.data)) {
+    p_list[["clusters"]] = Seurat::DimPlot(sc, reduction="umap", group.by="seurat_clusters", ...) + 
+      AddStyle(title="Clusters", xlab = "UMAP 1", ylab = "UMAP 2") +
+      scale_color_manual(values=clustercolors) + 
+      guides(colour = guide_legend(override.aes = list(size=3), nrow = 8))  +
+      plottheme
+    p_list[["clusters_separately"]] = Seurat::DimPlot(sc, reduction="umap", group.by="seurat_clusters", split.by = "orig.ident", ncol = ncol, ...) + 
+      AddStyle(title="Clusters per sample", xlab = "UMAP 1", ylab = "UMAP 2") +
+      scale_color_manual(values=clustercolors) + 
+      guides(colour = guide_legend(override.aes = list(size=3), nrow = 8)) +
+      plottheme
+  }
+  if ("orig.ident" %in% colnames(sc@meta.data)) {
+    p_list[["sample"]] = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident", ...) + 
+      AddStyle(title="Samples", xlab = "UMAP 1", ylab = "UMAP 2") +
+      scale_color_manual(values=samplecolors) + 
+      guides(colour = guide_legend(override.aes = list(size=3), nrow = 8)) +
+      plottheme
+    p_list[["sample_separately"]] = Seurat::DimPlot(sc, reduction="umap", group.by="orig.ident", split.by = "orig.ident", ncol = ncol, ...) + 
+      AddStyle(title="Samples separately", xlab = "UMAP 1", ylab = "UMAP 2") +
+      scale_color_manual(values=samplecolors) + 
+      guides(colour = guide_legend(override.aes = list(size=3), nrow = 8)) +
+      plottheme
+  }
+  if ("annotation" %in% colnames(sc@meta.data)) {
+    p_list[["cluster_annotation"]] = Seurat::DimPlot(sc, reduction="umap", group.by="annotation", ...) + 
+      AddStyle(title="Cluster annotation", xlab = "UMAP 1", ylab = "UMAP 2") +
+      scale_color_manual(values=celltypecolors) +
+      plottheme
+    p_list[["cluster_annotation_separately"]] = Seurat::DimPlot(sc, reduction="umap", group.by="annotation", split.by = "orig.ident", ncol = ncol, ...) + 
+      AddStyle(title="Cluster annotation per sample", xlab = "UMAP 1", ylab = "UMAP 2") +
+      scale_color_manual(values=celltypecolors) + 
+      guides(colour = guide_legend(override.aes = list(size=3), nrow = 8)) +
+      plottheme
+  }
+  if ("SingleR.labels" %in% colnames(sc@meta.data)) {
+    p_list[["cell_annotation"]] = Seurat::DimPlot(sc, reduction="umap", group.by="SingleR.labels", .__C__.name) +
+      AddStyle(title="Cell annotation", xlab = "UMAP 1", ylab = "UMAP 2") + 
+      guides(colour = guide_legend(override.aes = list(size=3), nrow = 8)) +
+      plottheme
+    p_list[["cell_annotation_separately"]] = Seurat::DimPlot(sc, reduction="umap", group.by="SingleR.labels", split.by = "orig.ident", ncol = ncol, ...) +
+      AddStyle(title="Cell annotation per sample", xlab = "UMAP 1", ylab = "UMAP 2") + 
+      guides(colour = guide_legend(override.aes = list(size=3), nrow = 8)) +
+      plottheme
+  }
   
-  qc_feature = c(paste0("nCount_", param$assay_raw), paste0("nFeature_", param$assay_raw), "percent_mt", "percent_ribo")
+  
+  qc_feature = c(paste0("nCount_", param$assay_raw), paste0("nFeature_", param$assay_raw))
+  if ("percent_mt" %in% colnames(sc@meta.data)) {
+    qc_feature = c(qc_feature, "percent_mt")
+  }  
+  if ("percent_ribo" %in% colnames(sc@meta.data)) {
+    qc_feature = c(qc_feature, "percent_ribo")
+  }  
+  
   for (n in seq(qc_feature)) {
     name = qc_feature[n]
     p_list[[name]] = suppressMessages(Seurat::FeaturePlot(sc, features=qc_feature[n]) + 
@@ -154,16 +170,16 @@ ADStandardPlots = function(sc, param, ncol=NULL, plottheme=theme_light(), cluste
 #'@param bgcolor Background color for cells without feature expression (lower end of scale)
 #'@param labelcluster Define whether to show cluster labels. Default: TRUE.
 #'@return Patchwork plot.
-ADFeaturePlots = function(sc, param, markers, ncol=4, plottheme=theme_light(), featurecolor=NULL, bgcolor=NULL, labelcluster=TRUE) {
+ADFeaturePlots = function(sc, param, markers, ncol=4, plottheme=theme_light(), featurecolor=NULL, bgcolor=NULL, labelcluster=TRUE, ...) {
   
   if (is.null(featurecolor)) featurecolor=param$col
   if (is.null(bgcolor)) bgcolor=param$col_bg
   
   p_list = list()
   for (i in 1:length(markers)) { 
-    p_list[[i]] = Seurat::FeaturePlot(sc, features=markers[i], pt.size = param$pt_size,
+    p_list[[i]] = Seurat::FeaturePlot(sc, features=markers[i], 
                                       cols=c(bgcolor, featurecolor),  
-                                      combine=TRUE, label=labelcluster) + 
+                                      combine=TRUE, label=labelcluster, ...) + 
       AddStyle(title=markers[i], 
                xlab="", ylab="") + 
       plottheme + theme(legend.position = "bottom")
@@ -189,7 +205,7 @@ ADFeaturePlots = function(sc, param, markers, ncol=4, plottheme=theme_light(), f
 #'@param clustercolors Color of clusters.
 
 #'@return Patchwork plot.
-ADViolinPlots = function(sc, param, markers, group="clusters", ncol=4, plottheme=theme_light(), clustercolors=NULL, samplecolors=NULL, celltypecolors=NULL) {
+ADViolinPlots = function(sc, param, markers, group="clusters", ncol=4, plottheme=theme_light(), clustercolors=NULL, samplecolors=NULL, celltypecolors=NULL, ...) {
   
   if (is.null(clustercolors)) clustercolors=param$col_clusters
   if (is.null(samplecolors)) samplecolors=param$col_samples
@@ -211,7 +227,7 @@ ADViolinPlots = function(sc, param, markers, group="clusters", ncol=4, plottheme
   p_list = list()
   
   for(i in 1:length(markers)) { 
-    p_list[[i]] = Seurat::VlnPlot(sc, features=markers[i], assay=param$norm, pt.size=0, cols=group_color, group.by = group_ident) + 
+    p_list[[i]] = Seurat::VlnPlot(sc, features=markers[i], assay=param$norm, pt.size=0, cols=group_color, group.by = group_ident, ...) + 
       AddStyle(title=markers[i], xlab="") + 
       theme(axis.text.x = element_text(angle=45, hjust=1, vjust=1)) +
       plottheme
