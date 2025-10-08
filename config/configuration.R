@@ -14,7 +14,8 @@ options(stringsAsFactors=FALSE,
 
 ### Fuctions
 # Git directory and files to source must be done first, then all helper functions can be sourced
-git_files_to_source = c("functions_analysis.R", 
+git_files_to_source = c("functions_analysis.R",
+                        "functions_annotation.R",
                         "functions_biomart.R", 
                         "functions_degs.R", 
                         "functions_io.R", 
