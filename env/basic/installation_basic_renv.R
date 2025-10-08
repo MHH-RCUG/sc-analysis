@@ -20,6 +20,7 @@ renv::install("clustertree") # version 0.5.1
 renv::install("cellgeni/sceasy") # version 0.0.7
 renv::install("ggsci") # version 3.0.1
 renv::install("scCustomize") # version 2.1.2
+remotes::install_github("chris-mcginnis-ucsf/DoubletFinder", force = TRUE) # version 2.0.6
 
 # rmarkdown
 renv::install("kableExtra") # version 1.4.0
@@ -33,6 +34,7 @@ renv::install("DT") # version 0.33
 renv::install("immunogenomics/presto") # version 1.0.0
 renv::install("RGLab/MAST") # version 1.27.1
 renv::install("enrichR") # version 3.2 
+renv::install("bioc::DESeq2") # version 1.38.3
 
 # dataset mapping
 remotes::install_version("matrixStats", version="1.1.0")
@@ -47,6 +49,15 @@ renv::install("bioc::clustifyrdatahub") # version 1.8.0
 
 # ccc analysis
 renv::install("saezlab/liana") # version 0.1.14
+renv::install("saeyslab/nichenetr/2.0.5")
+#remotes::install_github("saeyslab/nichenetr@v2.0.5") does not work
+
+# trajectory
+renv::install("bioc::lme4") # version 1.1-37
+renv::install("bioc::batchelor") # version 1.14.1
+renv::install("cole-trapnell-lab/monocle3") # version 1.3.7
+remotes::install_github('satijalab/seurat-wrappers')
+renv::install("bioc::destiny") # version 3.12.0
 
 # Further packages:
 # reticulate 1.35.0

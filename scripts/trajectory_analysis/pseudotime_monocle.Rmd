@@ -1,0 +1,376 @@
+---
+title: "Monocle Pseudotime"
+author: "`r param$author`"
+date: "`r format(Sys.time(), '%B, %Y')`"
+geometry: "margin=2cm"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    code_folding: "hide"
+    highlight: "tango"
+    theme: "paper"
+bibliography: "`r file.path(param$path_out, 'references.bib')`"
+link-citations: yes
+csl: "`r file.path(param$path_to_git, 'assets/elsevier-harvard.csl')`"
+css: "`r file.path(param$path_to_git, 'assets/style.css')`"
+---
+
+```{r r_options, file='../../config/configuration.R'}
+source(file.path(param$path_to_git,'config/configuration.R'), local = knitr::knit_global())
+message("Set R options")
+```
+
+```{r rmarkdown, file='../../config/rmarkdown_configuration.R'}
+source(file.path(param$path_to_git,'config/rmarkdown_configuration.R'), local = knitr::knit_global())
+message("Set Rmarkdown options")
+```
+
+```{r load_packages, warning=FALSE, message=FALSE, results='hide'}
+
+# Load renv
+renv::load(file.path(param$path_to_git,"env/basic"))
+
+# Required libraries
+library(monocle3)
+library(Seurat)
+library(patchwork)
+library(magrittr)
+library(ggplot2)
+library(ggsci)
+library(pheatmap)
+
+
+
+#library(biomaRt)
+library(dplyr)
+#library(tidyr)
+
+```
+
+
+
+# Introduction
+
+Constructing single-cell trajectories for the samples `r param$path_data$name` of the project `r param$project_id`. 
+
+During many biological processes, cells transition from one functional “state” to another or differentiate towards a required functional end state. Such events are characterized by the modulation of specific gene expression programs over time. By use of single cell expression signatures, it is, thus, possible to track down a cell’s 'position' within such a predetermined developmental path. The R packaged Monocle3 offers a strategy to explore respective expression changes when cells pass through such a ‘pseudotime’ matrix and to construct and visualize accordingly derived single-cell trajectories.
+
+Here we use the S4 class object generated in the Main-Report "Single-cell RNA-seq data analysis" and convert it to a SingleCellExperiment class object for analysis of pseudotime trajectory of cells.
+
+```{r read_rds, file='../read_data/read_rds.R', warning=FALSE}
+source(file.path(param$path_to_git,'scripts/read_data/read_rds.R'), local = knitr::knit_global())
+message("Load Seurat object from rds file")
+```
+
+
+```{r project_parameters}
+# displaying and testing different roots is possible, but only the last one is used in subsequent plots; At least one root needs to be provided!
+param$trajectory_root = c("SOX2")
+# Choose clusters that should be displayed in trajectory (all clusters are used in calculation); NULL if all clusters should be displayed
+param$trajectory_cluster = NULL
+#param$trajectory_cluster = c("6", "8", "9", "3", "7", "14", "11")
+if (is.null(param$trajectory_cluster)) {
+  param$trajectory_cluster = levels(sc$seurat_clusters)
+}  
+# individual genes that should be plotted in feature plots; NULL if no target genes are specified
+#param$plot_genes = NULL
+param$plot_genes = c("SOX2", "CDH5", "CD34", "GJA5", "NR2F2", "RUNX1", "PTPRC", "HBG1", "MYH6", "LUM", "TBX5", "GATA6")
+#param$plot_genes = c("CDH5", "MECOM", "PTPRC", "GJA4", "GJA5", "CXCR4", "RUNX1", "IL33", "ALDH1A1", "KCNK17", "HLF", "SPINK2")
+```
+
+```{r fig_heights}
+# Feature plots and Violinplots
+# The height of 1 row (= 1 plot) is fixed to 5 
+fig_height_plots = max(3.5, 3.5 + 3 * length(param$trajectory_root))
+
+# Dimplots (for multiple conditions)
+height_per_plot_genes = max(2.5, 2.5 * round(length(param$plot_genes)/3))
+
+# Dotplots
+# We fix the height of each row in a plot to the same height
+height_per_row = max(0.2, 0.2 * 2 * length(param$trajectory_cluster))
+fig_height_dotplots = max(3, 3 + height_per_row)
+```
+
+
+
+```{r generate_cds_oject}
+# Convert S4 class object to SingleCellExperiment class
+cds = SeuratWrappers::as.cell_data_set(sc)
+
+# Add gene_short_name to cds object
+rowData(cds)$gene_short_name = rownames(cds)
+
+# Transfer clusters from sc to cds object
+cds = monocle3::cluster_cells(cds)
+cds@clusters$UMAP$clusters = sc@meta.data$seurat_clusters
+names(cds@clusters$UMAP$clusters) = rownames(sc@meta.data)
+
+# Print both objects' information
+sc
+cds
+```
+ 
+# Constructing single-cell trajectories
+
+## Classification of cells
+While in some situations cells may continuously transition from one state to the next along one trajectory, in other cases multiple distinct trajectories might reflect the experimental situation more precisely. For example, different cell types have different initial transcriptomes and response to a stimulus by moving along distinct trajectories. Such distinct trajectories are identified as different “partitions” through the clustering procedure.
+
+```{r object_visualization, fig.height=3.5}
+# Plot cells coloured by sample
+p1 = DimPlot(sc, group.by = "orig.ident", cols = param$col_samples, pt.size = param$pt_size) +
+  AddStyle(title="Coloured by sample", legend_title = "", xlab = "UMAP 1", ylab = "UMAP 2") +
+  theme(text = element_text(size = 12), 
+  axis.line = element_line(size = 0.5, color = "grey50"), 
+  legend.position = "bottom") +
+  NoGrid()
+
+# Plot cells coloured by cluster
+p2 = plot_cells(cds, show_trajectory_graph = FALSE, label_cell_groups = FALSE, cell_size = param$pt_size) +
+  AddStyle(title="Coloured by cluster", xlab = "UMAP 1", ylab = "UMAP 2") +
+  scale_color_manual(values = param$col_clusters) +
+  theme(text = element_text(size = 12), 
+  axis.line = element_line(size = 0.5, color = "grey50"), 
+  legend.position = "bottom") +
+  NoGrid()
+
+# Plot cells coloured by partition
+p3 = plot_cells(cds, color_cells_by = "partition", show_trajectory_graph = FALSE, label_cell_groups = FALSE, cell_size = param$pt_size) +
+  AddStyle(title="Coloured by partition", xlab = "UMAP 1", ylab = "UMAP 2") +
+  theme(text = element_text(size = 12), legend.title = element_blank(), 
+  axis.line = element_line(size = 0.5, color = "grey50"), 
+  legend.position = "bottom") +
+  NoGrid()
+
+p = patchwork::wrap_plots(p1, p2, p3, ncol = 3)
+p
+```
+ 
+## Plot pseudotime trajectory
+Next, we fit a principal graph of gene expression changes within each partition and place each cell at its proper position according to its progress through the respective trajectory. To place the cells in order, a “root” of the trajectory has to be defined as the beginning of the biological process. That means, here we have set one gene (`r param$trajectory_root`) as root, which is (exclusively) expressed at the early state of the biological process. 
+The progress along the trajectory an individual cell has made is measured in pseudotime. Pseudotime is an abstract unit that indicates the distance between a cell and the start of the trajectory.
+Here we are displaying three different visualisations for the pseudotime and cell trajectory. Labeled black circles indicate branches of the trajectory tree to different outcomes (i.e. cell fate), while the white circled number represents the root. Gray colored cells have infinite pseudotime because they were not reachable from the chosen root.
+
+
+```{r learn_graphy, warning=FALSE, message=FALSE, results='hide'}
+# Learn the trajectory graph
+#cds = learn_graph(cds, close_loop = TRUE)
+cds = learn_graph(cds, close_loop = TRUE, use_partition = FALSE)
+```
+
+
+```{r plot_trajectory, fig.height=fig_height_plots, eval=param$transjectory_root, warning=FALSE, message=FALSE}
+# Plot trajectory with root and colored by clusters
+p1 = plot_cells(cds, label_groups_by_cluster = FALSE, label_leaves = FALSE, label_branch_points = FALSE, graph_label_size=3, group_label_size = 0, cell_size = param$pt_size) +
+  AddStyle(legend_title = "cluster", xlab = "UMAP 1", ylab = "UMAP 2") +
+  scale_color_manual(values = param$col_clusters) +
+  theme(text = element_text(size = 12), 
+  axis.line = element_line(size = 0.5, color = "grey50"), 
+  legend.position = "bottom") +
+  NoGrid()
+
+p_list = NULL
+
+for (i in param$trajectory_root) {
+
+# Integrate root to trajectory
+max.root = which.max(unlist(FetchData(sc, i)))
+max.root = colnames(sc)[max.root]
+cds = order_cells(cds, root_cells = max.root)
+
+# Extract the pseudotime and partition values form the SingleCellExperiment object and add them to the Seurat object
+sc = AddMetaData(sc, metadata = cds@principal_graph_aux@listData$UMAP$pseudotime, col.name = "pseudotime")
+sc = AddMetaData(sc, metadata = cds@clusters@listData$UMAP$partitions, col.name = "partition")
+
+
+
+# Plot trajectory with root and colored by pseudotime
+p2 = plot_cells(cds, color_cells_by = "pseudotime", label_cell_groups = FALSE, label_leaves = FALSE, label_branch_points = FALSE, graph_label_size=3, cell_size = param$pt_size) +
+  theme(text = element_text(size = 12), 
+  axis.line = element_line(size = 0.5, color = "grey50")) +
+  NoGrid() +
+  RestoreLegend(position = "right")
+
+# Plot trajectory with root and colored by pseudotime as FeaturePlot with Seurat object
+p3 = FeaturePlot(sc, features = "pseudotime", pt.size = param$pt_size) + 
+  AddStyle(title=i, legend_title = "pseudotime", xlab = "UMAP 1", ylab = "UMAP 2") +
+  scale_color_viridis_c() +
+  theme(text = element_text(size = 12), 
+  axis.line = element_line(size = 0.5, color = "grey50")) +
+  NoGrid() +
+  RestoreLegend(position = "right")
+
+p_list[[i]] = p2 + p3
+}
+
+p1 = patchwork::wrap_plots(p1 + plot_spacer())
+p = p1 + p_list + plot_layout(ncol=1) + 
+  AddStyle(title="Pseudotime trajectory") 
+p
+```
+
+## Distribution of cell along trajectory
+The clusters `r param$trajectory_cluster`, as part of one trajectory, were manually chosen and shown in the following. We display the relative counts of cells that were detected in the same state (same pseudotime point) along the cell trajectory.
+```{r clusters_pseudotime_correlation, warning=FALSE, message=FALSE}
+# Test whether cells at similar positions on the trajectory have correlated expression
+pseudotime_values = FetchData(object = sc, vars = c("pseudotime", "seurat_clusters", "orig.ident"))
+pseudotime_values = dplyr::filter(pseudotime_values, seurat_clusters %in% param$trajectory_cluster)
+
+p1 = ggplot(pseudotime_values, aes(x = pseudotime, fill = seurat_clusters)) + 
+  geom_density(alpha=0.7) +
+  theme_classic() +
+  AddStyle(legend_title = "cluster") +
+  NoGrid() +
+  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(), axis.line = element_line(size = 0.5)) +
+  scale_fill_manual(values = param$col_clusters)
+
+p2 = ggplot(pseudotime_values, aes(x = pseudotime, fill = seurat_clusters)) + 
+  geom_density() +
+  facet_grid(seurat_clusters ~ .) +
+  theme_classic() +
+  theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank(), axis.line = element_line(size = 0.5)) +
+  scale_fill_manual(values = param$col_clusters) +
+  NoLegend()
+
+p3 = ggplot(pseudotime_values, aes(x = pseudotime, fill = orig.ident)) + 
+  geom_density(alpha=0.7) +
+  theme_classic() +
+  AddStyle(legend_title = "sample", col = param$col_samples) +
+  NoGrid() +
+  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(), axis.line = element_line(size = 0.5)) +
+  scale_fill_manual(values = param$col_samples)
+
+
+p = patchwork::wrap_plots((p1 / p3) | p2)
+p
+```
+ 
+## Gene expression along cell trajectory
+To identify the genes that are regulated over the course of the trajectory, we test with the Moran's I test whether cells at similar positions on the trajectory have also correlated expression of individual genes.
+
+```{r morans_test, warning=FALSE, message=FALSE, results='hide'}
+# Test whether cells at similar positions on the trajectory have correlated expression
+morans_test_res = graph_test(cds, neighbor_graph="principal_graph", cores=4)
+write.table(x = morans_test_res, file = paste0(param$path_out, "/morans_test_result.xlsx"))
+```
+
+### Genes expression as function of pseudotime
+The plots display the dynamics of gene expression as a function of pseudotime for the top 12 genes with the highest correlation of expression to trajectory position.
+```{r DEGs_pseudotime, fig.height=10, warning=FALSE, message=FALSE}
+# 
+attach(morans_test_res)
+morans_test_res_sort = morans_test_res[order(q_value, -morans_I),]
+detach(morans_test_res)
+top12 = row.names(head(morans_test_res_sort, 12))
+top50 = row.names(head(morans_test_res_sort, 50))
+top100 = row.names(head(morans_test_res_sort, 100))
+
+
+p_list = NULL
+for (i in top12) {
+  p = FeatureScatter(subset(sc, idents = param$trajectory_cluster), feature1 = "pseudotime", feature2 = i, cols = param$col_clusters) +
+    geom_smooth(method = "loess", color="black") +
+    AddStyle(title = "") +
+    theme(text = element_text(size = 12), 
+    axis.line = element_line(size = 0.5, color = "grey50")) +
+    NoGrid() +
+    NoLegend()
+  p_list[[i]] = p
+}
+p_list = patchwork::wrap_plots(p_list, ncol = 3)
+p_list
+```
+ 
+### Genes expression as function of pseudotime (per sample)
+```{r DEGs_pseudotime_subsets, fig.height=10, warning=FALSE, message=FALSE}
+# Split object (seurat v4)
+#orig_ident_levels = levels(sc$orig.ident)
+#sc_subsets = list()
+
+#for (h in orig_ident_levels) {
+#  sc_subsets[[h]] = subset(x = sc, subset = orig.ident == h)
+#}
+
+# Split object (seurat v5)
+sc_subsets = Seurat::SplitObject(sc, split.by = "orig.ident")
+
+  p_list = NULL
+for (i in top12) {
+  p_samples = purrr::map(list_names(sc_subsets), function(n) {
+#  p = Seurat::FeatureScatter(object = subset(sc_subsets[[n]], idents = param$trajectory_cluster), feature1 = "pseudotime", feature2 = i, cols = param$col_clusters)
+  p = Seurat::FeatureScatter(object = sc_subsets[[n]], feature1 = "pseudotime", feature2 = i, cols = param$col_clusters) +
+    geom_smooth(method = "loess", color="black") +
+    AddStyle(title = "") +
+    theme(text = element_text(size = 12), 
+    axis.line = element_line(size = 0.5, color = "grey50")) +
+    NoGrid() +
+    NoLegend()
+  })
+p = patchwork::wrap_plots(p_samples, ncol=2)
+
+  p_list[[i]] = p
+  
+}
+p_list = patchwork::wrap_plots(p_list, ncol = 2)
+p_list
+```
+
+ 
+### Dotplot
+The dotplot displays the average gene expression per cluster for the top 50 genes with the highest correlation of expression to trajectory position.
+```{r DEGs_pseudotime_dotplot, fig.height=fig_height_dotplots}
+p = DotPlot(sc, features = top50, group.by = "seurat_clusters", split.by = "orig.ident", cols = param$col_samples, idents = param$trajectory_cluster) +
+  RotatedAxis() +
+  theme(axis.text.x.bottom = element_text(size = 8)) +
+  RestoreLegend()
+p
+```
+ 
+### Heatmap
+The heatmap displays the gene expression for the top 50 genes with the highest correlation of expression to trajectory position.
+```{r DEGs_pseudotime_heatmap, fig.height=12}
+p = DoHeatmap(subset(sc, idents = param$trajectory_cluster), features = top100, group.colors=param$col_clusters)
+p
+```
+ 
+## Plot pseudotime for target genes
+Visualization of gene expression of individual target genes.
+```{r target_gene_pseudotime, fig.height=height_per_plot_genes, warning=FALSE}
+if (!is.null(param$plot_genes)) {
+  # Plot pseudotime for target gene
+p = plot_cells(cds, genes = param$plot_genes, scale_to_range = TRUE, label_cell_groups=FALSE, label_leaves = FALSE, label_branch_points = FALSE, graph_label_size = 3, cell_size = param$pt_size) +
+    theme(text = element_text(size = 12), axis.line = element_line(size = 0.5, color = "grey50"), plot.title = element_text(size = 12)) +
+    NoGrid() +
+    RestoreLegend(position = "right")
+p
+} else {message("No target gene selected")}
+```
+
+```{r target_gene_featureplot, eval=!is.null(param$plot_genes), fig.height=height_per_plot_genes, warning=FALSE}
+# Plot feature plot for target gene
+p_list = NULL
+for (i in param$plot_genes) {
+  p = FeaturePlot(sc, features = i, pt.size = param$pt_size, cols = c(param$col_bg, param$col)) +
+    AddStyle(legend_title = "expression", xlab = "UMAP 1", ylab = "UMAP 2", title = i) +
+    theme(text = element_text(size = 12), axis.line = element_line(size = 0.5, color = "grey50"), plot.title = element_text(size = 10, vjust = 0, hjust = 0.5)) +
+    NoGrid() +
+   RestoreLegend(position = "right")
+  p_list[[i]] = p
+}
+
+p = patchwork::wrap_plots(p_list, ncol = 3)
+p
+```
+ 
+<br>
+<br>
+
+```{r, child='../export_data/standard_export.Rmd'}
+```
+
+<br>
+
+```{r, child='../export_data/appendix.Rmd'}
+```

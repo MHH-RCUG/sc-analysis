@@ -11,6 +11,7 @@ if (getwd()!=param$path_to_git) {
   setwd(param$path_to_git)
 }
 
+
 # Set environment
 renv::use_python(type = "virtualenv", name = file.path(param$path_to_git,"env/basic/virtualenvs/r-reticulate"))
 renv::load(file.path(param$path_to_git,"env/basic"))
